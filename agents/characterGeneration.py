@@ -1,6 +1,6 @@
 import random
 from pydantic import BaseModel, Field
-from actors import *
+from agents.player import Debater
 
 # 1. Add this small model so Instructor knows what to return
 class CharacterProfile(BaseModel):
@@ -10,7 +10,8 @@ class CharacterProfile(BaseModel):
 # 2. The Generator Class
 class CharacterGenerator:
     characters = [
-    'Lady Macbeth', 'Donald Trump', 'Macbeth', 'Holden Caulfield', 'Kanye']
+    'Ronald Regan', 'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
+    characters2 = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March"]
     characters2 = [
     'Avatar Aang',
     'Hannibal Lecter','Lady Macbeth',
@@ -21,18 +22,18 @@ class CharacterGenerator:
 
     characters = [
         'Avatar Aang', 
-    'Hannibal Lecter', 'The Joker','Lady Macbeth',
-    'Oscar Wilde', 'Socrates', 'Gollum', 'Winston Churchill',
-    'Lord Voldemort', 'Hermione Granger', 'Dorian Gray',
+    'Lady Macbeth',
+     'Socrates', 'Gollum', 
+    'Lord Voldemort', 'Hermione Granger', 
     'Cleopatra', 'Napoleon Bonaparte', 'Joan of Arc', 'Rasputin', 'Genghis Khan',
-    'Marie Antoinette', 'Leonardo da Vinci', 'Sun Tzu', 'Boudica', 'Machiavelli',
-    'Abraham Lincoln', 'Mata Hari', 'Julius Caesar', 'Catherine the Great', 'Blackbeard',
+    'Marie Antoinette', 'Leonardo da Vinci', 'Sun Tzu', 'Machiavelli',
+    'Abraham Lincoln', 'Mata Hari', 'Catherine the Great', 'Blackbeard',
     'Sherlock Holmes', 'Hannibal Lecter', 'The Joker', 'Jay Gatsby', 'Lady Macbeth',
     'Gandalf', 'Severus Snape', 'Katniss Everdeen', 'Captain Ahab', 'Mary Poppins',
     'Darth Vader', 'Elizabeth Bennet', 'Atticus Finch', 'Wednesday Addams', 'Tony Stark',
     'Loki', 'Medusa', 'King Arthur', 'Circe', 'Achilles',
     'Anansi', 'Pandora', 'Hades', 'Mulan', 'Robin Hood',
-    'Oscar Wilde', 'Grigori Rasputin', 'Alice in Wonderland', 'Victor Frankenstein', 'Count Dracula',
+    'Oscar Wilde', 'Alice in Wonderland', 'Victor Frankenstein', 'Count Dracula',
     'Tyler Durden', 'Socrates', 'Calamity Jane', 'Gollum', 'Winston Churchill',
     'Alexander the Great', 'Amelia Earhart', 'William Shakespeare', 'Wolfgang Amadeus Mozart', 'Frida Kahlo',
     'Charles Darwin', 'Ada Lovelace', 'Marie Curie', 'Vincent van Gogh', 'Albert Einstein',
@@ -50,14 +51,23 @@ class CharacterGenerator:
         self.client = client
         self.model_name = model_name
 
-    def genericPlayers(self):
-        debaters = [
-            Debater('Agent Alpha', 'Bold and daring', 'small man', client=self.client, model_name=self.model_name),
-            Debater('Agent Beta', 'Coy and cunning', 'small man', client=self.client, model_name=self.model_name),
-            Debater('Agent Capa', 'Cool and calm', 'small man', client=self.client, model_name=self.model_name),
-            Debater('Agent Delta', 'Handsome and charasmatic', 'big guy', client=self.client, model_name=self.model_name),
-            Debater('Agent Elphie', 'Shy and powerful', 'green girl', client=self.client, model_name=self.model_name)
+    def genericPlayers(self, number_of_players):
+        templates = [
+            ('Agent Alpha', 'Bold and daring', 'small man'),
+            ('Agent Beta', 'Coy and cunning', 'small man'),
+            ('Agent Capa', 'Cool and calm', 'small man'),
+            ('Agent Delta', 'Handsome and charismatic', 'big guy'),
+            ('Agent Elphie', 'Shy and powerful', 'green girl')
         ]
+        
+        debaters = []
+        for i in range(number_of_players):
+            name, personality, appearance = templates[i % len(templates)]
+            
+            debaters.append(
+                Debater(name, personality, appearance, client=self.client, model_name=self.model_name)
+            )
+            
         return debaters
          
        

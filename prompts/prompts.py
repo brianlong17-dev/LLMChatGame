@@ -7,6 +7,8 @@ class PromptLibrary:
     desc_action_agent = ("A visible physical action. Players may not speak in the future tense about their plans. You must describe the action you are taking right now in the present tense.")
     desc_message = "Something new and unexpected. If you wish not to speak, remain empty. Your spoken words. Just chat about what you want to debate and discuss."
     desc_agent_lifeLessons = ("NORMALLY EMPTY unless you want to add a new lesson to you mind that you will take forward. This will shape your future descisions")
+    desc_basic_thought = "Your internal thoughts. Strategy, feelings, and private observations."
+    desc_basic_public_response = "What you actually say out loud to the group. Stay in character!"
     #The judge
     
     desc_judge_monologue = f"Private thoughts."
@@ -31,11 +33,16 @@ class PromptLibrary:
     dp_hidden_agenda = "A evolving goal you are trying to achieve."
     dp_speaking_style = "Detailed and curious"
     
+    pd_slit = 3
+    pd_steal = 5
+    pd_both_steal = 1
+    
     # System Prompts
     @staticmethod
     def agent_prompt(lifeLessons, history_context):
         return (
-            f"Be bold and changing.Your life lessons that guide you: {lifeLessons}Context:\n{history_context}\n\nYour Turn:")
+            f"NEVER repeat your previous strategy or thoughts. You must evolve and try a new tactic every round."
+            f"Take BOLD ACTION.Your life lessons that guide you: {lifeLessons}Context:\n{history_context}\n\nYour Turn:")
     
     @staticmethod
     def judge_user(judge, game_board):
@@ -69,6 +76,7 @@ class PromptLibrary:
             f"ANY CURRENT PHYSICAL FORM: '{agent.form}'\n"
             f"YOUR LIFE LESSONS: '{agent.life_lessons}'\n"
             f"YOUR STRATEGY TO WIN: '{agent.strategy_to_win}'\n"
+            f"NEVER repeat your previous strategy or thoughts. You must evolve and try a new tactic every round."
             
         )
 

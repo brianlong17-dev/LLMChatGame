@@ -149,6 +149,9 @@ class GameBoard:
             #print(f"      \033[3m{self.agent_forms.get(agent, 'Unknown form')}\033[0m")
             
         print("="*45 + "\n")
+    
+    def append_agent_points(self, agent_name, points):
+        self.agent_scores[agent_name] += points
         
     def updateFromJudgement(self, judge_result):
         if judge_result.scores:
