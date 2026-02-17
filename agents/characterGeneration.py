@@ -21,30 +21,26 @@ class CharacterGenerator:
 
 
     characters = [
-        'Avatar Aang', 
+    'Donald Trump', 'Margaret Thatcher', 'Ronald Regan',
+    'Avatar Aang', 
     'Lady Macbeth',
-     'Socrates', 'Gollum', 
+    'Gollum', 
     'Lord Voldemort', 'Hermione Granger', 
     'Cleopatra', 'Napoleon Bonaparte', 'Joan of Arc', 'Rasputin', 'Genghis Khan',
     'Marie Antoinette', 'Leonardo da Vinci', 'Sun Tzu', 'Machiavelli',
-    'Abraham Lincoln', 'Mata Hari', 'Catherine the Great', 'Blackbeard',
-    'Sherlock Holmes', 'Hannibal Lecter', 'The Joker', 'Jay Gatsby', 'Lady Macbeth',
-    'Gandalf', 'Severus Snape', 'Katniss Everdeen', 'Captain Ahab', 'Mary Poppins',
-    'Darth Vader', 'Elizabeth Bennet', 'Atticus Finch', 'Wednesday Addams', 'Tony Stark',
-    'Loki', 'Medusa', 'King Arthur', 'Circe', 'Achilles',
-    'Anansi', 'Pandora', 'Hades', 'Mulan', 'Robin Hood',
+    'Abraham Lincoln', 'Catherine the Great', 'Blackbeard',
+    'Sherlock Holmes', 'Hannibal Lecter', 'Lady Macbeth',
+    'Gandalf', 'Severus Snape', 'Katniss Everdeen', 'Captain Ahab',
+    'Miranda Priestly',
+    'Darth Vader','Wednesday Addams', 'Tony Stark',
     'Oscar Wilde', 'Alice in Wonderland', 'Victor Frankenstein', 'Count Dracula',
-    'Tyler Durden', 'Socrates', 'Calamity Jane', 'Gollum', 'Winston Churchill',
-    'Alexander the Great', 'Amelia Earhart', 'William Shakespeare', 'Wolfgang Amadeus Mozart', 'Frida Kahlo',
-    'Charles Darwin', 'Ada Lovelace', 'Marie Curie', 'Vincent van Gogh', 'Albert Einstein',
-    'Marco Polo', 'Queen Victoria', 'The Great Gatsby', 'Huckleberry Finn', 'Don Quixote',
-    'Iago', 'Nurse Ratched', 'Lord Voldemort', 'Hermione Granger', 'Frodo Baggins',
-    'Walter White', 'Daenerys Targaryen', 'Tyrion Lannister', 'Ellen Ripley', 'Indiana Jones',
+    'Tyler Durden', 'Gollum', 'Winston Churchill',
+    'Amelia Earhart', 'William Shakespeare', 
+    
+    'The Great Gatsby', 'Nurse Ratched', 'Lord Voldemort', 'Hermione Granger', 'Frodo Baggins',
     'James Bond', 'Katara', 'Zuko', 'Uncle Iroh', 'Buffy Summers',
-    'The Wicked Witch of the West', 'Dr. Jekyll', 'Mr. Hyde', 'Dorian Gray', 'Frankenstein Monster',
-    'Holden Caulfield', 'Lisbeth Salander', 'Ebenezer Scrooge', 'Captain Nemo', 'Long John Silver',
-    'Al Capone', 'Billy the Kid', 'Wyatt Earp', 'Spartacus', 'Marcus Aurelius',
-    'Aristotle', 'Nietzsche', 'Confucius', 'The Sphinx', 'Merlin'
+    'Elphaba Thrope','Dorian Gray', 'Frankenstein Monster',
+    'Holden Caulfield', 'Lisbeth Salander', 'Morty Smith', 'Rick Sanches'
 ]
 
     def __init__(self, client, model_name: str):

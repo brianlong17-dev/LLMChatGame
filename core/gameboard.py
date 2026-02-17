@@ -1,5 +1,31 @@
 from collections import deque
 
+class ConsoleRenderer:
+    COLORS = {
+        "RED": "\033[91m", "GREEN": "\033[92m", "BLUE": "\033[94m",
+        "YELLOW": "\033[93m", "SYSTEM": "\033[1;30m", "RESET": "\033[0m"
+    }
+
+    @classmethod
+    def print_turn_header(cls, turn_number: int):
+        print(f"\n\n\033[1m[TURN {turn_number}]\033[0m")
+
+    @classmethod
+    def print_public_action(cls, speaker_name: str, message: str, color_name: str = "RESET"):
+        color = cls.COLORS.get(color_name.upper(), cls.COLORS["RESET"])
+        print(f"{color}\033[1m{speaker_name}\033[0m: {color}{message}{cls.COLORS['RESET']}")
+
+    @classmethod
+    def print_private_thought(cls, message: str, speaker_name: str = "", thought_type: str = "Thoughts", color_name: str = "RESET"):
+        color = cls.COLORS.get(color_name.upper(), cls.COLORS["RESET"])
+        if speaker_name != "":
+            speaker_name = f"[{speaker_name}] - "
+        print(f"{color}\033[3m{speaker_name}{thought_type} : {message}{cls.COLORS['RESET']}")
+
+    @classmethod
+    def print_system(cls, message: str):
+        color = cls.COLORS["SYSTEM"]
+        print(f"{color}🤖 [SYSTEM]: {message}{cls.COLORS['RESET']}")
 
 class GameBoard:
     COLORS = {
@@ -10,11 +36,10 @@ class GameBoard:
             "RESET": "\033[0m"
         }
     
-    def __init__(self, game_master, agent_names):
+    def __init__(self, game_master):
         self.full_rounds_text_amount = 2
         self.game_master = game_master
         self.agent_names = []
-        self.judge = None
         self.round_number = 0
         self.turn_number = 0
         self.history = []
@@ -24,11 +49,12 @@ class GameBoard:
         self.agent_scores: dict[str, int] = {}
         self.agent_response_allowed: dict[str, bool] = {}
         self.agent_forms: dict[str, str] = {}
-        for agent_name in agent_names:
-            self.add_agent_state(agent_name, 'blob')
+    
         
             
     def newRound(self):
+        #This will move to the simulator
+        self.print_leaderboard()
         self.round_number += 1
         self.round_entries.append(list(self.currentRound))
         #print(f"SSS: {self.round_entries}")
@@ -36,23 +62,15 @@ class GameBoard:
         roundSummary = self.game_master.summariseRound(self)
         roundSummaryString = "\n".join([f"{key}: {value}" for key, value in roundSummary])
         self.round_summaries.append(roundSummary)
-        self.privatePrint("SUMMARY", f"{roundSummaryString}", color = "YELLOW")
+        ConsoleRenderer.print_private_thought("SUMMARY", f"{roundSummaryString}", color_name = "YELLOW")
         self.currentRound.clear()
-        self.print_and_save("SYSTEM", f"BEGIN ROUND {self.round_number}")
-        
-        
-    def process_turn(self, player):
-        result = player.take_turn(self)
-        self.turn_number += 1
-        color = player.color
-        
-        print(f"\n\n\033[1m[TURN {self.turn_number}]\033[0m")
-        self.print_and_save(player.name, result['public_text'], color=color)
-        for key in result['private_text']:
-            text = f"{key} : {result['private_text'][key]}"
-            self._print(player.name, text, is_private = True, color=color)
-        return result
+        self.broadcast_public_action("SYSTEM", f"BEGIN ROUND {self.round_number}")
     
+    def broadcast_public_action(self, player_name: str, message: str, color: str = "RESET"):
+        #TODO need to merge this one with the manager one
+        self._update_history(player_name, message)
+        ConsoleRenderer.print_public_action(player_name, message, color)
+        
     def _print(self, player_name, public_message: str, color = "", is_private = False, print_name = False):
         reset = self.COLORS["RESET"]
         if player_name == "SYSTEM":
@@ -64,13 +82,9 @@ class GameBoard:
             print(f"{bold}{color_code}{player_name}{reset}")
         print(f"{color_code}{italic}{public_message}{reset}")
     
-    def privatePrint(self, player_name, public_message: str, color = None):
-        return(self._print(player_name, public_message, color, is_private = True, print_name = True))
                
-    def print_and_save(self, player_name, public_message: str, color = None):
-        
-        self._print(player_name, public_message, color, print_name = True)
-        self._update_history(player_name, public_message)
+    def print_and_save(self, player_name, public_message: str, color = "RESET"):
+        self.broadcast_public_action(player_name, public_message, color)
         
     def history_text(self):
         """Returns the compressed/summarized history of past rounds."""
@@ -113,9 +127,14 @@ class GameBoard:
         self.agent_forms.pop(agent_name, None)
         self.agent_response_allowed.pop(agent_name, None)
 
+    def initialize_agents(self, agent_list):
+        for agent in agent_list:
+            self.add_agent_state(agent.name, agent.form, 0)
+            
     def add_agent_state(self, agent_name: str, form: str, initial_score: int = None):
         """Initializes dictionaries for a newly born agent."""
         self.agent_names.append(agent_name)
+        #adding a new player midway gets average points. Redundant TODO remove 
         if initial_score == None:
             current_scores = list(self.agent_scores.values())
             initial_score = int(sum(current_scores) / len(current_scores)) if current_scores else 0

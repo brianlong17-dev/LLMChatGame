@@ -1,7 +1,19 @@
-from pydantic import BaseModel, Field
+from typing import Literal
+from pydantic import BaseModel, Field, create_model
 
-class SumariseRoundBasic(BaseModel):
+class SumamriseRoundBasic(BaseModel):
     round_summary: str = Field(description="A summary of the round to give to each player")
+    
+class DynamicGameModelFactory:
+    @classmethod
+    def choose_agent_based_on_parameter(cls, allowed_names, parameter: str):
+        return create_model("ChooseAgentBasedOnParameter",
+            nameToChoose=(Literal[tuple(allowed_names)], Field(
+                description=f"The exact name of the agent to choose. Only the players in the allowed names are valid. "
+                f"Allowed names: {allowed_names}. The parameter for choosing: {parameter}")),
+            thought_proccess=(str, Field(description="What's your thought proccess behind this decision?"))
+        )
+        
 
 class SumariseRoundComplex(BaseModel):
     round_summary: str = Field(description="A summary of the round to give to each player ")

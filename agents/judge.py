@@ -86,8 +86,8 @@ class Judge(BaseActor):
             response_model=NewAgentManifest,
             messages=[
                 {"role": "system", "content": f"You are {PromptLibrary.judgeName}. You are creating a new player because you have decided to "
-                 "This is the recent history: {history}"},
-                {f"role": "user", "content": "This is the information of your previous turn: {turn} "} 
+                              f"This is the recent history: {history}"},
+                {"role": "user", "content": f"This is the information of your previous turn: {turn} "}
             ]
         )
         return turn

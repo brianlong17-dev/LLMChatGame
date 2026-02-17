@@ -41,13 +41,13 @@ class Debater(BaseActor):
             self.life_lessons.append(turn.lifeLesson)
         return {
             "turn": turn,
-            "public_text": f"[{turn.public_action}]\n {turn.public_response}\n\n",
+            "public_text": f"[{turn.public_action}]\n {turn.public_response}",
             "private_text" : private_data
         }
     
     def splitOrSteal(self, gameBoard, opponent_agent):
         system_content = PromptLibrary.agent_system(self, gameBoard)
-        splitPoints = PromptLibrary.pd_slit
+        splitPoints = PromptLibrary.pd_split
         stealPoints = PromptLibrary.pd_steal
         bothSteal = PromptLibrary.pd_both_steal
         promptMessage = (
@@ -86,7 +86,7 @@ class Debater(BaseActor):
             {"role": "user", "content": prompt}
         ]
 
-        response = self.client.chat.completions.create(
+        response = self.client.create(
             model=self.model_name,
             response_model=AgentReaction,
             messages=messages
@@ -111,15 +111,14 @@ class Debater(BaseActor):
     
     def voteOnePlayerOff(self, gameBoard, other_agent_names):
         system_content = PromptLibrary.agent_system(self, gameBoard)
-        other_agents = [name for name in gameBoard.agent_names if name != self.name]
         
         vote_result = self.client.create(
                 model=self.model_name,
-                response_model=DynamicModelFactory.choose_agent_to_remove_model(other_agents),
+                response_model=DynamicModelFactory.choose_agent_to_remove_model(other_agent_names),
                 messages=[
-                    {"role": "system", "content": f"You are {self.name}. Each player gets a vote. You must vote for one player you want to leave the completition. They player with the most votes will leave the game."
+                    {"role": "system", "content": f"You are {self.name}. Each player gets a vote. You must vote for one player you want to leave the competition. They player with the most votes will leave the game."
                      f"{system_content}"},
-                    {"role": "user", "content": f"Context: {gameBoard.get_full_context()}\n\nWho do you vote to leave? Who do you eliminate from {other_agents} and why?"}
+                    {"role": "user", "content": f"Context: {gameBoard.get_full_context()}\n\nWho do you vote to leave? Who do you eliminate from {other_agent_names} and why?"}
                 ]
             )
         return vote_result
@@ -133,7 +132,7 @@ class Debater(BaseActor):
                 model=self.model_name,
                 response_model=DynamicModelFactory.choose_agent_to_remove_model(other_agents),
                 messages=[
-                    {"role": "system", "content": f"You are {self.name}. You have won the round. You must now eliminate one of your rival"
+                    {"role": "system", "content": f"You are {self.name}. You have won the round. You must now eliminate one of your rivals"
                      f"{system_content}"},
                     {"role": "user", "content": f"Context: {gameBoard.get_full_context()}\n\nWho do you eliminate from {other_agents} and why?"}
                 ]

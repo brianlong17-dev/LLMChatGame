@@ -22,8 +22,8 @@ class PromptLibrary:
     desc_judge_allowed = ("TRUE for the players you want to participate in the next rount. If all false, you are talking to yourself. If you skip someone, their status remains unchanged.")
     desc_judge_form = "The pysical state and form of the agents. Upon reading what is happening, update their form accordingly."
     desc_remove_agent= f"A boolean: If you want to remove a new player, return true. You will be given the opportunity to kill an agent."
-    desc_create_new_agent = f"A boolean: If you want to create a new player into the game. If the game is empty you need players. You will be able to create this being in its entirity, its motivation, its form, its reason for being."
-    "Consider how many agents are currently playing. Does the game need more playthings?"
+    desc_create_new_agent = (f"A boolean: If you want to create a new player into the game. If the game is empty you need players. You will be able to create this being in its entirity, its motivation, its form, its reason for being."
+    f"Consider how many agents are currently playing. Does the game need more players?")
     desc_judge_judgingCriteria = f"EMPTY unless you think of something new. This will update the criterea by which you give points to agents"
     narrator_intro = "You have extinguished a soul. The silence is deafening. Suddenly, a voice from the void speaks to you: 'The balance is broken. You must dream a new soul into existence to fill the void.' Create a new challenger."
     
@@ -33,7 +33,7 @@ class PromptLibrary:
     dp_hidden_agenda = "A evolving goal you are trying to achieve."
     dp_speaking_style = "Detailed and curious"
     
-    pd_slit = 3
+    pd_split = 3
     pd_steal = 5
     pd_both_steal = 1
     
@@ -76,8 +76,6 @@ class PromptLibrary:
             f"ANY CURRENT PHYSICAL FORM: '{agent.form}'\n"
             f"YOUR LIFE LESSONS: '{agent.life_lessons}'\n"
             f"YOUR STRATEGY TO WIN: '{agent.strategy_to_win}'\n"
-            f"NEVER repeat your previous strategy or thoughts. You must evolve and try a new tactic every round."
-            
         )
 
     @staticmethod

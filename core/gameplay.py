@@ -13,10 +13,12 @@ import random
 import instructor
 from collections import Counter, deque
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from agents.characterGeneration import CharacterGenerator
+from core.game_configs import *
+from core.games import VoteAndGameManager
 from prompts.prompts import PromptLibrary
 from agents.actors import *
 from agents.player import Debater
@@ -26,7 +28,51 @@ from models.player_models import *
 from .gameboard import GameBoard
 
 
-
+class PhaseRecipe(BaseModel):
+    pre_game_discussion_rounds: int = 2
+    mini_game: Optional[GameDefinition] = None
+    pre_vote_discussion_rounds: int = 1
+    vote_type: Optional[VoteDefinition] = None
+    post_vote_discussion_rounds: int = 0
+    immunity_types: Optional[List[ImmunityDefinition]] = None  # e.g., ["winner_immunity", "public_vote_immunity"]
+    
+    def messageString(self, phase_number):
+        game_description = ""
+        vote_description = ""
+        pre_game_discussion_message = ""
+        pre_vote_discussion_message = ""
+        immunity_message = ""
+        
+        if self.pre_game_discussion_rounds > 0:
+            if self.mini_game:
+                pre_game_discussion_message = f"Before we start the mini game, we will have {self.pre_game_discussion_rounds} rounds of discussion to strategize and form alliances.\n"
+            else:
+                pre_game_discussion_message = f"We will start with {self.pre_game_discussion_rounds} rounds of discussion to strategize and form alliances.\n"
+                
+        if self.mini_game:
+            game_description += f"We will be playing a mini game this phase: {self.mini_game.display_name}. {self.mini_game.rules_description}\n"
+        
+        if self.pre_vote_discussion_rounds > 0:
+            pre_vote_discussion_message = f"We will have {self.pre_vote_discussion_rounds} rounds of discussion before the voting round to discuss and plan.\n"
+            
+        if self.immunity_types:
+            immunity_message += "HOWEVER! This voting round phase has the following immunities in play:\n"
+            for immunity in self.immunity_types:
+                immunity_message += f"- {immunity.display_name}: {immunity.rules_description}\n"
+        if self.vote_type:
+            vote_description += f"We will be playing a voting game this phase: {self.vote_type.display_name}. {self.vote_type.rules_description}\n"
+            
+        
+        
+        message = f"🚨 WELCOME PLAYERS, TO PHASE {phase_number} 🚨\n"
+        message += pre_game_discussion_message
+        message += game_description
+        message += pre_vote_discussion_message
+        message += vote_description
+        return message
+        
+    
+    
 class SimulationEngine:
     def __init__(self, model_name: str = "gemini-2.0-flash-lite", number_of_players = 5):
         load_dotenv()
@@ -39,65 +85,133 @@ class SimulationEngine:
         self.roundsRemaining = None 
         self.rounds_per_phase = 3
         self.phase_number = 0
+        self.gameBoard = GameBoard(self.game_master)
+        self.game_manager = VoteAndGameManager(self.gameBoard, self)
         
     def initialiseGameBoard(self):
-        self.gameBoard = GameBoard(self.game_master, [agent.name for agent in self.agents])
-        for agent in self.agents:
-            self.gameBoard.add_agent_state(agent.name, agent.form)
-        for agent in self.agents:
-            self.gameBoard.agent_forms[agent.name] = agent.form
-        self.gameBoard.judge = self.judge
+        self.gameBoard.initialize_agents(self.agents)
+        
         
     def players(self):
         if len(self.agents) <= 2:
-            return self.agents + [self.judge] 
+            return self.agents #+ [self.judge] 
         return self.agents #+ [self.judge] 
     
-    def run(self, topic: str, rounds_per_phase=1, number_of_players = 2, generic_players=False):
-        print(f"\n🚀 Simulation Started: {topic}\n" + "="*50)
-        self.rounds_per_phase = rounds_per_phase
+    def get_phase_recipe(self):
+        recipe1 = PhaseRecipe(
+            pre_game_discussion_rounds=2,
+            mini_game=PRISONERS_DILEMMA,
+            pre_vote_discussion_rounds=1,
+            vote_type=EACH_PLAYER_VOTES_TO_REMOVE,
+            post_vote_discussion_rounds=0,
+            immunity_types=[HIGHEST_POINT_IMMUNITY] #"HighestPointPlayerImmunity(), WildcardImmunity()]
+        )
+        
+        recipe2 = PhaseRecipe(
+            pre_game_discussion_rounds=0,
+            mini_game=None,
+            pre_vote_discussion_rounds=2,
+            vote_type=EACH_PLAYER_VOTES_TO_REMOVE,
+            post_vote_discussion_rounds=0
+        )
+        if self.phase_number < 5:
+            return recipe1
+        else:
+            return recipe2
+        
+    def runPhase(self, recipe: PhaseRecipe):
+        
+        intro = recipe.messageString(self.phase_number)
+        self.gameBoard.print_and_save("SYSTEM", intro)
+        
+        for _ in range(recipe.pre_game_discussion_rounds):  
+            self.gameBoard.newRound()
+            self.game_manager.run_discussion_round()
+        
+        if recipe.mini_game:
+            self.gameBoard.newRound()
+            #this printing has to be moved.
+            self.gameBoard.print_and_save("SYSTEM", f"\n🎲 TRIGGERING EVENT: {recipe.mini_game.display_name}")
+            self.gameBoard.print_and_save("SYSTEM", recipe.mini_game.rules_description)
+            recipe.mini_game.execute_game(self.game_manager)
+        
+        for _ in range(recipe.pre_vote_discussion_rounds):
+            self.gameBoard.newRound()
+            self.game_manager.run_discussion_round()
+        
+        if recipe.vote_type:
+            
+            self.gameBoard.newRound()
+            if recipe.vote_type:
+                immune_players = [] # Use a standard list!
+                
+                if recipe.immunity_types:
+                    for immunity in recipe.immunity_types:
+                        result = immunity.execute_game(self.game_manager)
+                        if isinstance(result, list):
+                            immune_players.extend(result)
+                        else:
+                            immune_players.append(result)
+            self.gameBoard.print_and_save("SYSTEM", f"\n🗳️ TRIGGERING VOTE: {recipe.vote_type.display_name}")
+            self.gameBoard.print_and_save("SYSTEM", recipe.vote_type.rules_description)
+            
+            recipe.vote_type.execute_game(self.game_manager, immunity_players=immune_players)
+        
+        for _ in range(recipe.post_vote_discussion_rounds):
+            self.gameBoard.newRound()
+            self.game_manager.run_discussion_round()
+                
+        return
+        phase1 = (2, gameName, 1, voteType)
+        genericPhase = (2, None, 0, voteType)
+        # Run for rounds_per_phase rounds
+        
+        
+        for _ in range(self.rounds_per_phase):
+            if self.finalPhase:
+                self.gameBoard.print_and_save("SYSTEM", f"🚨🚨🚨{self.roundsRemaining} ROUNDS REMAIN UNTIL THE FINAL VOTE. THE PLAYER WITH THE MOST POINTS FROM THE JUDGE WILL GET THE DECIDING VOTE ")
+                self.roundsRemaining -= 1
+            self.gameBoard.newRound()
+            
+            for player in self.players():
+                if player.isAgent() and not self.gameBoard.agent_response_allowed.get(player.name, True):
+                    continue
+                
+                #result =self.gameBoard.process_turn(player)
+                if (creation_turn := result.get("creation_turn")) is not None:
+                    self.handle_agent_creation(creation_turn)
+            
+            self.gameBoard.print_leaderboard()
+
+        # --- THE VOTING PHASE ---
+        self.execute_end_of_phase()
+            
+            
+            
+  
+    def set_up_players(self, number_of_players, generic_players):
         if generic_players:
             self.agents = self.generator.genericPlayers(number_of_players)
         else:
             self.agents = [self.generator.generate_random_debater() for _ in range(number_of_players)]
         
+         
+    def run(self, topic: str, rounds_per_discussion_phase=1, number_of_players = 2, generic_players=False):
+        print(f"\n🚀 Simulation Started: {topic}\n" + "="*50)
+        self.rounds_per_phase = rounds_per_discussion_phase
+        self.set_up_players(number_of_players, generic_players)
         self.initialiseGameBoard()
-        self.gameBoard.print_and_save("System", f"Goal: {topic}")
         
+        
+        self.gameBoard.print_and_save("System", f"Goal: {topic}")
         while len(self.agents) > 1:
-            # Run for rounds_per_phase rounds
             self.phase_number += 1
+            self.runPhase(self.get_phase_recipe())
             
-            for _ in range(self.rounds_per_phase):
-                if self.finalPhase:
-                    self.gameBoard.print_and_save("SYSTEM", f"🚨🚨🚨{self.roundsRemaining} ROUNDS REMAIN UNTIL THE FINAL VOTE. THE PLAYER WITH THE MOST POINTS FROM THE JUDGE WILL GET THE DECIDING VOTE ")
-                    self.roundsRemaining -= 1
-                self.gameBoard.newRound()
-                
-                for player in self.players():
-                    if player.isAgent() and not self.gameBoard.agent_response_allowed.get(player.name, True):
-                        continue
-                    
-                    result =self.gameBoard.process_turn(player)
-                    if (creation_turn := result.get("creation_turn")) is not None:
-                        self.handle_agent_creation(creation_turn)
-                
-                self.gameBoard.print_leaderboard()
-
-            # --- THE VOTING PHASE ---
-            self.execute_end_of_phase()
         print(f"🏆 FINAL SURVIVOR: {self.agents[0].name}")
         
-    def execute_end_of_phase(self):
-        if self.phase_number <= 2:
-            return self.execute_prisoners_dilema_game()
-        return self.execute_voting_phase_each_votes()
-    
-    
-    import random
-
     def execute_prisoners_dilema_game(self):
-        splitPoints = PromptLibrary.pd_slit
+        splitPoints = PromptLibrary.pd_split
         stealPoints = PromptLibrary.pd_steal
         bothSteal = PromptLibrary.pd_both_steal
         
@@ -353,56 +467,6 @@ class SimulationEngine:
         self.gameBoard.print_and_save("SYSTEM", f"A new being appears: {name}")
         self.gameBoard._print("SYSTEM", creation_private_text, is_private=True)
     
-    def run2(self, topic: str, batch_size: int = 50, round_length = 5):
-        print(f"\n🚀 Simulation Started: {topic}\n" + "="*50)
-        self.gameBoard.print_and_save("System", f"Goal: {topic}")
-        turn_count = 0
-        keep_going = True
-    
-        while len(self.agents) > 1:
-            self.gameBoard.newRound()
-            print(self.gameBoard.agent_scores)
-           
-            # --- 2. AGENT TURNS ---
-            for player in self.players():
-                # Double check existence
-                
-                if player not in self.players(): continue
-                if player.isAgent() and not self.gameBoard.agent_response_allowed.get(player.name, True):
-                    self.gameBoard.print_and_save("SYSTEM", f"\n\033[1;30m[Skipped]\033[0m {player.name} is silenced by {PromptLibrary.judgeName}.")
-                    continue
-                turn_count += 1
-                result = self.gameBoard.process_turn(player)
-                
-                if (creation_turn := result.get("creation_turn")) is not None:
-                    self.handle_agent_creation(creation_turn)
-                    
-                
-                    #do stuff
-                if (target := result.get("ejection_target")) is not None:
-                    
-                    victim = next((a for a in self.agents if a.name.lower() in target.lower()), None)
-                    
-                    if victim:
-                        message = (f"\n🚨 💀 JUDGMENT: {victim.name} HAS BEEN EXECUTED. 💀 🚨\n")
-                        self.gameBoard.print_and_save("SYSTEM", message)
-                        self.gameBoard.remove_agent_state(victim.name)
-                        self.agents.remove(victim)
-                
-                
-            
-            self.gameBoard.print_leaderboard()
-
-              
-            
-            if turn_count >= batch_size:
-                    if input(f"\nBatch Complete. Continue? (y/n): ").strip().lower() != 'y':
-                        keep_going = False
-                    else:
-                        batch_size += 20
-
-            
-        
-        self.export_to_markdown(topic)
+   
 
 

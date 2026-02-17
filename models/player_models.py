@@ -112,17 +112,13 @@ class DynamicModelFactory:
      
         public_desc = public_response_prompt or PromptLibrary.desc_basic_public_response
         private_desc = private_thoughts_prompt or PromptLibrary.desc_basic_thought
-        
         if additional_thought_nudge:
             private_desc = f"{private_desc} {additional_thought_nudge}"
             
-        fields = {
-            
-            "public_response": (str, Field(description=public_desc)),
-            "private_thoughts": (str, Field(description=private_desc))
-        }
+        fields = {"public_response": (str, Field(description=public_desc)),
+            "private_thoughts": (str, Field(description=private_desc))}
         
-        # If the game has a specific action (like voting or split/steal), add it here
+        # Action: like vote a player, split or steal. Single answer games 
         if action_field:
             fields["action"] = action_field
             
