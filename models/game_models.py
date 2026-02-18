@@ -16,7 +16,7 @@ class DynamicGameModelFactory:
         
 
 class SumariseRoundComplex(BaseModel):
-    round_summary: str = Field(description="A summary of the round to give to each player ")
+    round_summary: str = Field(description="A summary of the round. What information would an LLM agent player need to know? Condensed for LLM readability")
     overall_story: str = Field(description="A summary of the over all story so far")
     narative_critique: str = Field(description=f"These are LLMs playing a game. Is it interesting to watch? "
                                    "Are the agents understanding the game?"

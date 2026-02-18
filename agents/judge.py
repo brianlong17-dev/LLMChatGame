@@ -1,8 +1,8 @@
-from .actors import BaseActor
+from .base_agent import BaseAgent
 from prompts.prompts import PromptLibrary
 from models.player_models import JudgeTurn, NewAgentManifest, DynamicModelFactory
 
-class Judge(BaseActor):
+class Judge(BaseAgent):
     def __init__(self, name: str, initial_persona: str, initial_form: str,client, model_name: str):
         super().__init__(name, initial_persona, initial_form, client, model_name)
         self.complex_persona = PromptLibrary.desc_judge_initialPersona

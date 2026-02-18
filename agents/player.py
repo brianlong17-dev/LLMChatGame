@@ -1,9 +1,12 @@
+from prompts.gamePrompts import GamePromptLibrary
 from prompts.prompts import PromptLibrary
 from models import *
-from agents.actors import BaseActor
+from agents.base_agent import BaseAgent
+#from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
-
-class Debater(BaseActor):
+class Debater(BaseAgent):
+    
+    
     def __init__(self, name: str, initial_persona: str, initial_form: str,client, model_name: str):
         super().__init__(name, initial_persona, initial_form, client, model_name)
         self.rating = 0
@@ -14,19 +17,27 @@ class Debater(BaseActor):
         return True
     
    
-        
+    def safety_settings(self):
+        return[
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
+        ]
     
     def take_turn(self, gameBoard):
     #history_context: str, judge_persona: str, scores: dict[str, int], forms: dict[str, str]) -> dict:
         system_content = PromptLibrary.agent_system(self, gameBoard)
-        user_content =PromptLibrary.agent_prompt(self.life_lessons, gameBoard.get_full_context())
+        user_content =PromptLibrary.agent_prompt(list(self.life_lessons), gameBoard.get_full_context())
+        #print("SC: " + system_content)
+        #print("UC: " + user_content)
         turn: AgentTurn = self.client.create(
             model=self.model_name,
             response_model=AgentTurn,
             messages=[
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content}
-            ]
+            ]#,safety_settings=self.safety_settings
         )
         self.persona = turn.updated_persona_summary
         if turn.updated_strategy_to_win.lower() not in self.emptyResponses():
@@ -45,11 +56,45 @@ class Debater(BaseActor):
             "private_text" : private_data
         }
     
+    def choose_player(self, gameBoard, allowed_names, user_content):
+        messages = [
+            {"role": "system", "content": PromptLibrary.agent_system(self, gameBoard)},
+            {"role": "user", "content": user_content}
+        ]
+        response = self.client.create(
+            model=self.model_name,
+            response_model=DynamicModelFactory.choose_agent(allowed_names, user_content),
+            messages=messages
+        )
+        return response
+            
+    
+    def choose_partner(self, gameBoard, allowed_names):
+        system_content = PromptLibrary.agent_system(self, gameBoard)
+        user_content = (
+            f"You are about to play a mini game with another player. You get to choose who you want to play with from the following list: {allowed_names}.\n"
+            f"Based on your history and the current game context, who do you choose to partner up with for the next mini-game and why?"
+        )
+        messages = [
+            {"role": "system", "content": PromptLibrary.agent_system(self, gameBoard)},
+            {"role": "user", "content": user_content}
+        ]
+        response = self.client.create(
+            model=self.model_name,
+            response_model=DynamicModelFactory.choose_agent_as_partner(allowed_names),
+            messages=messages
+        )
+        
+        return response
+    
+    
+    
+    
     def splitOrSteal(self, gameBoard, opponent_agent):
         system_content = PromptLibrary.agent_system(self, gameBoard)
-        splitPoints = PromptLibrary.pd_split
-        stealPoints = PromptLibrary.pd_steal
-        bothSteal = PromptLibrary.pd_both_steal
+        splitPoints = GamePromptLibrary.pd_split
+        stealPoints = GamePromptLibrary.pd_steal
+        bothSteal = GamePromptLibrary.pd_both_steal
         promptMessage = (
             f"🚨 PRISONER'S DILEMMA 🚨\n"
             f"You have been paired with {opponent_agent.name}.\n"
@@ -91,7 +136,6 @@ class Debater(BaseActor):
             response_model=AgentReaction,
             messages=messages
         )
-        
         return response
     
     def finalWords(self, gameBoard):

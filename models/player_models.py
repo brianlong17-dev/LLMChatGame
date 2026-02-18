@@ -121,6 +121,8 @@ class DynamicModelFactory:
         # Action: like vote a player, split or steal. Single answer games 
         if action_field:
             fields["action"] = action_field
+        if additional_thought_nudge:
+            fields["rethink"] = (str, Field(description="Lets just doublecheck your thoughts. Consider the score. Consider what you can win. Consider the next vote " + additional_thought_nudge))
             
         return create_model(name, __base__=BaseResponse, **fields)
     
@@ -131,6 +133,20 @@ class DynamicModelFactory:
                 description="The exact name of the agent to REMOVE."
                 ))
         return cls.basic_turn_model("choose_agent_to_remove_model", action_field=actionField )
+    
+    @classmethod
+    def choose_agent(cls, allowed_names, context):
+        actionField= (Literal[tuple(allowed_names)], Field(
+                description=f"The exact name of the agent. {context}"
+                ))
+        return cls.basic_turn_model("choose_agent_as_partner", action_field=actionField )
+    
+    @classmethod
+    def choose_agent_as_partner(cls, allowed_names):
+        actionField= (Literal[tuple(allowed_names)], Field(
+                description="The exact name of the agent to PAIR UP WITH.."
+                ))
+        return cls.basic_turn_model("choose_agent_as_partner", action_field=actionField )
     
     @classmethod
     def prisoners_dilemma_model(cls):
@@ -144,7 +160,6 @@ class DynamicModelFactory:
             additional_thought_nudge="Will you cooperate or betray?", 
             action_field=action
         )
-        
         
         
             

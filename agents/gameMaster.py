@@ -4,6 +4,7 @@ class GameMaster:
     def __init__(self, client, model_name: str):
         self.model_name = model_name
         self.client = client
+        self.color = "YELLOW"
     
     def choose_agent_based_on_parameter(self, gameBoard,allowed_names, parameter: str):
         ex = ("The most CHAOTIC player is the one that has the most unpredictable actions, and causes the most disruption to the other players. "

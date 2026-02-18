@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Callable, Optional, List
 
-from core.games import VoteAndGameManager
+from core.games import *
 
 class GameDefinition(BaseModel):
     execute_game: Callable
@@ -27,7 +27,16 @@ HIGHEST_POINT_IMMUNITY = ImmunityDefinition(
         "The player(s) with the highest points at the end of the phase receive immunity from the next vote. "
         "In the case of a tie, all tied players receive immunity."
     ),
-    execute_game=VoteAndGameManager.get_highest_points_players_immunity 
+    execute_game=ImmunityMechanicsMixin.get_highest_points_players_immunity 
+)
+
+HIGHEST_POINT_IMMUNITY_ONLY_ONE = ImmunityDefinition(
+    display_name="Highest Points Player Immunity",
+    rules_description=(
+        "The player with the highest points at the end of the phase receive immunity from the next vote."
+        "In the case of a tie, one player is randomly selected to receive immunity."
+    ),
+    execute_game=ImmunityMechanicsMixin.get_highest_points_players_immunity_only_one
 )
 
 WILDCARD_IMMUNITY = ImmunityDefinition(
@@ -36,17 +45,47 @@ WILDCARD_IMMUNITY = ImmunityDefinition(
         "The player deemed to be the most chaotic will receive immunity from the next vote. "
         "This is a one-off immunity that will be given once."
     ),
-    execute_game=VoteAndGameManager.get_wildcard_player_immunity 
+    execute_game=ImmunityMechanicsMixin.get_wildcard_player_immunity 
 )
     
-PRISONERS_DILEMMA = GameDefinition(
+PRISONERS_DILEMMA= GameDefinition(
     display_name="Prisoner's Dilemma",
-    rules_description="Each player will be paired another player, and play a round of prisoners dilemma. The points they potentially win will be added to their score",
-    execute_game=VoteAndGameManager.run_game_prisoners_dilemma  # Note: no parentheses! We are passing the method itself.
+    rules_description="At random, players will be assigned parters.",
+    execute_game=GameMechanicsMixin.run_game_prisoners_dilemma  # Note: no parentheses! We are passing the method itself.
+)
+
+PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_RANDOM= GameDefinition(
+    display_name="Prisoner's Dilemma",
+    rules_description="In a random order, players will get to choose their partners.",
+    execute_game=GameMechanicsMixin.run_game_prisoners_dilemma_choose_partner  # Note: no parentheses! We are passing the method itself.
+)
+
+PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_WINNER = GameDefinition(
+    display_name="Prisoner's Dilemma",
+    rules_description="The player with the highest score will get to pick their partner, and so on. Each pair will play a round.",
+    execute_game=GameMechanicsMixin.run_game_prisoners_dilemma_choose_partner_winner  # Note: no parentheses! We are passing the method itself.
+)
+
+PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER = GameDefinition(
+    display_name="Prisoner's Dilemma",
+    rules_description="The player with the lowest score will get to pick their partner, and so on.",
+    execute_game=GameMechanicsMixin.run_game_prisoners_dilemma_choose_partner_loser  # Note: no parentheses! We are passing the method itself.
 )
 
 EACH_PLAYER_VOTES_TO_REMOVE = VoteDefinition(
     display_name="Each player votes which player they want to remove",
     rules_description="The player that receives the most votes will be removed from the game...",
-    execute_game=VoteAndGameManager.run_voting_round_basic
+    execute_game=VoteMechanicsMixin.run_voting_round_basic
+)
+
+LOWEST_POINTS_REMOVED = VoteDefinition(
+    display_name="Player with the lowest points is removed from the game",
+    rules_description="The player with the lowest points will be removed from the game IMMEDATELY..",
+    execute_game=VoteMechanicsMixin.run_voting_lowest_points_removed
+)
+
+WINNER_CHOOSES = VoteDefinition(
+    display_name="The Leader Executes",
+    rules_description="The player leading the scores will choose who leaves the game IMMEDATELY..",
+    execute_game=VoteMechanicsMixin.run_voting_winner_chooses
 )

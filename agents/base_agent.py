@@ -1,9 +1,7 @@
 from abc import abstractmethod
 from collections import deque
-from prompts.prompts import PromptLibrary
-from models.player_models import *
 
-class BaseActor:
+class BaseAgent:
     def __init__(self, name: str, initial_persona: str, initial_form: str,client, model_name: str, color = "BLUE"):
         self.name = name
         self.persona = initial_persona

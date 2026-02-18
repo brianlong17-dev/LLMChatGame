@@ -9,18 +9,16 @@ class CharacterProfile(BaseModel):
 
 # 2. The Generator Class
 class CharacterGenerator:
-    characters = [
-    'Ronald Regan', 'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
-    characters2 = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March"]
-    characters2 = [
-    'Avatar Aang',
-    'Hannibal Lecter','Lady Macbeth',
-    'Oscar Wilde', 'Socrates', 'Gollum', 'Winston Churchill', 'Achilles',
-    'Gollum', 'Winston Churchill', 'Holden Caulfield'
-]
+    swearers = ['Rick Sanches', 'Tony Soprano', 'Logan Roy', 'Tony Montana', 'Katya Zamolodchikova', 'Lois Griffin', 'Gordon Ramsay']
+    
+    goats = ['Hermione Granger', 'Lady Macbeth', 'Morty Smith', 'Rick Sanches', 'Catherine Earnshaw', 'Gollum', 'Heathcliffe', 'Mr. Burns']
+    politics = [
+    'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
+    marches = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March", "Theodore 'Laurie' Laurence", "Mr. Laurence"]
+    
 
 
-    characters = [
+    full_characters = [
     'Donald Trump', 'Margaret Thatcher', 'Ronald Regan',
     'Avatar Aang', 
     'Lady Macbeth',
@@ -42,7 +40,7 @@ class CharacterGenerator:
     'Elphaba Thrope','Dorian Gray', 'Frankenstein Monster',
     'Holden Caulfield', 'Lisbeth Salander', 'Morty Smith', 'Rick Sanches'
 ]
-
+    characters = marches
     def __init__(self, client, model_name: str):
         self.client = client
         self.model_name = model_name

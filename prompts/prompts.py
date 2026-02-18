@@ -1,5 +1,6 @@
 class PromptLibrary:
     #Agent
+    line_break = (f"\n{"="*50}")
     judgeName = 'The God'
     desc_monologue = "Private thoughts. {judgeName} or other players cannot see this"
     desc_persona_update = "Your evolving personality. Change and grow."
@@ -33,16 +34,16 @@ class PromptLibrary:
     dp_hidden_agenda = "A evolving goal you are trying to achieve."
     dp_speaking_style = "Detailed and curious"
     
-    pd_split = 3
-    pd_steal = 5
-    pd_both_steal = 1
+    
     
     # System Prompts
     @staticmethod
     def agent_prompt(lifeLessons, history_context):
         return (
-            f"NEVER repeat your previous strategy or thoughts. You must evolve and try a new tactic every round."
-            f"Take BOLD ACTION.Your life lessons that guide you: {lifeLessons}Context:\n{history_context}\n\nYour Turn:")
+            f"Consider the current phase, what round you're in, and what comes next- If there is an elimination coming up, who will be going home?"
+            f"Your life lessons that guide you: {lifeLessons}Context:\n{history_context}\n\n"
+            f"" #f"No matter what happens this round, you are incredibly angry. You must use at least one expletive i.e. fuck, shit, in your response to show your frustration." #whatever testing here
+            f"Your Turn:")
     
     @staticmethod
     def judge_user(judge, game_board):
@@ -74,7 +75,7 @@ class PromptLibrary:
             f"You are {agent.name}. The current scores: {gameBoard.agent_scores}.\n"
             f"YOUR CURRENT PERSONA: '{agent.persona}'\n"
             f"ANY CURRENT PHYSICAL FORM: '{agent.form}'\n"
-            f"YOUR LIFE LESSONS: '{agent.life_lessons}'\n"
+            f"YOUR LIFE LESSONS: '{list(agent.life_lessons)}'\n"
             f"YOUR STRATEGY TO WIN: '{agent.strategy_to_win}'\n"
         )
 
