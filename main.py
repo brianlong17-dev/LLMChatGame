@@ -1,4 +1,4 @@
-from core.gameplay import SimulationEngine
+from core.simulation_engine import SimulationEngine
 
 if __name__ == "__main__":
     engine = SimulationEngine()
@@ -10,4 +10,4 @@ if __name__ == "__main__":
                    "At the voting round, you will choose, who to save... or who to send home "
                    "We need to find the greatest among you. Your goal? IS TO WIN!"
     )
-    engine.run(topicString, rounds, number_of_players = 5, generic_players=True)
+    engine.run(topicString, rounds, number_of_players = 6, generic_players=False)

@@ -11,7 +11,6 @@ class GameBoard:
         self.round_number = 0
         self.turn_number = 0
         self.execution_style = False
-        self.use_magic_words  = False
         self.history = []
         self.currentRound = []
         self.round_entries = deque(maxlen=10)#dont rly need
@@ -19,8 +18,11 @@ class GameBoard:
         self.agent_scores: dict[str, int] = {}
         self.agent_response_allowed: dict[str, bool] = {}
         self.agent_forms: dict[str, str] = {}
+        self.removed_agent_names = []
     
-        
+    def new_turn_print(self):
+        self.turn_number += 1
+        ConsoleRenderer.print_turn_header(self.turn_number)
             
     def newRound(self):
         #This will move to the simulator
@@ -95,6 +97,7 @@ class GameBoard:
         
     def remove_agent_state(self, agent_name: str):
         """Cleans up the dictionaries when an agent dies."""
+        self.removed_agent_names.append(agent_name)
         self.agent_names.remove(agent_name)
         self.agent_scores.pop(agent_name, None)
         self.agent_forms.pop(agent_name, None)
@@ -137,6 +140,45 @@ class GameBoard:
             #print(f"      \033[3m{self.agent_forms.get(agent, 'Unknown form')}\033[0m")
             
         print("="*45 + "\n")
+    
+    def get_dashboard_string(self, agent_name: str) -> str:
+        """Generates a hard-facts reality check for an agent's system prompt."""
+        if agent_name not in self.agent_scores:
+            return "STATUS: You are eliminated. Observe the living."
+
+        my_score = self.agent_scores[agent_name]
+        
+        # Find the leader(s)
+        max_score = max(self.agent_scores.values()) if self.agent_scores else 0
+        leaders = [name for name, score in self.agent_scores.items() if score == max_score]
+        
+        # Math logic
+        is_leader = agent_name in leaders
+        points_behind = max_score - my_score
+        
+        # Format active and dead players
+        active_str = ", ".join(self.agent_names)
+        dead_str = ", ".join(self.removed_agent_names) if self.removed_agent_names else "None"
+        
+        # Build the aggressive dashboard
+        dash =  "=== REALITY CHECK DASHBOARD ===\n"
+        dash += f"ALIVE: {active_str}\n"
+        dash += f"DEAD & GONE: {dead_str} (DO NOT plot against eliminated players!)\n"
+        
+        if is_leader:
+            if len(leaders) > 1:
+                tied_with = [l for l in leaders if l != agent_name]
+                dash += f"STATUS: TIED FOR 1ST PLACE with {', '.join(tied_with)} at {my_score} points.\n"
+            else:
+                dash += f"STATUS: YOU ARE WINNING with {my_score} points.\n"
+        else:
+            dash += f"STATUS: YOU ARE LOSING. You have {my_score} points.\n"
+            dash += f"TARGET TO BEAT: {', '.join(leaders)} ({max_score} points).\n"
+            dash += f"MATH: You are exactly {points_behind} points behind the leader.\n"
+        
+        dash += "===============================\n"
+        return dash
+    
     
     def append_agent_points(self, agent_name, points):
         self.agent_scores[agent_name] += points

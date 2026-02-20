@@ -11,10 +11,11 @@ class CharacterProfile(BaseModel):
 class CharacterGenerator:
     swearers = ['Rick Sanches', 'Tony Soprano', 'Logan Roy', 'Tony Montana', 'Katya Zamolodchikova', 'Lois Griffin', 'Gordon Ramsay']
     
-    goats = ['Hermione Granger', 'Lady Macbeth', 'Morty Smith', 'Rick Sanches', 'Catherine Earnshaw', 'Gollum', 'Heathcliffe', 'Mr. Burns']
+    goats = ['Detective Columbo', 'Hermione Granger', 'Lady Macbeth', 'Morty Smith', 'Rick Sanches', 'Catherine Earnshaw', 'Gollum', 'Heathcliffe', 'Mr. Burns', "Donald Trump", 'Dennis Reynolds', 'Michael Scott', 'GLaDOS']
+    
     politics = [
     'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
-    marches = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March", "Theodore 'Laurie' Laurence", "Mr. Laurence"]
+    marches = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March", "Theodore 'Laurie' Laurence", "Mr. Laurence", "Aunt March"]
     
 
 
@@ -40,18 +41,21 @@ class CharacterGenerator:
     'Elphaba Thrope','Dorian Gray', 'Frankenstein Monster',
     'Holden Caulfield', 'Lisbeth Salander', 'Morty Smith', 'Rick Sanches'
 ]
-    characters = marches
+    characters = goats
     def __init__(self, client, model_name: str):
         self.client = client
         self.model_name = model_name
 
     def genericPlayers(self, number_of_players):
         templates = [
+            ('Agent Greg', 'Always managing to fail upward', 'tall guy'),
             ('Agent Alpha', 'Bold and daring', 'small man'),
             ('Agent Beta', 'Coy and cunning', 'small man'),
             ('Agent Capa', 'Cool and calm', 'small man'),
             ('Agent Delta', 'Handsome and charismatic', 'big guy'),
-            ('Agent Elphie', 'Shy and powerful', 'green girl')
+            ('Agent Elphie', 'Shy and powerful', 'green girl'),
+            ('Agent Fierello', 'Charasmatic and scheming', 'tall guy')
+            
         ]
         
         debaters = []

@@ -1,7 +1,11 @@
 from pydantic import BaseModel
 from typing import Callable, Optional, List
+from gamplay_management.base_manager import *
+from gamplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
+from gamplay_management.game_mechanicsMixin import GameMechanicsMixin
+from gamplay_management.vote_mechanicsMixin import VoteMechanicsMixin
 
-from core.games import *
+from prompts.gamePrompts import GamePromptLibrary
 
 class GameDefinition(BaseModel):
     execute_game: Callable
@@ -47,28 +51,40 @@ WILDCARD_IMMUNITY = ImmunityDefinition(
     ),
     execute_game=ImmunityMechanicsMixin.get_wildcard_player_immunity 
 )
-    
+
+GIVER= GameDefinition(
+    display_name="Giver",
+    rules_description="Choose a player to recieve points !",
+    execute_game=GameMechanicsMixin.run_game_give
+)
+
+STEALER= GameDefinition(
+    display_name="Stealer",
+    rules_description="Choose a player to steal points from!",
+    execute_game=GameMechanicsMixin.run_game_steal
+)
+
 PRISONERS_DILEMMA= GameDefinition(
     display_name="Prisoner's Dilemma",
-    rules_description="At random, players will be assigned parters.",
+    rules_description=f"At random, players will be assigned parters. {GamePromptLibrary.pd_desc_string}",
     execute_game=GameMechanicsMixin.run_game_prisoners_dilemma  # Note: no parentheses! We are passing the method itself.
 )
 
 PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_RANDOM= GameDefinition(
     display_name="Prisoner's Dilemma",
-    rules_description="In a random order, players will get to choose their partners.",
+    rules_description="In a random order, players will get to choose their partners. {GamePromptLibrary.pd_desc_string}",
     execute_game=GameMechanicsMixin.run_game_prisoners_dilemma_choose_partner  # Note: no parentheses! We are passing the method itself.
 )
 
 PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_WINNER = GameDefinition(
     display_name="Prisoner's Dilemma",
-    rules_description="The player with the highest score will get to pick their partner, and so on. Each pair will play a round.",
+    rules_description="The player with the highest score will get to pick their partner, and so on. Each pair will play a round. {GamePromptLibrary.pd_desc_string}",
     execute_game=GameMechanicsMixin.run_game_prisoners_dilemma_choose_partner_winner  # Note: no parentheses! We are passing the method itself.
 )
 
 PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER = GameDefinition(
     display_name="Prisoner's Dilemma",
-    rules_description="The player with the lowest score will get to pick their partner, and so on.",
+    rules_description="The player with the lowest score will get to pick their partner, and so on. {GamePromptLibrary.pd_desc_string}",
     execute_game=GameMechanicsMixin.run_game_prisoners_dilemma_choose_partner_loser  # Note: no parentheses! We are passing the method itself.
 )
 
@@ -76,6 +92,12 @@ EACH_PLAYER_VOTES_TO_REMOVE = VoteDefinition(
     display_name="Each player votes which player they want to remove",
     rules_description="The player that receives the most votes will be removed from the game...",
     execute_game=VoteMechanicsMixin.run_voting_round_basic
+)
+
+EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS = VoteDefinition(
+    display_name="Vote a player out, but don't miss.",
+    rules_description="Each player votes which player they want to remove. Any players voted for but not removed will gain a point for each vote against them.",
+    execute_game=VoteMechanicsMixin.run_voting_round_basic_dont_miss
 )
 
 LOWEST_POINTS_REMOVED = VoteDefinition(

@@ -9,21 +9,15 @@
 # ///
 
 import os
-import random
 import instructor
-from collections import Counter, deque
-from datetime import datetime
-from typing import List, Dict, Optional, Set
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from agents.characterGeneration import CharacterGenerator
 from core.game_configs import *
-from core.games import BaseManager
 from core.phases import PhaseRecipe, PhaseRecipeFactory
 from agents.base_agent import *
-from agents.player import Debater
 from agents.gameMaster import GameMaster
-from agents.judge import Judge
+from gamplay_management.unified_controller import UnifiedController
 from models.player_models import *
 from .gameboard import GameBoard
  
@@ -35,10 +29,6 @@ class SimulationEngine:
         self.model_name = model_name
         self.game_master = GameMaster(self.client, model_name)
         self.generator = CharacterGenerator(self.client, self.model_name)
-        self.judge = Judge("Judge", "You are a reality tv producer, seeking to create the most compelling drama.", "A curious individual", self.client, model_name)
-        self.finalPhase = False
-        self.roundsRemaining = None 
-        self.rounds_per_phase = 3
         self.phase_number = 0
         self.gameBoard = GameBoard(self.game_master)
         self.game_manager = UnifiedController(self.gameBoard, self)
@@ -61,7 +51,7 @@ class SimulationEngine:
     def runPhase(self, recipe: PhaseRecipe):
         
         self.printPhaseHeader()
-        host_intro, system_summary = recipe.messageString(self.phase_number)
+        host_intro, system_summary = recipe.phase_intro_string(self.phase_number, len(self.agents))
         self.gameBoard.host_broadcast(host_intro)
         self.gameBoard.broadcast_public_action("", system_summary, "SYS")
         
@@ -101,6 +91,8 @@ class SimulationEngine:
         
         
         for i in range(recipe.post_vote_discussion_rounds):
+            if len(self.agents) <= 1:
+                break #already over
             self.trigger_new_round()
             round_number = recipe.post_vote_discussion_rounds - i
             self.gameBoard.host_broadcast(f"You have {round_number} round(s) to discuss, before the next phase begins")
@@ -119,7 +111,6 @@ class SimulationEngine:
          
     def run(self, game_introduction: str, rounds_per_discussion_phase=1, number_of_players = 2, generic_players=False):
         #print(f"\n🚀 Simulation Started: {topic}\n" + "="*50)
-        self.rounds_per_phase = rounds_per_discussion_phase
         self.set_up_players(number_of_players, generic_players)
         self.initialiseGameBoard()
         

@@ -14,8 +14,11 @@ class PhaseRecipe(BaseModel):
     post_vote_discussion_rounds: int = 0
     immunity_types: Optional[List[ImmunityDefinition]] = None  # e.g., ["winner_immunity", "public_vote_immunity"]
     
-    def messageString(self, phase_number):
+    def phase_intro_string(self, phase_number, num_players):
         phase_description = f"🚨 WELCOME PLAYERS, TO PHASE {phase_number} 🚨\n"
+        #TODO this is temp
+        if num_players == 2:
+            phase_description = f"🚨 Only two players remain. Unfortunately only one player can win. Only one player will remain at the end of this phase. The player with the most points. Act accordingly. Accept your fate, or fight 🚨\n"
         #phase_description += f"Discussion rounds have magic words- figure out what they are and use them to earn points\n"
         phase_description += f"In this round we will have: \n"
         
@@ -45,11 +48,11 @@ class PhaseRecipe(BaseModel):
         for _ in range(self.pre_game_discussion_rounds):
             round_summary += f'Discussion round\n'
         if self.mini_game:
-            round_summary += f"{self.mini_game.display_name}\n"
+            round_summary += f"{self.mini_game.display_name} - {self.mini_game.rules_description}\n"
         for _ in range(self.pre_vote_discussion_rounds):
             round_summary += f'Discussion round\n'
         if self.vote_type:
-            round_summary += f"{self.vote_type.display_name}\n"
+            round_summary += f"{self.vote_type.display_name} - {self.vote_type.rules_description}\n"
         for _ in range(self.post_vote_discussion_rounds):
             round_summary += f'Discussion round\n'
         round_summary += '-----------------\n'
@@ -71,48 +74,92 @@ class PhaseRecipeFactory(BaseModel):
             post_vote_discussion_rounds=post_vote_discussion_rounds,
             immunity_types=immunity_types #"HighestPointPlayerImmunity(), WildcardImmunity()]
         )
+    
+    @classmethod
+    def quick_phase(cls, game, vote, immunity=None):
+        return cls.make_phase(0, game, 0, vote, 0, immunity)
+    
+    @classmethod
+    def chatty_phase(cls, game, vote, immunity=None):
+        return cls.make_phase(1, game, 1, vote, 1, immunity)
+    
+    @classmethod
+    def mid_phase(cls, game, vote, immunity=None):
+        return cls.make_phase(1, game, 0, vote, 0, immunity)     
+            
     @classmethod
     def get_phase_recipe(cls, phase_number, agent_number):
-        # --- PHASE DEFINITIONS (The Menu) ---
+        # 1. Finale Override
+        if agent_number <= 2:
+            return cls.make_phase(2, PRISONERS_DILEMMA, 0, LOWEST_POINTS_REMOVED, 1, [])
+
+        # 2. Define the variables to test
+        games = [
+            GIVER,
+            GIVER,
+            STEALER,
+            STEALER
+        ]
+        games2=[
+            PRISONERS_DILEMMA, 
+            PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_RANDOM, 
+            PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_WINNER, 
+            PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER
+        ]
+        votes = [
+            EACH_PLAYER_VOTES_TO_REMOVE, 
+            EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS, 
+            LOWEST_POINTS_REMOVED, 
+            WINNER_CHOOSES
+        ]
+
+        # 3. Build the schedule sequence dynamically
+        # Creates a list of tuples: (Game, Vote)
+        schedule = [(g, None) for g in games] + \
+                   [(None, v) for v in votes]
+
+        # 4. Serve the recipe based on the current phase
+        idx = phase_number - 1
+        if idx < len(schedule):
+            game, vote = schedule[idx]
+            return cls.mid_phase(game, vote, [])
+            
+        # 5. Fallback loop (when testing is done but >2 players remain)
+        return cls.make_phase(0, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 0, EACH_PLAYER_VOTES_TO_REMOVE, 0, [HIGHEST_POINT_IMMUNITY_ONLY_ONE])
+    
+    @classmethod
+    def get_phase_recipe2(cls, phase_number, agent_number):
+        # 1. Define the Menu of Recipes
+        intro = cls.chatty_phase(PRISONERS_DILEMMA, EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS, [HIGHEST_POINT_IMMUNITY])
+        #intro = cls.make_phase(1, None, 0, EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS, 0, [HIGHEST_POINT_IMMUNITY])
         
-        # Intro: Players get to know each other, random pairings
-        intro = cls.make_phase(1, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_RANDOM, 1, WINNER_CHOOSES, 1, [])
-        
-        # Points Builder 1: Winner picks partner, focus on scoring
-        points_builder_1 = cls.make_phase(0, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 1, WINNER_CHOOSES, 0, [])
-        
-        # Points Builder 2: Loser picks partner, NO elimination (Safe Round)
+        points_builder_1 = cls.quick_phase(PRISONERS_DILEMMA, EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS, [HIGHEST_POINT_IMMUNITY])
         points_builder_2 = cls.make_phase(1, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 1, EACH_PLAYER_VOTES_TO_REMOVE, 0, [])
         
-        # Regular 1: Standard gameplay with Highest Score Immunity
-        regular_1 = cls.make_phase(1, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 1, EACH_PLAYER_VOTES_TO_REMOVE, 0, [])
+        regular_1 = cls.chatty_phase(PRISONERS_DILEMMA, EACH_PLAYER_VOTES_TO_REMOVE, [])
         
-        # Regular 2: High stakes, players vote each other out manually
         regular_2 = cls.make_phase(0, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 0, EACH_PLAYER_VOTES_TO_REMOVE, 0, [])
-        
-        # Regular 2: High stakes, players vote each other out manually
         regular_3 = cls.make_phase(0, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 0, EACH_PLAYER_VOTES_TO_REMOVE, 0, [HIGHEST_POINT_IMMUNITY_ONLY_ONE])
-        
-        # Final: The 2-player showdown logic
         final = cls.make_phase(2, PRISONERS_DILEMMA, 0, LOWEST_POINTS_REMOVED, 1, [])
 
-        # --- SELECTION LOGIC ---
-        
+        # 2. Handle the Game-Ending Override First
         if agent_number == 2:
             return final
-        
-            
-        if phase_number == 1:
-            return intro
-        elif phase_number == 2:
-            return regular_1
-        elif phase_number == 2:
+        if phase_number >= 7 or phase_number <=0: #zero wont happen
             return regular_2
-        else:
-            return regular_3
+
+
+        # 3. The Schedule (Dictionary Mapping)
+        # Easily map which phase gets which recipe. 
+        phase_schedule = {
+            1: intro,
+            2: points_builder_1,
+            3: regular_1,
+            # 4: regular_1,
+            # 5: regular_1, # Assigning the same recipe to multiple phases is clean and explicit
+            # 6: regular_2,
+            # 7: regular_2
+        }
         
-        # elif phase_number == 4:
-        #     return regular_1
-        # else:
-        #     # All rounds from phase 5 onwards use the manual voting style
-        #     return regular_2
+        return phase_schedule.get(phase_number, cls.get_phase_recipe((phase_number - 1), agent_number))
+        

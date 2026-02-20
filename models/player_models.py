@@ -1,11 +1,12 @@
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Type
 from pydantic import BaseModel, Field, create_model, field_validator, validator
 from prompts.prompts import PromptLibrary
+import warnings
 
 
 class AgentTurn(BaseModel):
-    
-    internal_monologue: str = Field(description=PromptLibrary.desc_monologue)
+    private_thoughts: str = Field(description=PromptLibrary.desc_basic_thought)
+    public_response: str = Field(description=PromptLibrary.desc_message)
     updated_persona_summary: str = Field(description=PromptLibrary.desc_persona_update)
     updated_strategy_to_win: str = Field(description=PromptLibrary.desc_agent_updated_strategy_to_win)
     public_action: str = Field(description=PromptLibrary.desc_action_agent)
@@ -18,59 +19,6 @@ class DeepPersona(BaseModel):
     hidden_agenda: str = Field(description=PromptLibrary.dp_hidden_agenda)
     speaking_style: str = Field(description=PromptLibrary.dp_speaking_style)
     
-class AgentsAllowedToRespond(BaseModel):
-    name: str = Field(description=PromptLibrary.desc_agent_names)
-    allowed: bool = Field(description=PromptLibrary.desc_judge_allowed)
-    @property
-    def update_value(self):
-        return self.allowed
-    
-class AgentScoreEntry(BaseModel):
-    name: str = Field(description=PromptLibrary.desc_agent_names)
-    score: int = Field(description=PromptLibrary.desc_judge_score)
-    @property
-    def update_value(self):
-        return self.score
-
-class AgentFormEntry(BaseModel):
-    name: str = Field(description=PromptLibrary.desc_agent_names)
-    form: str = Field(description=PromptLibrary.desc_judge_form)
-    @property
-    def update_value(self):
-        return self.form
-    
-class JudgeTurn(BaseModel):
-    internal_monologue: str = Field(description=PromptLibrary.desc_judge_monologue)
-    complex_persona: DeepPersona = Field(description="The complex, evolving state of your psyche.")
-    public_action: str = Field(description=PromptLibrary.desc_judge_action)
-    public_response: str = Field(description=PromptLibrary.desc_judge_response)
-    #ejection_target: str = Field(description=PromptLibrary.desc_ejection)
-    create_new_agent: bool = Field(description=PromptLibrary.desc_create_new_agent)
-    remove_agent: bool = Field(description=PromptLibrary.desc_remove_agent)
-    lifeLesson: str = Field(description=PromptLibrary.desc_agent_lifeLessons)
-    judgingCriteria: str = Field(description=PromptLibrary.desc_judge_judgingCriteria)
-    
-    scores: List[AgentScoreEntry] = Field(description=PromptLibrary.desc_judge_score)
-    forms: List[AgentFormEntry] = Field(description=PromptLibrary.desc_judge_form)
-    agent_response_allowed: List[AgentsAllowedToRespond] = Field(description=PromptLibrary.desc_judge_allowed)
-    
-    @property
-    def agent_scores(self) -> dict:
-        return {entry.name: entry.score for entry in self.scores}
-
-class NewAgentManifest(BaseModel):
-    private_thoughts: str = Field(description="Why are you creating this specific type of being?")
-    name: str = Field(description="The name of the new agent.")
-    form: str = Field(description="The pysical form of the new being.")
-    persona: str = Field(description="The detailed personality and goal of this new agent. Make them harsh, rude, agressive")
-    internal_monologue: str = Field("What's your thought proccess behind creating this particular agent?")
-    public_response: str = Field(description="What you wish to publicly say to the agents about the creation of this new agent.")
-    
-class NewAgentRemoval(BaseModel):
-    private_thoughts: str = Field(description="Why are you creating this killing this agent?")
-    name: str = Field(description=f"The name of the agent you want to REMOVE from the game immediately (e.g., 'Zeldaton'). From")
-    internal_monologue: str = Field("What's your thought proccess behind removing this particular agent?")
-    public_response: str = Field(description="What you wish to publicly say to the agents about the removal of this agent.")
 
 #TBR with Response
 class FinalWords(BaseModel):
@@ -87,66 +35,99 @@ class AgentReaction(BaseModel):
     )
 
 
-class BaseAgentResponse(BaseModel):
-    """
-    The master template for all agent interactions.
-    Ensures every response has internal logic and a public statement.
-    """
-    private_thoughts: str = Field(
-        description="Your internal thoughts. Strategy, feelings, and private observations."
-    )
-    public_response: str = Field(
-        description="What you actually say out loud to the group. Stay in character!"
-    )
-    
 class BaseResponse(BaseModel):
-    private_thoughts: str
-    public_response: str
+    private_thoughts: str = Field(description= PromptLibrary.desc_basic_thought)
+    public_response: str = Field(description=PromptLibrary.desc_message)
     
     
-class DynamicModelFactory:
+class DynamicModelFactory:  
     
     @classmethod
-    def basic_turn_model(cls, name: str, public_response_prompt = None, private_thoughts_prompt = None, 
-                         additional_thought_nudge: str = None, action_field: tuple = None):
-     
-        public_desc = public_response_prompt or PromptLibrary.desc_basic_public_response
-        private_desc = private_thoughts_prompt or PromptLibrary.desc_basic_thought
-        if additional_thought_nudge:
-            private_desc = f"{private_desc} {additional_thought_nudge}"
-            
-        fields = {"public_response": (str, Field(description=public_desc)),
-            "private_thoughts": (str, Field(description=private_desc))}
+    def _check_existing_complex_fields(cls, complex_fields, base_turn_model):
+        existing_fields = getattr(base_turn_model, 'model_fields', {}).keys()
+        overlaps = [key for key in complex_fields if key in existing_fields]
+        if overlaps:
+            warnings.warn(
+            f"Model '{base_turn_model.__name__}' already contains fields: {overlaps}. "
+            "These are being overwritten by with_complex_fields().",
+            UserWarning
+        )
+    
+    @classmethod
+    def with_complex_fields(cls, base_turn_model: Type[BaseModel]):
+            # updated_persona_summary: str = PromptLibrary.desc_persona_update,
+            # updated_strategy_to_win: str = PromptLibrary.desc_agent_updated_strategy_to_win,
+            # lifeLesson: str = PromptLibrary.desc_agent_lifeLessons):
         
+        complex_fields = {
+            "updated_persona_summary": (str, Field(description= PromptLibrary.desc_persona_update)),
+            "updated_strategy_to_win": (str, Field(description=PromptLibrary.desc_agent_updated_strategy_to_win)),
+            "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons)),
+            "mathematicalAssessment": (str, Field(description=PromptLibrary.desc_agent_mathematicalAssessment))
+        }
+        #TODO this is just to flag.. it shouldnt happen ...
+        cls._check_existing_complex_fields(complex_fields, base_turn_model)
+        
+        return create_model(
+            "ComplexTurn", 
+            __base__=base_turn_model, 
+            **complex_fields
+        )
+        
+  
+    @classmethod
+    def _basic_fields_prompt_model(cls, public_response_prompt = None, private_thoughts_prompt = None, 
+                         additional_thought_nudge: str = None):
+        fields = {}
+        #Only overwrite if there's a specific prompt
+        #Anyway depreciate, you should be passing **fields if you want to do this
+        
+        if public_response_prompt:
+            fields["public_response"] = (str, Field(description=public_response_prompt))
+        if private_thoughts_prompt or additional_thought_nudge:
+            base_thought = private_thoughts_prompt or BaseResponse.model_fields["private_thoughts"].description
+            if additional_thought_nudge:
+                base_thought = f"{base_thought} {additional_thought_nudge}"
+                fields["rethink"] = (str, Field(description="Lets just doublecheck your thoughts. Consider the score. Consider what you can win. Consider the next vote " + additional_thought_nudge))
+            fields["private_thoughts"] = (str, Field(description=base_thought))
+            
+        return fields
+    
+    @classmethod
+    def basic_turn_model(cls, name: str = "basic_turn_model", public_response_prompt = None, private_thoughts_prompt = None, 
+                         additional_thought_nudge: str = None, action_field: tuple = None):
+        
+        fields = cls._basic_fields_prompt_model(public_response_prompt, private_thoughts_prompt, additional_thought_nudge)
+
         # Action: like vote a player, split or steal. Single answer games 
         if action_field:
             fields["action"] = action_field
-        if additional_thought_nudge:
-            fields["rethink"] = (str, Field(description="Lets just doublecheck your thoughts. Consider the score. Consider what you can win. Consider the next vote " + additional_thought_nudge))
             
+          
         return create_model(name, __base__=BaseResponse, **fields)
     
     
     @classmethod
+    def final_words(cls):
+        private_thoughts_prompt = "HOW DO YOU FEEL? What do you think but wouldn't say? What are you privately thinking?"
+        public_response_prompt = "YOU ARE ABOUT TO DIE. What are you final words to the players?"
+        return cls.basic_turn_model("final_words", public_response_prompt = public_response_prompt, private_thoughts_prompt = private_thoughts_prompt)
+
+
+    @classmethod
     def choose_agent_to_remove_model(cls, allowed_names):
-        actionField= (Literal[tuple(allowed_names)], Field(
-                description="The exact name of the agent to REMOVE."
-                ))
-        return cls.basic_turn_model("choose_agent_to_remove_model", action_field=actionField )
+        context = "The exact name of the agent to REMOVE."
+        return cls.choose_name_model(allowed_names, context)
+
     
     @classmethod
-    def choose_agent(cls, allowed_names, context):
+    def choose_name_model(cls, allowed_names, reason_for_choosing_prompt: str = "", model_name = "choose_agent_name", additional_thought_nudge = None):
         actionField= (Literal[tuple(allowed_names)], Field(
-                description=f"The exact name of the agent. {context}"
+                description=f"The exact name of the agent. {reason_for_choosing_prompt}"
                 ))
-        return cls.basic_turn_model("choose_agent_as_partner", action_field=actionField )
+        return cls.basic_turn_model(model_name, action_field=actionField, additional_thought_nudge = additional_thought_nudge)
     
-    @classmethod
-    def choose_agent_as_partner(cls, allowed_names):
-        actionField= (Literal[tuple(allowed_names)], Field(
-                description="The exact name of the agent to PAIR UP WITH.."
-                ))
-        return cls.basic_turn_model("choose_agent_as_partner", action_field=actionField )
+    
     
     @classmethod
     def prisoners_dilemma_model(cls):
@@ -154,10 +135,12 @@ class DynamicModelFactory:
             # - they seem to do this without prompting
         #"What you say out loud to the group while revealing your choice."
             # - some times they lie which is funny because their words are secret until the reveal anyway
+            
+        #should we nudge them to think about math here
         action = (Literal["split", "steal"], Field(description="Your final choice."))
         return cls.basic_turn_model(
-            "Dilemma", 
-            additional_thought_nudge="Will you cooperate or betray?", 
+            "Dilemma",  #this is more havy handed than id like but whatever
+            additional_thought_nudge="What points are available? How will the next elimination work? Do you need points or alliance? ", 
             action_field=action
         )
         

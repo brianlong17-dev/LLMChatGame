@@ -4,6 +4,8 @@ class GamePromptLibrary:
     pd_split = 3
     pd_steal = 5
     pd_both_steal = 1
+    pd_desc_string = f"Stealing from a a splitter: {pd_steal} points and 0 points. Both split: {pd_split} points each, both steal: {pd_both_steal} point each."
+
     
     @classmethod
     def prisonersDilemmaIntro(cls, choose_partner: bool, winner_picks_first = True):

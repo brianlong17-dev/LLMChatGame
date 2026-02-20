@@ -2,21 +2,16 @@ class PromptLibrary:
     #Agent
     line_break = (f"\n{"="*50}")
     judgeName = 'The God'
-    desc_monologue = "Private thoughts. {judgeName} or other players cannot see this"
     desc_persona_update = "Your evolving personality. Change and grow."
     desc_agent_updated_strategy_to_win = "UPDATE if you want to UPDATE your strategy to win. Based on how the game works, what is the smartest strategy to win?"
     desc_action_agent = ("A visible physical action. Players may not speak in the future tense about their plans. You must describe the action you are taking right now in the present tense.")
-    desc_message = "Something new and unexpected. If you wish not to speak, remain empty. Your spoken words. Just chat about what you want to debate and discuss."
-    desc_agent_lifeLessons = ("NORMALLY EMPTY unless you want to add a new lesson to you mind that you will take forward. This will shape your future descisions")
+    desc_message = "Your spoken words. What will you say? Stay in character. What you say is revealed to the group"
+    desc_agent_lifeLessons = ("A new lesson to you mind that you will take forward. This will shape your future descisions. Take key lessons only, so you don't cloud your decision making.")
+    desc_agent_mathematicalAssessment = ("What's your assessment of the scoreboard and your place in it?")
+    
     desc_basic_thought = "Your internal thoughts. Strategy, feelings, and private observations."
     desc_basic_public_response = "What you actually say out loud to the group. Stay in character!"
-    #The judge
-    
-    desc_judge_monologue = f"Private thoughts."
-    desc_judge_persona = "Become increasingly complex. Your evolving personality. Add to, and update your previous personality. Remove parts of your personality that no longer serve your new desires'"
-    desc_judge_action = f"A visible physical action. This can alter the reality of the world you all inhabit. If nothing leave empty."
-    desc_judge_response = "Your spoken response. Just chat. Don't try to control the agents. What do you feel? What do you personally think about? This response prompts their response."
-    
+   
     #Gameplay
     desc_agent_names = "The name of the agent (e.g. 'Agent Alpha')"
     desc_judge_score = "A SCORE BETWEEN -10,10. NEVER ZERO. The updated scores. Try to include everyone, but if you skip someone, their score remains unchanged."
@@ -38,11 +33,14 @@ class PromptLibrary:
     
     # System Prompts
     @staticmethod
-    def agent_prompt(lifeLessons, history_context):
+    def player_user_prompt(lifeLessons, history_context):
         return (
             f"Consider the current phase, what round you're in, and what comes next- If there is an elimination coming up, who will be going home?"
-            f"Your life lessons that guide you: {lifeLessons}Context:\n{history_context}\n\n"
-            f"" #f"No matter what happens this round, you are incredibly angry. You must use at least one expletive i.e. fuck, shit, in your response to show your frustration." #whatever testing here
+            f"Context:\n{history_context}\n\n"
+            f"Your life lessons that guide you: {lifeLessons}"
+            f"---------------------------------------------------------------------"
+            f"No matter what, say something with the intention of moving yourself forward. Be proactive, dive in, speak to get responses."
+            f"---------------------------------------------------------------------"
             f"Your Turn:")
     
     @staticmethod
@@ -70,13 +68,15 @@ class PromptLibrary:
         
     
     @classmethod
-    def agent_system(self, agent, gameBoard):
+    def player_system_prompt(self, agent, gameBoard):
         return (
             f"You are {agent.name}. The current scores: {gameBoard.agent_scores}.\n"
+            f"{gameBoard.get_dashboard_string(agent.name)}\n" # I think this is currently way too much 
             f"YOUR CURRENT PERSONA: '{agent.persona}'\n"
             f"ANY CURRENT PHYSICAL FORM: '{agent.form}'\n"
             f"YOUR LIFE LESSONS: '{list(agent.life_lessons)}'\n"
             f"YOUR STRATEGY TO WIN: '{agent.strategy_to_win}'\n"
+            f"Mathematical assessment of the scores: '{agent.mathematicalAssessment}'\n"
         )
 
     @staticmethod
