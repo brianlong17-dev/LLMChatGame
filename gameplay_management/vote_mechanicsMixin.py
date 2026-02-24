@@ -1,4 +1,6 @@
-from gamplay_management.base_manager import *
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
+from gameplay_management.base_manager import *
 
     
    
@@ -21,10 +23,8 @@ class VoteMechanicsMixin(BaseManager):
             host_message = (f"THE VOTES HAVE BEEN CAST. THE RESULTS ARE FINAL. "
                                         f"💀 {victim.name} HAS BEEN EJECTED FROM THE ISLAND. 💀 \n")
             self.gameBoard.host_broadcast(host_message)
-            
-            finalWordsResult = victim.respond_to(self.gameBoard, host_message)
-            self.publicPrivateResponse(victim, finalWordsResult)
-            finalWordsResult = victim.finalWords(self.gameBoard)
+            #TODO is this enough or do we need a thought prompt here?
+            finalWordsResult = self.respond_to(victim, host_message, public_response_prompt="You have been eliminated from the game! Your final words?")
             self.publicPrivateResponse(victim, finalWordsResult)
             
             self.gameBoard.remove_agent_state(victim.name)
@@ -41,7 +41,7 @@ class VoteMechanicsMixin(BaseManager):
             immunityString = f"The following players have immunity, and will be cannot be voted for to leave in this round of voting: {', '.join(immunity_players)}.\n"
         players_up_for_elimination_string = f"The following players are up for elimination {', '.join(players_up_for_elimination)}\n"
         return f"{immunityString} {players_up_for_elimination_string}"
-    
+            
     def run_voting_winner_chooses(self, immunity_players = None, with_pass_option = False):
         immunity_players = self._validate_immunity(immunity_players)
             
@@ -50,22 +50,51 @@ class VoteMechanicsMixin(BaseManager):
         leading_player_message = f"🚨🚨🚨 The time... has come. The player with the highest score, {leading_player.name}, gets to choose who leaves the game this round. They cannot choose themselves. They will choose from the following players:\n {', '.join(other_agent_names)}"
         self.gameBoard.host_broadcast(leading_player_message)
         context_msg = "As the leading player you get to choose the player who will now leave the competition"
-        response = leading_player.choose_player_to_send_home(self.gameBoard, other_agent_names, context_msg)
+        choice_prompt = "Choose the player you want to remove from the competition"
+        additional_thought_nudge="Who do you want to send home? In terms of allies, competition, what is your best choice?"
+        #--------------
+        
+        action_fields = self.create_choice_field("target_name", other_agent_names, field_description= choice_prompt)
+        model = DynamicModelFactory.create_model_(leading_player, "leader_vote_player_off", 
+                    additional_thought_nudge=additional_thought_nudge, action_fields=action_fields)
+        response = leading_player.take_turn_standard(context_msg, self.gameBoard, model)
+        #-------------
+        
         self.publicPrivateResponse(leading_player, response)
-        self.eliminate_player_by_name(response.action)
+        self.eliminate_player_by_name(response.target_name)
     
     
     def run_voting_round_basic_dont_miss(self, immunity_players, dont_miss = True):
         self.run_voting_round_basic(immunity_players, dont_miss = True)
     
-
+    def voteOnePlayerOff(self, player, eligible_players_names):
+        names_str = ", ".join(eligible_players_names)
+        user_content = (
+            (f"You must vote for one player you want to leave the competition. They player with the most votes will leave the game."
+            f"Who do you vote to leave? Who do you eliminate from {names_str} and why?")
+        )
+        name_field_prompt = "The exact name of the agent to you want to leave the competition.."
+        #----------------
+        action_fields = self._choose_name_field(eligible_players_names, name_field_prompt) 
+        response_model = DynamicModelFactory.create_model_(player, model_name="vote_out_player", action_fields=action_fields) 
+        vote_result = player.take_turn_standard(user_content, self.gameBoard, response_model)
+        #-----------------
+        return vote_result
+            
+    
     def _collect_votes(self, players_up_for_elimination, pass_allowed = False):
         votes = []
         votingResults = []
-        for agent in self.simulationEngine.agents:
-            vote_response = agent.voteOnePlayerOff(self.gameBoard, players_up_for_elimination)
-            votingResults.append(vote_response)
+        voting_futures = []
+        with ThreadPoolExecutor() as executor:
+            for agent in self.simulationEngine.agents:
+                # Start the task and store the future object
+                future = executor.submit(self.voteOnePlayerOff, agent, players_up_for_elimination)
+                voting_futures.append(future)
             
+            # 3. Collect results (this waits for everyone to finish)
+            votingResults = [vote_future.result() for vote_future in voting_futures]
+                
         for agent, vote_response in zip(self.simulationEngine.agents, votingResults):
             actual_vote = vote_response.action.strip()
             

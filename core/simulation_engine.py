@@ -13,11 +13,11 @@ import instructor
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from agents.characterGeneration import CharacterGenerator
-from core.game_configs import *
+from core.gameplay_definitions_config import *
 from core.phases import PhaseRecipe, PhaseRecipeFactory
 from agents.base_agent import *
 from agents.gameMaster import GameMaster
-from gamplay_management.unified_controller import UnifiedController
+from gameplay_management.unified_controller import UnifiedController
 from models.player_models import *
 from .gameboard import GameBoard
  
@@ -106,7 +106,8 @@ class SimulationEngine:
         if generic_players:
             self.agents = self.generator.genericPlayers(number_of_players)
         else:
-            self.agents = [self.generator.generate_random_debater() for _ in range(number_of_players)]
+            #self.agents = [self.generator.generate_random_debater() for _ in range(number_of_players)]
+            self.agents = self.generator.generate_balanced_cast(number_of_players)
         print(PromptLibrary.line_break)
          
     def run(self, game_introduction: str, rounds_per_discussion_phase=1, number_of_players = 2, generic_players=False):

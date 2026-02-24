@@ -1,13 +1,19 @@
-from collections import Counter
+from __future__ import annotations
 import random
-import re
-
+from typing import Literal
+from pydantic import Field
 from core.gameboard import ConsoleRenderer
 from agents.base_agent import BaseAgent
+from models.player_models import DynamicModelFactory
+from prompts.prompts import PromptLibrary
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    # 2. This is only imported during static analysis (linting)
+    from agents.player import Debater
 
    
         
-class BaseManager:
+class BaseManager: #base class
     def __init__(self, gameBoard, simulationEngine):
         self.gameBoard = gameBoard
         self.simulationEngine = simulationEngine
@@ -17,7 +23,7 @@ class BaseManager:
         self.gameBoard.broadcast_public_action(agent, public_message)
         #TODO send thru gameboard- future proofing turning on/off - lives in a setting, the printer has no state
         ConsoleRenderer.print_private(agent, f"{private_message}\n", print_name = False)
-        #self.process_magic_words(agent, public_message)
+       
     
     def _output_discussion_round_text(self, player, result):
         public_text = result.public_response
@@ -35,12 +41,16 @@ class BaseManager:
                 message = f"{formatted_key} : {value}"
                 ConsoleRenderer.print_private(player, message, print_name=False)
     
+    
     def run_discussion_round(self):
         for player in self.simulationEngine.agents:
             if not self.gameBoard.agent_response_allowed.get(player.name, True):
                 continue #this is almost redundant because the judge is almost gone.
-
-            result = player.make_discussion_turn(self.gameBoard)
+            #-----------
+            user_content =  "Time to discuss!"
+            basic_model = DynamicModelFactory.create_model_(player, "basic_turn")
+            result = player.take_turn_standard(user_content, self.gameBoard, basic_model)
+            #----------
             self.gameBoard.new_turn_print()
             self._output_discussion_round_text(player, result)
         
@@ -68,7 +78,7 @@ class BaseManager:
     def _agent_by_name(self, name):
         return next((agent for agent in self.simulationEngine.agents if agent.name == name), None)
     
-    def get_strategic_player(self, available_agents, top_player = True):
+    def get_strategic_player(self, available_agents, top_player = True) -> Debater:
         """
         Selects a player from available_agents based on rank.
         mode="top": Picks from the leaders.
@@ -91,13 +101,23 @@ class BaseManager:
 
     def _handle_manual_pairing(self, available_agents, winner_picks_first = True):
         """Helper to manage the 'choice' logic for a single pair."""
-        available_agents_names = [a.name for a in available_agents]
+        
         chooser = self.get_strategic_player(available_agents, winner_picks_first) 
         available_agents.remove(chooser)
         
-        response = chooser.choose_partner(self.gameBoard, available_agents_names)
-        partner = self._agent_by_name(response.action)
+        available_agents_names = [a.name for a in available_agents]
+        user_content = (
+            f"You get to choose who you want to play with from the following list: {available_agents_names}.\n"
+            f"Based on your history and the current game context, who do you choose to partner up with for the next mini-game and why?"
+        )
+        name_field_prompt = "The exact name of the agent to PAIR UP WITH.."
         
+        #----------------------
+        action_fields = self._choose_name_field(available_agents_names, name_field_prompt) 
+        response_model = DynamicModelFactory.create_model_(chooser, model_name="PickPartner", action_fields=action_fields) 
+        response = chooser.take_turn_standard(user_content, self.gameBoard, response_model)
+        partner = self._agent_by_name(response.action)
+        #-----------------------
         self.publicPrivateResponse(chooser, response)
 
         if partner in available_agents:
@@ -112,5 +132,35 @@ class BaseManager:
         #I guess they could both react here
         return (chooser, partner)
     
- 
-  
+    def _shuffled_agents(self):
+        agents = list(self.simulationEngine.agents)
+        return random.sample(agents, k=len(agents))
+    
+    def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None, private_thoughts_prompt: str =None):
+        
+        model = DynamicModelFactory.create_model_(player, public_response_prompt = public_response_prompt, 
+                                                     private_thoughts_prompt = private_thoughts_prompt)
+        return player.take_turn_standard(text_to_respond_to, self.gameBoard, model)
+    
+    def create_choice_field(self, field_name, choices, field_description= None):
+        if not field_description:
+            field_description = "Your final choice."
+        choice_definition = (Literal[*choices], Field(description=field_description))
+        return {field_name: choice_definition}
+    
+    def _choose_name_field(self, allowed_names, reason_for_choosing_prompt):
+        choice_reason_prompt = f"The exact name of the agent. {reason_for_choosing_prompt}"
+        return self.create_choice_field("action", allowed_names, choice_reason_prompt)
+
+    def _make_player_turn(self, player: Debater, user_prompt: str, response_model, action_fields=None):
+        
+        return player.take_turn_standard(user_prompt, self.gameBoard, response_model)
+        
+    def get_response(self, player, model_name, context_msg, action_fields= None, additional_thought_nudge = None):
+        model = model = DynamicModelFactory.create_model_(
+            player,
+            model_name,  
+            additional_thought_nudge=additional_thought_nudge, 
+            action_fields=action_fields
+        )
+        return player.take_turn_standard(context_msg, self.gameBoard, model)

@@ -5,6 +5,7 @@ class SumamriseRoundBasic(BaseModel):
     round_summary: str = Field(description="A summary of the round to give to each player")
     
 class DynamicGameModelFactory:
+    #depreciate i guess... altho why isnt it better here?
     @classmethod
     def choose_agent_based_on_parameter(cls, allowed_names, parameter: str):
         return create_model("ChooseAgentBasedOnParameter",
@@ -15,7 +16,7 @@ class DynamicGameModelFactory:
         )
         
 
-class SumariseRoundComplex(BaseModel):
+class SummariseRoundComplex(BaseModel):
     round_summary: str = Field(description="A summary of the round. What information would an LLM agent player need to know? Condensed for LLM readability")
     overall_story: str = Field(description="A summary of the over all story so far")
     narative_critique: str = Field(description=f"These are LLMs playing a game. Is it interesting to watch? "

@@ -10,4 +10,4 @@ if __name__ == "__main__":
                    "At the voting round, you will choose, who to save... or who to send home "
                    "We need to find the greatest among you. Your goal? IS TO WIN!"
     )
-    engine.run(topicString, rounds, number_of_players = 6, generic_players=False)
+    engine.run(topicString, rounds, number_of_players = 10, generic_players=True)

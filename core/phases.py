@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from core.game_configs import *
+from core.gameplay_definitions_config import *
 
 
 class PhaseRecipe(BaseModel):
@@ -19,7 +19,6 @@ class PhaseRecipe(BaseModel):
         #TODO this is temp
         if num_players == 2:
             phase_description = f"🚨 Only two players remain. Unfortunately only one player can win. Only one player will remain at the end of this phase. The player with the most points. Act accordingly. Accept your fate, or fight 🚨\n"
-        #phase_description += f"Discussion rounds have magic words- figure out what they are and use them to earn points\n"
         phase_description += f"In this round we will have: \n"
         
         game_description = ""
@@ -90,22 +89,31 @@ class PhaseRecipeFactory(BaseModel):
     @classmethod
     def get_phase_recipe(cls, phase_number, agent_number):
         # 1. Finale Override
+        if phase_number == -1:
+            #intro
+            return cls.make_phase(0, PRISONERS_DILEMMA , 0, None, 0, [WILDCARD_IMMUNITY])
+        if phase_number == -2:
+            #intro
+            return cls.make_phase(0, SACRIFICER, 0, None, 0, [])
+        if phase_number == -1:
+            #intro
+            return cls.make_phase(0, PRISONERS_DILEMMA, 0, EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS, 1, [HIGHEST_POINT_IMMUNITY_ONLY_ONE])
+        
+        
         if agent_number <= 2:
             return cls.make_phase(2, PRISONERS_DILEMMA, 0, LOWEST_POINTS_REMOVED, 1, [])
 
         # 2. Define the variables to test
         games = [
             GIVER,
-            GIVER,
             STEALER,
-            STEALER
-        ]
-        games2=[
-            PRISONERS_DILEMMA, 
-            PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_RANDOM, 
+            SACRIFICER,
+            PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER,
             PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_WINNER, 
             PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER
         ]
+        immunities = [WILDCARD_IMMUNITY, HIGHEST_POINT_IMMUNITY, HIGHEST_POINT_IMMUNITY_ONLY_ONE]
+        
         votes = [
             EACH_PLAYER_VOTES_TO_REMOVE, 
             EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS, 
@@ -115,14 +123,15 @@ class PhaseRecipeFactory(BaseModel):
 
         # 3. Build the schedule sequence dynamically
         # Creates a list of tuples: (Game, Vote)
-        schedule = [(g, None) for g in games] + \
-                   [(None, v) for v in votes]
+        schedule = [(None, v, None) for v in votes] + \
+                    [(g, None, None) for g in games] 
+        schedule += [(None, EACH_PLAYER_VOTES_TO_REMOVE, [i]) for i in immunities]
 
         # 4. Serve the recipe based on the current phase
         idx = phase_number - 1
         if idx < len(schedule):
-            game, vote = schedule[idx]
-            return cls.mid_phase(game, vote, [])
+            game, vote, immunity = schedule[idx]
+            return cls.quick_phase(game, vote, immunity)
             
         # 5. Fallback loop (when testing is done but >2 players remain)
         return cls.make_phase(0, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 0, EACH_PLAYER_VOTES_TO_REMOVE, 0, [HIGHEST_POINT_IMMUNITY_ONLY_ONE])

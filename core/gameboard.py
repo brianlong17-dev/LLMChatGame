@@ -105,7 +105,7 @@ class GameBoard:
 
     def initialize_agents(self, agent_list):
         for agent in agent_list:
-            self.add_agent_state(agent.name, agent.form, 0)
+            self.add_agent_state(agent.name, agent.form, 5)
             
     def add_agent_state(self, agent_name: str, form: str, initial_score: int = None):
         """Initializes dictionaries for a newly born agent."""

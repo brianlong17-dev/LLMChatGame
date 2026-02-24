@@ -1,4 +1,4 @@
-from gamplay_management.base_manager import BaseManager
+from gameplay_management.base_manager import BaseManager
 #from core.gameboard import GameBoard
 import random
 
@@ -10,8 +10,16 @@ class ImmunityMechanicsMixin(BaseManager):
                     
     def get_wildcard_player_immunity(self):
         # This is an example of a dynamic immunity type that the judge could call on. It gives immunity to the player with the most chaotic playstyle.
-        wildcard_player = self.gameBoard.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names, "chaotic")
-        return wildcard_player
+        response = self.gameBoard.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names, "chaotic")
+        print(response)
+        return [response.target_name]
+
+    def get_wildcard_player_random_trait(self):
+        traits = ["chaotic", "kind", "vengeful", "calculating"]
+        trait = random.choice(traits)
+        response = self.gameBoard.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names, trait)
+        print(response)
+        return [response.target_name]
     
     def get_highest_points_players_immunity_only_one(self):
         return self.get_highest_points_players_immunity(only_one = True)

@@ -14,9 +14,6 @@ class PromptLibrary:
    
     #Gameplay
     desc_agent_names = "The name of the agent (e.g. 'Agent Alpha')"
-    desc_judge_score = "A SCORE BETWEEN -10,10. NEVER ZERO. The updated scores. Try to include everyone, but if you skip someone, their score remains unchanged."
-    desc_judge_allowed = ("TRUE for the players you want to participate in the next rount. If all false, you are talking to yourself. If you skip someone, their status remains unchanged.")
-    desc_judge_form = "The pysical state and form of the agents. Upon reading what is happening, update their form accordingly."
     desc_remove_agent= f"A boolean: If you want to remove a new player, return true. You will be given the opportunity to kill an agent."
     desc_create_new_agent = (f"A boolean: If you want to create a new player into the game. If the game is empty you need players. You will be able to create this being in its entirity, its motivation, its form, its reason for being."
     f"Consider how many agents are currently playing. Does the game need more players?")
@@ -33,39 +30,16 @@ class PromptLibrary:
     
     # System Prompts
     @staticmethod
-    def player_user_prompt(lifeLessons, history_context):
+    def player_user_prompt( history_context):
         return (
             f"Consider the current phase, what round you're in, and what comes next- If there is an elimination coming up, who will be going home?"
             f"Context:\n{history_context}\n\n"
-            f"Your life lessons that guide you: {lifeLessons}"
             f"---------------------------------------------------------------------"
             f"No matter what, say something with the intention of moving yourself forward. Be proactive, dive in, speak to get responses."
             f"---------------------------------------------------------------------"
             f"Your Turn:")
     
-    @staticmethod
-    def judge_user(judge, game_board):
-        template = (
-            "### JUDGE PROTOCOL ###\n"
-            "Current Persona: {persona}\n"
-            "Life Lessons: {lessons}\n"
-            "Current Agent Ratings: {scores}\n\n"
-            "Current Agent Forms: {agent_forms}\n\n"
-            "Current Agent Allowed to speak: {agent_allowed}\n\n"
-            "### RECENT EXCHANGE ###\n"
-            "{history}\n\n"
-            "Based on the above, provide your monologue, actions, and spoken response."
-        )
-        
-        return template.format(
-            persona=judge.complex_persona,
-            lessons=judge.life_lessons,
-            scores=game_board.agent_scores,
-            history=game_board.get_full_context(),
-            agent_forms = game_board.agent_forms,
-            agent_allowed = game_board.agent_response_allowed
-        )
-        
+    
     
     @classmethod
     def player_system_prompt(self, agent, gameBoard):
@@ -76,6 +50,7 @@ class PromptLibrary:
             f"ANY CURRENT PHYSICAL FORM: '{agent.form}'\n"
             f"YOUR LIFE LESSONS: '{list(agent.life_lessons)}'\n"
             f"YOUR STRATEGY TO WIN: '{agent.strategy_to_win}'\n"
+            #TODO this all needs to be put into a method on player
             f"Mathematical assessment of the scores: '{agent.mathematicalAssessment}'\n"
         )
 

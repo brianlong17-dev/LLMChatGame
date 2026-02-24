@@ -11,3 +11,12 @@ dependencies = [
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]

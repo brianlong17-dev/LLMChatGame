@@ -5,8 +5,21 @@ class GamePromptLibrary:
     pd_steal = 5
     pd_both_steal = 1
     pd_desc_string = f"Stealing from a a splitter: {pd_steal} points and 0 points. Both split: {pd_split} points each, both steal: {pd_both_steal} point each."
-
+    pd_game_prompt = (
+            f"🚨 PRISONER'S DILEMMA 🚨\n"
+            "You have been paired with {opponent_name}.\n"
+            f"Remember:\n"
+            f"- If you both SPLIT, you both get {pd_split} points.\n"
+            f"- If you STEAL and they SPLIT, you get {pd_steal} points and they get 0.\n"
+            f"- If you both STEAL, you both get {pd_both_steal} point.\n"
+            f"Based on your game history and personality, make your choice."
+        )
     
+    targeted_games_points = 3
+    give_game_intro = (f"Well, enough of the scheming, lying, conning... whatever happened to giving!? "
+        f"In this round, you will get to pick a pal. The player you pick will receive {targeted_games_points} points! "
+        f"Everyone is happy! Well... except any player with no friends! hehe")
+    give_game_player_intro = ("{player_name}! You're up- what player are you choosing, and why?")
     @classmethod
     def prisonersDilemmaIntro(cls, choose_partner: bool, winner_picks_first = True):
         splitPoints = cls.pd_split

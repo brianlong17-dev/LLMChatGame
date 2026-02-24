@@ -17,7 +17,12 @@ class CharacterGenerator:
     'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
     marches = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March", "Theodore 'Laurie' Laurence", "Mr. Laurence", "Aunt March"]
     
-
+    regulars = ['Kendall Roy', 'Shiv Roy', 'Harry Potter', 'Buffy Summers']
+    schemers = ['Anna Delvey', 'Petyr Baelish', 'Albus Dumbledore']#'Lady Macbeth', 'Albus Dumbledore', 'Gollum', 'Amy March', 
+    agros = [ 'Donald Trump', 'Jair Bolsonaro', "Michael O'Leary", 'Elon Musk', 'Kanye West', 'Logan Roy']#'Rick Sanchez', 'Mr. Burns'
+    logicos = ['HAL 9000', 'GLaDOS', 'Spock', 'Detective Columbo', 'Benoit Blanc']
+    foils = ['Morty Smith', 'Michael Scott']
+    pools= [regulars, schemers, agros, logicos, foils]
 
     full_characters = [
     'Donald Trump', 'Margaret Thatcher', 'Ronald Regan',
@@ -48,13 +53,17 @@ class CharacterGenerator:
 
     def genericPlayers(self, number_of_players):
         templates = [
-            ('Agent Greg', 'Always managing to fail upward', 'tall guy'),
+            
             ('Agent Alpha', 'Bold and daring', 'small man'),
             ('Agent Beta', 'Coy and cunning', 'small man'),
             ('Agent Capa', 'Cool and calm', 'small man'),
             ('Agent Delta', 'Handsome and charismatic', 'big guy'),
             ('Agent Elphie', 'Shy and powerful', 'green girl'),
-            ('Agent Fierello', 'Charasmatic and scheming', 'tall guy')
+            ('Agent Greg', 'Always managing to fail upward', 'tall guy'),
+            ('Agent Harriete', 'Curious and coy', 'young girl'),
+            ('Agent Inspector', 'Quirky and investigatory', 'gadget guy'),
+            ('Agent Jolly', 'Friendly to a fault', 'jolly guy'),
+            ('Agent Intelligent', 'Analytical andn insightful', 'tall guy')
             
         ]
         
@@ -67,7 +76,23 @@ class CharacterGenerator:
             )
             
         return debaters
-         
+    
+    def generate_balanced_cast(self, count) -> 'Debater':
+        cast = []
+        # Shuffle the pools so we don't always start with a 'Regular'
+        random.shuffle(self.pools)
+        
+        for i in range(count):
+            # Use modulo to loop back to the first pool if count > 5
+            current_pool = self.pools[i % len(self.pools)]
+            
+            if current_pool:
+                # Pick, remove, and add to cast
+                name = random.choice(current_pool)
+                current_pool.remove(name)
+                cast.append(name)
+               
+        return [self.generate_debater(character_name) for character_name in cast]
        
     def generate_random_debater(self) -> 'Debater':
         """Selects a random character from the list and builds a Debater."""
@@ -93,7 +118,7 @@ class CharacterGenerator:
         return Debater(
             name=character_name,
             initial_persona=profile.persona,
-            initial_form=profile.form,
+            initial_form=profile.form, #is this being used?
             client=self.client,
             model_name=self.model_name
         )
