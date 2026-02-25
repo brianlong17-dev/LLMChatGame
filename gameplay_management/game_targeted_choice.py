@@ -165,12 +165,19 @@ class GameTargetedChoice(GameMechanicsMixin):
             
             spent = getattr(response, "points_to_spend", 0)
             target_name = getattr(response, "public_response_action", None) or getattr(response, "target_name", None) or response.action
+            normalized_target = str(target_name).strip().lower() if target_name is not None else ""
             
             # Handle "Pass"
-            if target_name == "Pass" or spent <= 0:
+            if normalized_target == "pass" or spent <= 0:
                 return (
                     f"{player.name} chooses mercy (or cowardice?) and passes. No blood is shed.",
                     player # Player reacts to their own pass
+                )
+
+            if not target_agent or target_agent.name == player.name:
+                return (
+                    f"{player.name} chose '{target_name}'... but that's an invalid target. No points changed hands.",
+                    player
                 )
             
             # Handle Valid Attack
