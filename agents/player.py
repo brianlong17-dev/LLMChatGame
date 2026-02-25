@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class Debater(BaseAgent):
     
     
-    def __init__(self, name: str, initial_persona: str, initial_form: str,client, model_name: str):
+    def __init__(self, name: str, initial_persona: str, initial_form: str,client, model_name: str, speaking_style: str = ""):
         super().__init__(name, client, model_name)
         self.rating = 0
         self.persona = initial_persona
@@ -19,6 +19,7 @@ class Debater(BaseAgent):
         self.strategy_to_win = "WATCH AND UPDATE WITH A PLAN"
         self.mathematicalAssessment = ""
         self.life_lessons = deque(maxlen=8)
+        self.speaking_style = speaking_style
         
         #todo : implement temperature
     
@@ -82,16 +83,24 @@ class Debater(BaseAgent):
             else:
                 setattr(self, target_attr_name, value)
     
-    def _get_full_user_content(self, gameBoard, user_content):
+    def _get_full_user_content(self, gameBoard, user_content, instruction_override=None) :
         
-        full_user_content= f"{PromptLibrary.player_user_prompt( gameBoard.get_full_context())}\n{user_content}"
+        # 1. Choose the instruction wrapper
+        if instruction_override:
+            instructions = instruction_override
+        else:
+            # Default to the standard "Play to Win" prompt
+            instructions = PromptLibrary.player_user_prompt(gameBoard.get_full_context())
+
+        # 2. Combine
+        full_user_content = f"{instructions}\n\n{user_content}"
         return full_user_content
                      
-    def take_turn_standard(self, user_content, gameBoard, model, system_content = None, append_complex_fields = True):
+    def take_turn_standard(self, user_content, gameBoard, model, system_content = None, append_complex_fields = True, instruction_override=None):
         #Human player split will be here---- needing to demark the required fields is the question.
         #it is only public words and action, and anyway, public words isnt even required.
         
-        user_content = self._get_full_user_content(gameBoard, user_content) #TODO this is a big refactoring
+        user_content = self._get_full_user_content(gameBoard, user_content, instruction_override) #TODO this is a big refactoring
         turn = self.get_response(user_content, model, gameBoard, system_content) #TODO temperature
         self.process_turn_cognitive_fields(turn)
         return turn

@@ -23,12 +23,17 @@ class VoteMechanicsMixin(BaseManager):
             host_message = (f"THE VOTES HAVE BEEN CAST. THE RESULTS ARE FINAL. "
                                         f"💀 {victim.name} HAS BEEN EJECTED FROM THE ISLAND. 💀 \n")
             self.gameBoard.host_broadcast(host_message)
-            #TODO is this enough or do we need a thought prompt here?
-            finalWordsResult = self.respond_to(victim, host_message, public_response_prompt="You have been eliminated from the game! Your final words?")
-            self.publicPrivateResponse(victim, finalWordsResult)
+            instruction_override = PromptLibrary.final_words_prompt(self.gameBoard)
+            #TODO is this enough or do we need a thought prompt here?             
+            
             
             self.gameBoard.remove_agent_state(victim.name)
             self.simulationEngine.agents.remove(victim)
+            finalWordsResult = self.respond_to(victim, host_message, 
+                                               public_response_prompt="You have been eliminated from the game! Your final words?", 
+                                               instruction_override = instruction_override)
+            print(finalWordsResult)
+            self.publicPrivateResponse(victim, finalWordsResult)
             if self.gameBoard.execution_style:
                 executionString = self.get_execution_string(victim)
                 self.gameBoard.system_broadcast(executionString)
@@ -38,8 +43,8 @@ class VoteMechanicsMixin(BaseManager):
     def immunity_string(self, immunity_players, players_up_for_elimination):
         immunityString = ""
         if immunity_players:
-            immunityString = f"The following players have immunity, and will be cannot be voted for to leave in this round of voting: {', '.join(immunity_players)}.\n"
-        players_up_for_elimination_string = f"The following players are up for elimination {', '.join(players_up_for_elimination)}\n"
+            immunityString = f"The following players have immunity, and will be cannot be voted for to leave in this round of voting: \n {', '.join(immunity_players)}.\n"
+        players_up_for_elimination_string = f"\nThe following players are up for elimination:\n {', '.join(players_up_for_elimination)}\n"
         return f"{immunityString} {players_up_for_elimination_string}"
             
     def run_voting_winner_chooses(self, immunity_players = None, with_pass_option = False):
@@ -63,7 +68,6 @@ class VoteMechanicsMixin(BaseManager):
         self.publicPrivateResponse(leading_player, response)
         self.eliminate_player_by_name(response.target_name)
     
-    
     def run_voting_round_basic_dont_miss(self, immunity_players, dont_miss = True):
         self.run_voting_round_basic(immunity_players, dont_miss = True)
     
@@ -80,8 +84,21 @@ class VoteMechanicsMixin(BaseManager):
         vote_result = player.take_turn_standard(user_content, self.gameBoard, response_model)
         #-----------------
         return vote_result
-            
     
+    def run_voting_bottom_two(self, immunity_players = None, dont_miss=False):
+        players_up_for_elimination = [a.name for a in self.simulationEngine.agents if a.name not in immunity_players]
+        if len(players_up_for_elimination) < 2:
+            print("Not enough players!")
+            return
+
+        player_0 = self.get_strategic_player(players_up_for_elimination, False)
+        player_1 = self.get_strategic_player(players_up_for_elimination.remove(player_0), False)
+        victim_name, voting_results = self.run_voting_round_logic([player_0, player_1])
+        if dont_miss:
+            self._dispense_victim_points(victim_name, voting_results)
+        self.eliminate_player_by_name(victim_name)
+   
+            
     def _collect_votes(self, players_up_for_elimination, pass_allowed = False):
         votes = []
         votingResults = []
@@ -139,7 +156,6 @@ class VoteMechanicsMixin(BaseManager):
         else:
             return players_with_most_votes[0], voting_results
                 
-        
     def run_voting_round_basic(self, immunity_players = None, with_pass_option = False, dont_miss = False):
         
         immunity_players = self._validate_immunity(immunity_players)
@@ -179,6 +195,7 @@ class VoteMechanicsMixin(BaseManager):
                 f"🛡️ BULLET DODGER BONUS! The following players took heat but survived the vote. "
                 f"They receive points for every vote they survived: {reward_str}"
             )
+            
     def run_voting_lowest_points_removed(self, immunity_players = None, with_pass_option = False):
         #immunity is irrelevant here 
         
@@ -190,8 +207,7 @@ class VoteMechanicsMixin(BaseManager):
                                      
        
         self.eliminate_player_by_name(player.name)
-        
-        
+             
     def get_execution_string(self, victim):
         name = victim.name
         string1 = f"{name} is brought onto the podium under the stormy sky. Lightning strikes {name} several times. The pile of ashes is proptly blown away"

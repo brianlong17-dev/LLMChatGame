@@ -123,15 +123,16 @@ class PhaseRecipeFactory(BaseModel):
 
         # 3. Build the schedule sequence dynamically
         # Creates a list of tuples: (Game, Vote)
-        schedule = [(None, v, None) for v in votes] + \
-                    [(g, None, None) for g in games] 
+        schedule = [(g, None, None) for g in games] #+ \
+                   # [(None, v, None) for v in votes] 
+                    
         schedule += [(None, EACH_PLAYER_VOTES_TO_REMOVE, [i]) for i in immunities]
 
         # 4. Serve the recipe based on the current phase
         idx = phase_number - 1
         if idx < len(schedule):
             game, vote, immunity = schedule[idx]
-            return cls.quick_phase(game, vote, immunity)
+            return cls.mid_phase(game, vote, immunity)
             
         # 5. Fallback loop (when testing is done but >2 players remain)
         return cls.make_phase(0, PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER, 0, EACH_PLAYER_VOTES_TO_REMOVE, 0, [HIGHEST_POINT_IMMUNITY_ONLY_ONE])

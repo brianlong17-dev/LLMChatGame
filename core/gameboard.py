@@ -84,9 +84,10 @@ class GameBoard:
     def get_full_context(self):
         """Combines them with clear markdown headers for the LLM to read."""
         current_text = self._format_dialogue_list(self.currentRound)
+        round_summaries_formatted = ("\n".join(list(self.round_summaries)))
         context_string = (
             f"### PAST ROUND SUMMARIES  ###\n"
-            f"{self.round_summaries}\n\n"
+            f"{round_summaries_formatted}\n\n"
             f"### PAST {self.full_rounds_text_amount} ROUNDS  ###\n"
             f"{self.history_text()}\n\n"
             f"### CURRENT ROUND DIALOGUE ###\n"
@@ -105,7 +106,7 @@ class GameBoard:
 
     def initialize_agents(self, agent_list):
         for agent in agent_list:
-            self.add_agent_state(agent.name, agent.form, 5)
+            self.add_agent_state(agent.name, agent.form, 0)
             
     def add_agent_state(self, agent_name: str, form: str, initial_score: int = None):
         """Initializes dictionaries for a newly born agent."""
@@ -144,42 +145,52 @@ class GameBoard:
     def get_dashboard_string(self, agent_name: str) -> str:
         """Generates a hard-facts reality check for an agent's system prompt."""
         if agent_name not in self.agent_scores:
-            return "STATUS: You are eliminated. Observe the living."
+            return "=== STATUS: ELIMINATED ===\nYou are dead. Observe the living."
 
         my_score = self.agent_scores[agent_name]
         
-        # Find the leader(s)
-        max_score = max(self.agent_scores.values()) if self.agent_scores else 0
+        # 1. Calculate Standings
+        # Sort by score (descending)
+        sorted_scores = sorted(self.agent_scores.items(), key=lambda x: x[1], reverse=True)
+        max_score = sorted_scores[0][1] if sorted_scores else 0
         leaders = [name for name, score in self.agent_scores.items() if score == max_score]
         
-        # Math logic
         is_leader = agent_name in leaders
         points_behind = max_score - my_score
+
+        # 2. Build the Visual Dashboard
+        dash = []
+        dash.append("=== REALITY CHECK DASHBOARD ===")
         
-        # Format active and dead players
-        active_str = ", ".join(self.agent_names)
-        dead_str = ", ".join(self.removed_agent_names) if self.removed_agent_names else "None"
+        # A. The Leaderboard (Clean List)
+        dash.append("CURRENT STANDINGS:")
+        for name, score in sorted_scores:
+            marker = " <-- YOU" if name == agent_name else ""
+            dash.append(f"- {name}: {score} points{marker}")
         
-        # Build the aggressive dashboard
-        dash =  "=== REALITY CHECK DASHBOARD ===\n"
-        dash += f"ALIVE: {active_str}\n"
-        dash += f"DEAD & GONE: {dead_str} (DO NOT plot against eliminated players!)\n"
-        
+        dash.append("") # Empty line for spacing
+
+        # B. The Narrative Status
         if is_leader:
             if len(leaders) > 1:
                 tied_with = [l for l in leaders if l != agent_name]
-                dash += f"STATUS: TIED FOR 1ST PLACE with {', '.join(tied_with)} at {my_score} points.\n"
+                dash.append(f"STATUS: TIED FOR 1ST with {', '.join(tied_with)}.")
             else:
-                dash += f"STATUS: YOU ARE WINNING with {my_score} points.\n"
+                dash.append("STATUS: YOU ARE WINNING.")
         else:
-            dash += f"STATUS: YOU ARE LOSING. You have {my_score} points.\n"
-            dash += f"TARGET TO BEAT: {', '.join(leaders)} ({max_score} points).\n"
-            dash += f"MATH: You are exactly {points_behind} points behind the leader.\n"
+            dash.append("STATUS: YOU ARE LOSING.")
+            dash.append(f"MATH: You are exactly {points_behind} points behind the leader.")
+
+        # C. The Roster (Who is left?)
+        # (Optional: You might not need this if everyone is in the leaderboard above, 
+        # but strictly separating 'Dead' is useful)
+        dead_str = ", ".join(self.removed_agent_names) if self.removed_agent_names else "None"
+        dash.append(f"GRAVEYARD: {dead_str} (Do not plot against them)")
         
-        dash += "===============================\n"
-        return dash
-    
-    
+        dash.append("===============================")
+        return "\n".join(dash)
+        
+        
     def append_agent_points(self, agent_name, points):
         self.agent_scores[agent_name] += points
              

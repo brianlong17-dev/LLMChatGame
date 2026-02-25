@@ -41,6 +41,7 @@ class GameMaster(BaseAgent):
                 {"role": "system", "content": f"You oversee this game. You help to make the information managable for the LLMs playing."},
                 {"role": "user", "content": f"PAST SUMARRIES: {gameBoard.round_summaries} "
                  f"#########################"
+                 f"#########################"
                  f"Summarise the following round: {gameBoard.currentRound} Scores:  {gameBoard.agent_scores}"} 
             ]
         )

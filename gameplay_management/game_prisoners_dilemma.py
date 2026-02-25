@@ -24,10 +24,29 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         additional_thought_nudge="What points are available? How will the next elimination work? Do you need points or alliance?" 
         model = DynamicModelFactory.create_model_(player, "split_or_steal", 
                     additional_thought_nudge=additional_thought_nudge, action_fields=action_fields)
-        response = player.take_turn_standard("Split or steal?", self.gameBoard, model)
+        response = player.take_turn_standard(user_content, self.gameBoard, model)
         #-----------------------------
         return response
     
+    def _calculate_pd_payout(self, choice0, choice1, name0, name1):
+        splitPoints = GamePromptLibrary.pd_split
+        bothSteal= GamePromptLibrary.pd_both_steal
+        stealPoints = GamePromptLibrary.pd_steal
+        choice0 = choice0.strip().lower().replace(".", "")
+        choice1 = choice1.strip().lower().replace(".", "")
+            
+        outcomes = {
+            ('split', 'split'): (splitPoints, splitPoints, f"Congratulations {name0} and {name1}. You both SPLIT! "),
+            ('steal', 'steal'): (bothSteal, bothSteal, f"OH NO {name0} and {name1}... You both STOLE. "),
+            ('steal', 'split'): (stealPoints, 0, f"OH NO! {name0} STOLE from {name1}! "),
+            ('split', 'steal'): (0, stealPoints, f"OH NO! {name1} STOLE from {name0}! ")
+        }
+                                
+        # 1. Look up the results
+        p0_gain, p1_gain, msg = outcomes.get(
+            (choice0, choice1), 
+            (0, 0, f"Someone hallucinated a move! No points awarded."))
+        return p0_gain, p1_gain, msg
     
     def run_game_prisoners_dilemma(self, choose_partner = False, winner_picks_first = True):
         splitPoints = GamePromptLibrary.pd_split
@@ -37,7 +56,6 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         self.gameBoard.host_broadcast(intro_message)
 
         # 2. Pairing Logic
-        # Assuming self.simulationEngine.agents is a list of your agent objects. We shuffle to make pairings random.
         available_agents = list(self.simulationEngine.agents)
         random.shuffle(available_agents)
         pairs, leftover_player = self._generate_pairings(available_agents, choose_partner, winner_picks_first)
@@ -63,23 +81,10 @@ class GamePrisonersDilemma(GameMechanicsMixin):
             for agent, res in zip((agent0, agent1), results):
                 self.publicPrivateResponse(agent, res)
                 choices.append(res.action.strip().lower())
-
-            choice0 = choices[0].strip().lower().replace(".", "")
-            choice1 = choices[1].strip().lower().replace(".", "")
             
-            outcomes = {
-                ('split', 'split'): (splitPoints, splitPoints, f"Congratulations {agent0.name} and {agent1.name}. You both SPLIT! "),
-                ('steal', 'steal'): (bothSteal, bothSteal, f"OH NO {agent0.name} and {agent1.name}... You both STOLE. "),
-                ('steal', 'split'): (stealPoints, 0, f"OH NO! {agent0.name} STOLE from {agent1.name}! "),
-                ('split', 'steal'): (0, stealPoints, f"OH NO! {agent1.name} STOLE from {agent0.name}! ")
-            }
-                                    
             # 1. Look up the results
-            p0_gain, p1_gain, msg = outcomes.get(
-                (choice0, choice1), 
-                (0, 0, f"Someone hallucinated a move! No points awarded.")
-            )
-
+            p0_gain, p1_gain, msg = self._calculate_pd_payout(choices[0], choices[1], agent0.name, agent1.name)
+            
             # 2. Update points and broadcast
             for agent, gain in zip((agent0, agent1), (p0_gain, p1_gain)):
                 self.gameBoard.append_agent_points(agent.name, gain)

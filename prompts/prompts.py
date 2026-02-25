@@ -26,8 +26,20 @@ class PromptLibrary:
     dp_hidden_agenda = "A evolving goal you are trying to achieve."
     dp_speaking_style = "Detailed and curious"
     
-    
-    
+    @staticmethod
+    def final_words_prompt(gameBoard):
+        history_context = gameBoard.get_full_context()
+        return (
+            f"CONTEXT:\n{history_context}\n\n"
+            f"---------------------------------------------------------------------\n"
+            f"🛑 GAME OVER 🛑\n"
+            f"You have just been ELIMINATED. Your game is finished.\n"
+            f"Do not plan for the next round. Do not try to save yourself.\n"
+            f"Your Goal: Give a memorable final statement. You can be gracious, angry, confused, or vengeful.\n"
+            f"---------------------------------------------------------------------\n"
+            f"Your Final Words:"
+        )
+        
     # System Prompts
     @staticmethod
     def player_user_prompt( history_context):
@@ -43,15 +55,28 @@ class PromptLibrary:
     
     @classmethod
     def player_system_prompt(self, agent, gameBoard):
+        # Format Life Lessons as a bulleted list (Clean Readability)
+        if agent.life_lessons:
+            lessons_str = "\n".join([f"- {lesson}" for lesson in agent.life_lessons])
+        else:
+            lessons_str = "- None yet. I am a blank slate."
+
         return (
-            f"You are {agent.name}. The current scores: {gameBoard.agent_scores}.\n"
-            f"{gameBoard.get_dashboard_string(agent.name)}\n" # I think this is currently way too much 
-            f"YOUR CURRENT PERSONA: '{agent.persona}'\n"
-            f"ANY CURRENT PHYSICAL FORM: '{agent.form}'\n"
-            f"YOUR LIFE LESSONS: '{list(agent.life_lessons)}'\n"
-            f"YOUR STRATEGY TO WIN: '{agent.strategy_to_win}'\n"
-            #TODO this all needs to be put into a method on player
-            f"Mathematical assessment of the scores: '{agent.mathematicalAssessment}'\n"
+            f"You are {agent.name}.\n\n"
+            f"{gameBoard.get_dashboard_string(agent.name)}\n\n"
+            
+            f"=== YOUR PROFILE ===\n"
+            f"Persona: {agent.persona}\n"
+            #f"Physical Form: {agent.form}\n\n"
+            f"Speaking Style: {agent.speaking_style}\n\n"
+            
+            f"=== LIFE LESSONS ===\n"
+            f"Use these past learnings to guide your current behavior:\n"
+            f"{lessons_str}\n\n"
+            
+            f"=== INTERNAL MONOLOGUE ===\n"
+            f"Current Strategy: {agent.strategy_to_win}\n"
+            f"Calculated Odds: {agent.mathematicalAssessment}\n"
         )
 
     @staticmethod

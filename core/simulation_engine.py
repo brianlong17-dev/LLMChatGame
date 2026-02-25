@@ -23,7 +23,7 @@ from .gameboard import GameBoard
  
     
 class SimulationEngine:
-    def __init__(self, model_name: str = "gemini-2.0-flash-lite", number_of_players = 5):
+    def __init__(self, model_name: str = "gemini-2.5-flash-lite", number_of_players = 5):
         load_dotenv()
         self.client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
         self.model_name = model_name

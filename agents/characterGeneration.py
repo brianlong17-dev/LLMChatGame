@@ -6,6 +6,7 @@ from agents.player import Debater
 class CharacterProfile(BaseModel):
     persona: str = Field(description="A detailed, first-person personality description, core beliefs, and debate strategy for this historical figure.")
     form: str = Field(description="Their brief physical appearance, and stance/immediate surrounding.")
+    speaking_style: str = Field(description="Their speaking style, how they talk, to preserve the charcter from context bleed")
 
 # 2. The Generator Class
 class CharacterGenerator:
@@ -113,6 +114,7 @@ class CharacterGenerator:
                 {"role": "user", "content": f"Create a rich, first-person persona and a physical form description for the historical figure: {character_name}. Make them highly opinionated."}
             ]
         )
+        print(profile.speaking_style)
         
         # Build and return the Debater using the generated traits
         return Debater(
@@ -120,5 +122,6 @@ class CharacterGenerator:
             initial_persona=profile.persona,
             initial_form=profile.form, #is this being used?
             client=self.client,
-            model_name=self.model_name
+            model_name=self.model_name,
+            speaking_style=profile.speaking_style
         )
