@@ -1,11 +1,12 @@
-import pytest
+from types import SimpleNamespace
 
+from core.gameboard import GameBoard
+from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
+from tests.helpers.game_test_helpers import NoopGameMaster
 
-
-def test_split_vs_steal_logic(pd_game):
+def test_split_vs_steal_logic():
     """
     Verifies the scoring logic for the Prisoner's Dilemma payout matrix.
-    The 'pd_game' argument is automatically injected by the fixture in conftest.py.
     """
     
     # Define test cases: (Choice A, Choice B, Points A, Points B, Description)
@@ -18,13 +19,13 @@ def test_split_vs_steal_logic(pd_game):
         ("SPLIT.", "split ", 3, 3, "Messy Input (Sanitization Check)"),
     ]
 
-    print("\n----------------------------------------------------------------")
-    print(f"Testing Payout Matrix logic on: {pd_game.__class__.__name__}")
+    board = GameBoard(NoopGameMaster())
+    game = GamePrisonersDilemma(board, SimpleNamespace(agents=[]))
     
     for c0, c1, exp0, exp1, desc in scenarios:
         # Act
         # calling the helper method we refactored earlier
-        p0, p1, msg = pd_game._calculate_pd_payout(c0, c1, "AgentA", "AgentB")
+        p0, p1, msg = game._calculate_pd_payout(c0, c1, "AgentA", "AgentB")
 
         # Assert
         error_msg = f"Failed on case: {desc} | Input: {c0} vs {c1}"
@@ -36,5 +37,3 @@ def test_split_vs_steal_logic(pd_game):
             assert "hallucinated" in msg
         elif c0.lower().startswith("steal") and c1.lower().startswith("split"):
              assert "STOLE from" in msg
-
-    print("✅ All Prisoner's Dilemma logic tests passed!")

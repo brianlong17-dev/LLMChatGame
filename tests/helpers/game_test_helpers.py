@@ -2,7 +2,9 @@ from types import SimpleNamespace
 
 from agents.player import Debater
 from core.gameboard import GameBoard
+from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
 from gameplay_management.game_targeted_choice import GameTargetedChoice
+from gameplay_management.vote_mechanicsMixin import VoteMechanicsMixin
 
 
 def turn_payload(target_name=None, public_response="pub", private_thoughts="priv", **extra_fields):
@@ -50,6 +52,10 @@ def host_messages(board):
     return [entry["message"] for entry in board.currentRound if entry["speaker"] == "HOST"]
 
 
+def messages_for(board, speaker):
+    return [entry["message"] for entry in board.currentRound if entry["speaker"] == speaker]
+
+
 def build_targeted_choice_game(agent_specs, initial_scores=None):
     clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
     agents = [make_debater(name, clients[name]) for name in agent_specs]
@@ -65,3 +71,36 @@ def build_targeted_choice_game(agent_specs, initial_scores=None):
     game = GameTargetedChoice(board, simulation)
     game._shuffled_agents = lambda: list(simulation.agents)
     return game, board, agents, clients
+
+
+def build_pd_game(agent_specs, initial_scores=None):
+    clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
+    agents = [make_debater(name, clients[name]) for name in agent_specs]
+
+    board = GameBoard(NoopGameMaster())
+    board.initialize_agents(agents)
+    if initial_scores:
+        for name, score in initial_scores.items():
+            if name in board.agent_scores:
+                board.agent_scores[name] = score
+
+    simulation = SimpleNamespace(agents=agents)
+    game = GamePrisonersDilemma(board, simulation)
+    return game, board, agents, clients
+
+
+def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
+    clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
+    agents = [make_debater(name, clients[name]) for name in agent_specs]
+
+    board = GameBoard(NoopGameMaster())
+    board.execution_style = execution_style
+    board.initialize_agents(agents)
+    if initial_scores:
+        for name, score in initial_scores.items():
+            if name in board.agent_scores:
+                board.agent_scores[name] = score
+
+    simulation = SimpleNamespace(agents=agents)
+    manager = VoteMechanicsMixin(board, simulation)
+    return manager, board, agents, clients

@@ -1,125 +1,64 @@
 from types import SimpleNamespace
-from unittest.mock import MagicMock, call
 
-from gameplay_management.vote_mechanicsMixin import VoteMechanicsMixin
 from prompts.votePrompts import VotePromptLibrary
-
-
-def _player(name):
-    player = MagicMock()
-    player.name = name
-    return player
+from tests.helpers.game_test_helpers import build_vote_game, host_messages
 
 
 def test_process_vote_rounds_returns_clear_winner():
-    alice = _player("Alice")
-    bob = _player("Bob")
-    cara = _player("Cara")
-    simulation = SimpleNamespace(agents=[alice, bob, cara])
+    game, board, _agents, _clients = build_vote_game({"Alice": [], "Bob": [], "Cara": []})
 
-    game_board = MagicMock()
-    game = VoteMechanicsMixin(game_board, simulation)
+    def _collect(players_up_for_elimination):
+        assert players_up_for_elimination == ["Alice", "Bob", "Cara"]
+        return ["Bob", "Alice", "Bob"], [SimpleNamespace(action="x")]
 
-    voting_results = [SimpleNamespace(action="Bob"), SimpleNamespace(action="Alice"), SimpleNamespace(action="Bob")]
-    game._collect_votes = MagicMock(return_value=(["Bob", "Alice", "Bob"], voting_results))
-
+    game._collect_votes = _collect
     victim_name, returned_votes = game.process_vote_rounds(["Alice", "Bob", "Cara"])
 
     assert victim_name == "Bob"
-    assert returned_votes == voting_results
-    game._collect_votes.assert_called_once_with(["Alice", "Bob", "Cara"])
-    game_board.host_broadcast.assert_called_once_with(
-        VotePromptLibrary.voting_tally_msg.format(tally="Bob: 2 votes, Alice: 1 votes")
+    assert returned_votes == [SimpleNamespace(action="x")]
+    assert host_messages(board)[-1] == VotePromptLibrary.voting_tally_msg.format(
+        tally="Bob: 2 votes, Alice: 1 votes"
     )
 
 
 def test_process_vote_rounds_tie_revotes_on_tied_subset_only():
-    alice = _player("Alice")
-    bob = _player("Bob")
-    cara = _player("Cara")
-    dan = _player("Dan")
-    simulation = SimpleNamespace(agents=[alice, bob, cara, dan])
+    game, board, _agents, _clients = build_vote_game({"Alice": [], "Bob": [], "Cara": [], "Dan": []})
+    calls = []
 
-    game_board = MagicMock()
-    game = VoteMechanicsMixin(game_board, simulation)
+    def _collect(players_up_for_elimination):
+        calls.append(list(players_up_for_elimination))
+        if len(calls) == 1:
+            return ["Alice", "Bob", "Alice", "Bob"], [SimpleNamespace(action="round1")]
+        return ["Bob", "Bob", "Alice", "Bob"], [SimpleNamespace(action="round2")]
 
-    first_round_results = [
-        SimpleNamespace(action="Alice"),
-        SimpleNamespace(action="Bob"),
-        SimpleNamespace(action="Alice"),
-        SimpleNamespace(action="Bob"),
-    ]
-    second_round_results = [
-        SimpleNamespace(action="Bob"),
-        SimpleNamespace(action="Bob"),
-        SimpleNamespace(action="Alice"),
-        SimpleNamespace(action="Bob"),
-    ]
-
-    game._collect_votes = MagicMock(
-        side_effect=[
-            (["Alice", "Bob", "Alice", "Bob"], first_round_results),
-            (["Bob", "Bob", "Alice", "Bob"], second_round_results),
-        ]
-    )
-
+    game._collect_votes = _collect
     victim_name, returned_votes = game.process_vote_rounds(["Alice", "Bob", "Cara", "Dan"])
 
     assert victim_name == "Bob"
-    # Returned voting_results should preserve initial round votes across revote recursion.
-    assert returned_votes == first_round_results
-    assert game._collect_votes.call_args_list == [
-        call(["Alice", "Bob", "Cara", "Dan"]),
-        call(["Alice", "Bob"]),
-    ]
-    assert VotePromptLibrary.voting_round_tie_msg.format(
-        players_with_most_votes="Alice, Bob"
-    ) in [c.args[0] for c in game_board.host_broadcast.call_args_list]
+    assert returned_votes == [SimpleNamespace(action="round1")]
+    assert calls == [["Alice", "Bob", "Cara", "Dan"], ["Alice", "Bob"]]
+    assert any("tie between Alice, Bob" in m for m in host_messages(board))
 
 
 def test_process_vote_rounds_complete_deadlock_uses_deadlock_message():
-    alice = _player("Alice")
-    bob = _player("Bob")
-    cara = _player("Cara")
-    simulation = SimpleNamespace(agents=[alice, bob, cara])
+    game, board, _agents, _clients = build_vote_game({"Alice": [], "Bob": [], "Cara": []})
+    calls = {"count": 0}
 
-    game_board = MagicMock()
-    game = VoteMechanicsMixin(game_board, simulation)
+    def _collect(_players_up_for_elimination):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return ["Alice", "Bob", "Cara"], [SimpleNamespace(action="round1")]
+        return ["Bob", "Bob", "Alice"], [SimpleNamespace(action="round2")]
 
-    first_round_results = [
-        SimpleNamespace(action="Alice"),
-        SimpleNamespace(action="Bob"),
-        SimpleNamespace(action="Cara"),
-    ]
-    second_round_results = [
-        SimpleNamespace(action="Bob"),
-        SimpleNamespace(action="Bob"),
-        SimpleNamespace(action="Alice"),
-    ]
-
-    game._collect_votes = MagicMock(
-        side_effect=[
-            (["Alice", "Bob", "Cara"], first_round_results),
-            (["Bob", "Bob", "Alice"], second_round_results),
-        ]
-    )
-
-    victim_name, _returned_votes = game.process_vote_rounds(["Alice", "Bob", "Cara"])
+    game._collect_votes = _collect
+    victim_name, _ = game.process_vote_rounds(["Alice", "Bob", "Cara"])
 
     assert victim_name == "Bob"
-    assert VotePromptLibrary.voting_round_complete_deadlock_msg.format(max_votes=1) in [
-        c.args[0] for c in game_board.host_broadcast.call_args_list
-    ]
+    assert VotePromptLibrary.voting_round_complete_deadlock_msg.format(max_votes=1) in host_messages(board)
 
 
 def test_process_vote_rounds_after_max_revotes_randomly_eliminates(monkeypatch):
-    alice = _player("Alice")
-    bob = _player("Bob")
-    simulation = SimpleNamespace(agents=[alice, bob])
-
-    game_board = MagicMock()
-    game = VoteMechanicsMixin(game_board, simulation)
-
+    game, board, _agents, _clients = build_vote_game({"Alice": [], "Bob": []})
     initial_votes = [SimpleNamespace(action="Alice")]
     monkeypatch.setattr("gameplay_management.vote_mechanicsMixin.random.choice", lambda players: players[1])
 
@@ -129,21 +68,14 @@ def test_process_vote_rounds_after_max_revotes_randomly_eliminates(monkeypatch):
 
     assert victim_name == "Bob"
     assert returned_votes == initial_votes
-    game_board.host_broadcast.assert_called_once_with(VotePromptLibrary.voting_round_random_elimination_msg)
+    assert host_messages(board)[-1] == VotePromptLibrary.voting_round_random_elimination_msg
 
 
 def test_process_vote_rounds_uses_explicit_initial_votes_if_provided():
-    alice = _player("Alice")
-    bob = _player("Bob")
-    cara = _player("Cara")
-    simulation = SimpleNamespace(agents=[alice, bob, cara])
-
-    game_board = MagicMock()
-    game = VoteMechanicsMixin(game_board, simulation)
-
+    game, _board, _agents, _clients = build_vote_game({"Alice": [], "Bob": [], "Cara": []})
     collected_results = [SimpleNamespace(action="Bob")]
     preserved_initial_votes = [SimpleNamespace(action="Alice"), SimpleNamespace(action="Bob")]
-    game._collect_votes = MagicMock(return_value=(["Bob", "Alice", "Bob"], collected_results))
+    game._collect_votes = lambda _players: (["Bob", "Alice", "Bob"], collected_results)
 
     victim_name, returned_votes = game.process_vote_rounds(
         ["Alice", "Bob", "Cara"], initial_votes=preserved_initial_votes

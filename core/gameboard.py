@@ -19,6 +19,7 @@ class GameBoard:
         self.agent_response_allowed: dict[str, bool] = {}
         self.agent_forms: dict[str, str] = {}
         self.removed_agent_names = []
+        self.overall_game_rules = ""
     
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
@@ -167,6 +168,9 @@ class GameBoard:
         # 2. Build the Visual Dashboard
         dash = []
         dash.append("=== REALITY CHECK DASHBOARD ===")
+        if self.overall_game_rules:
+            dash.append("OVERALL GAME:")
+            dash.append(self.overall_game_rules)
         
         # A. The Leaderboard (Clean List)
         dash.append("CURRENT STANDINGS:")

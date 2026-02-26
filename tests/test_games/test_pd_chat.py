@@ -1,77 +1,71 @@
-from types import SimpleNamespace
-from unittest.mock import MagicMock
+from tests.helpers.game_test_helpers import build_pd_game, turn_payload
 
-def test_run_pd_odd_player_gets_auto_split_points(pd_game):
-    """Odd leftover player should get automatic split points and not be prompted."""
-    a1 = MagicMock(name="A1")
-    a1.name = "A1"
-    a2 = MagicMock(name="A2")
-    a2.name = "A2"
-    a3 = MagicMock(name="A3")
-    a3.name = "A3"
 
-    pd_game.simulationEngine.agents = [a1, a2, a3]
-
-    pd_game._generate_pairings = MagicMock(return_value=([(a1, a2)], a3))
-    pd_game.get_split_or_steal = MagicMock(
-        side_effect=[SimpleNamespace(action="split"), SimpleNamespace(action="split")]
+def test_run_pd_odd_player_gets_auto_split_points():
+    game, board, agents, clients = build_pd_game(
+        {
+            "A1": [
+                turn_payload(action="split"),
+                turn_payload(public_response="A1 reacts"),
+            ],
+            "A2": [
+                turn_payload(action="split"),
+                turn_payload(public_response="A2 reacts"),
+            ],
+            "A3": [],
+        }
     )
-    pd_game.publicPrivateResponse = MagicMock()
-    pd_game.respond_to = MagicMock(return_value=SimpleNamespace())
+    a1, a2, a3 = agents
+    game._generate_pairings = lambda _available, _choose_partner, _winner_picks_first: ([(a1, a2)], a3)
 
-    pd_game.run_game_prisoners_dilemma(choose_partner=False)
+    game.run_game_prisoners_dilemma(choose_partner=False)
 
-    pd_game.gameBoard.append_agent_points.assert_any_call("A3", 3)
-    assert pd_game.get_split_or_steal.call_count == 2
+    assert board.agent_scores["A3"] == 3
+    assert board.agent_scores["A1"] == 3
+    assert board.agent_scores["A2"] == 3
+    clients["A1"].assert_exhausted()
+    clients["A2"].assert_exhausted()
+    clients["A3"].assert_exhausted()
 
 
-def test_run_pd_passes_manual_pairing_flags(pd_game):
-    """Choose-partner mode should pass both flags into pairing generation."""
-    p1 = MagicMock()
-    p1.name = "P1"
-    p2 = MagicMock()
-    p2.name = "P2"
-
-    pd_game.simulationEngine.agents = [p1, p2]
-
-    pd_game._generate_pairings = MagicMock(return_value=([(p1, p2)], None))
-    pd_game.get_split_or_steal = MagicMock(
-        side_effect=[SimpleNamespace(action="split"), SimpleNamespace(action="steal")]
+def test_run_pd_passes_manual_pairing_flags():
+    game, _board, agents, _clients = build_pd_game(
+        {
+            "P1": [turn_payload(action="split"), turn_payload()],
+            "P2": [turn_payload(action="steal"), turn_payload()],
+        }
     )
-    pd_game.publicPrivateResponse = MagicMock()
-    pd_game.respond_to = MagicMock(return_value=SimpleNamespace())
+    p1, p2 = agents
+    seen = {}
 
-    pd_game.run_game_prisoners_dilemma(choose_partner=True, winner_picks_first=False)
+    def _generate_pairings(_available, choose_partner, winner_picks_first):
+        seen["flags"] = (choose_partner, winner_picks_first)
+        return ([(p1, p2)], None)
 
-    args, _ = pd_game._generate_pairings.call_args
-    assert args[1] is True
-    assert args[2] is False
+    game._generate_pairings = _generate_pairings
+    game.run_game_prisoners_dilemma(choose_partner=True, winner_picks_first=False)
+
+    assert seen["flags"] == (True, False)
 
 
-def test_run_pd_collects_decisions_and_reactions_for_each_player(pd_game):
-    """Each pair should publish 2 decisions and 2 reactions via publicPrivateResponse."""
-    h = MagicMock()
-    h.name = "Hero"
-    v = MagicMock()
-    v.name = "Villain"
+def test_run_pd_collects_decisions_and_reactions_for_each_player():
+    game, board, _agents, clients = build_pd_game(
+        {
+            "Hero": [
+                turn_payload(action="split", public_response="hero decision"),
+                turn_payload(public_response="Noooo"),
+            ],
+            "Villain": [
+                turn_payload(action="steal", public_response="villain decision"),
+                turn_payload(public_response="Worth it"),
+            ],
+        }
+    )
 
-    pd_game.simulationEngine.agents = [h, v]
-    pd_game._generate_pairings = MagicMock(return_value=([(h, v)], None))
+    game.run_game_prisoners_dilemma(choose_partner=False)
 
-    hero_decision = SimpleNamespace(action="split")
-    villain_decision = SimpleNamespace(action="steal")
-    pd_game.get_split_or_steal = MagicMock(side_effect=[hero_decision, villain_decision])
-
-    hero_reaction = SimpleNamespace(public_response="Noooo")
-    villain_reaction = SimpleNamespace(public_response="Worth it")
-    pd_game.respond_to = MagicMock(side_effect=[hero_reaction, villain_reaction])
-
-    pd_game.publicPrivateResponse = MagicMock()
-
-    pd_game.run_game_prisoners_dilemma(choose_partner=False)
-
-    assert pd_game.publicPrivateResponse.call_count == 4
-    pd_game.publicPrivateResponse.assert_any_call(h, hero_decision)
-    pd_game.publicPrivateResponse.assert_any_call(v, villain_decision)
-    pd_game.publicPrivateResponse.assert_any_call(h, hero_reaction)
-    pd_game.publicPrivateResponse.assert_any_call(v, villain_reaction)
+    # Each player should have 1 decision + 1 reaction in API calls.
+    assert len(clients["Hero"].calls) == 2
+    assert len(clients["Villain"].calls) == 2
+    host_msgs = [entry["message"] for entry in board.currentRound if entry["speaker"] == "HOST"]
+    assert any("STOLE from Hero" in m for m in host_msgs)

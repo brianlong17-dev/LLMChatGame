@@ -1,40 +1,29 @@
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
+from core.gameboard import GameBoard
 from gameplay_management.game_mechanicsMixin import GameMechanicsMixin
+from tests.helpers.game_test_helpers import NoopGameMaster, QueuedClient, make_debater, turn_payload
 
 
-def _player(name):
-    player = MagicMock()
-    player.name = name
-    return player
+def test_handle_manual_pairing_uses_configured_name_field_target_name():
+    chooser_client = QueuedClient([turn_payload(target_name="Bob")])
+    bob_client = QueuedClient([])
+    cara_client = QueuedClient([])
 
+    chooser = make_debater("Alice", chooser_client)
+    bob = make_debater("Bob", bob_client)
+    cara = make_debater("Cara", cara_client)
 
-def test_handle_manual_pairing_uses_configured_name_field_target_name(monkeypatch):
-    chooser = _player("Alice")
-    bob = _player("Bob")
-    cara = _player("Cara")
-
-    game_board = MagicMock()
+    game_board = GameBoard(NoopGameMaster())
+    game_board.initialize_agents([chooser, bob, cara])
     simulation = SimpleNamespace(agents=[chooser, bob, cara])
     game = GameMechanicsMixin(game_board, simulation)
 
-    game.get_strategic_player = MagicMock(return_value=chooser)
-    game.publicPrivateResponse = MagicMock()
-    game._choose_name_field = MagicMock(return_value={"target_name": (str, "field")})
+    game.get_strategic_player = lambda available_agents, _winner_picks_first: chooser
+    available = [chooser, bob, cara]
 
-    mock_model = object()
-    monkeypatch.setattr(
-        "gameplay_management.game_mechanicsMixin.DynamicModelFactory.create_model_",
-        MagicMock(return_value=mock_model),
-    )
-
-    chooser.take_turn_standard.return_value = SimpleNamespace(
-        target_name="Bob",
-        public_response="pub",
-        private_thoughts="priv",
-    )
-
-    pair = game._handle_manual_pairing([chooser, bob, cara], winner_picks_first=True)
+    pair = game._handle_manual_pairing(available, winner_picks_first=True)
 
     assert pair == (chooser, bob)
+    assert chooser_client.calls
+    assert "target_name" in chooser_client.calls[0]["response_model"].model_fields
