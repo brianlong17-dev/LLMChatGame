@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
 from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
-from agents.player import Debater
 from core.simulation_engine import SimulationEngine
+from tests.helpers.game_test_helpers import make_debater
 
 # --- FIXTURES ---
 
@@ -10,29 +10,14 @@ from core.simulation_engine import SimulationEngine
 def real_agent_hero():
     """A real Agent with a mocked client."""
     mock_client = MagicMock()
-    # Mocking the 'create' method early so it's ready
-    agent = Debater(
-        name="Hero", 
-        client=mock_client, 
-        model_name="gpt-4o", 
-        initial_persona="I am a hero.",
-        initial_form="Human",
-        speaking_style="normal" # Uncomment if your class requires this
-    )
+    agent = make_debater(name="Hero", client=mock_client, model_name="gpt-4o")
     return agent
 
 @pytest.fixture
 def real_agent_villain():
     """A second real Agent."""
     mock_client = MagicMock()
-    agent = Debater(
-        name="Villain", 
-        client=mock_client, 
-        model_name="gpt-4o",
-        initial_persona="I am a villain.",
-        initial_form="Human",
-        speaking_style="normal" 
-    )
+    agent = make_debater(name="Villain", client=mock_client, model_name="gpt-4o")
     return agent
 
 @pytest.fixture
