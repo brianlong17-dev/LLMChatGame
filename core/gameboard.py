@@ -20,6 +20,12 @@ class GameBoard:
         self.agent_forms: dict[str, str] = {}
         self.removed_agent_names = []
     
+    def get_agent_score(self, agent_name: str) -> int:
+        if agent_name not in self.agent_scores:
+            raise RuntimeError(f"Missing score for active player '{agent_name}'")
+        return self.agent_scores[agent_name]
+
+
     def new_turn_print(self):
         self.turn_number += 1
         ConsoleRenderer.print_turn_header(self.turn_number)
@@ -192,7 +198,8 @@ class GameBoard:
         
         
     def append_agent_points(self, agent_name, points):
-        self.agent_scores[agent_name] += points
+        new_score = max(0, self.agent_scores[agent_name] + points)
+        self.agent_scores[agent_name] = new_score
              
     def resetScores(self):
         for entry in self.agent_scores:

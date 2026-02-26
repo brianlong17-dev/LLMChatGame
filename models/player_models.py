@@ -31,6 +31,15 @@ class DynamicModelFactory:
         #........ Scratch pad
         if game_logic_fields:
             ordered_fields.update(game_logic_fields)
+        ordered_fields["who_are_you"] = (
+                str, Field(description=f"Remind yourself of who you are, so you don't get confused")
+            )
+        ordered_fields["hallucination_catcher"] = (
+                str, Field(description=f"In the past round do you see a hallucination or lie? Be careful not to repeat it")
+            )
+        ordered_fields["bandwagon"] = (
+                str, Field(description=f"Is everyone jumping on a repleating a thought? Do you agree? If not, say so")
+            )
             
         if agent_logic_fields:
             ordered_fields.update(agent_logic_fields)

@@ -59,7 +59,7 @@ def build_game(game_targeted_choice_module):
 
 
 def _decision(action, public="pub", private="priv"):
-    return SimpleNamespace(action=action, public_response=public, private_thoughts=private)
+    return SimpleNamespace(target_name=action, public_response=public, private_thoughts=private)
 
 
 def test_give_awards_points_to_selected_target_for_each_turn(build_game, game_targeted_choice_module):
@@ -101,8 +101,8 @@ def test_give_invalid_self_choice_gets_no_points_and_self_reacts(build_game, gam
 
     first_reaction_player = game.respond_to.call_args_list[0].args[0]
     assert first_reaction_player is a
-    #dito for invalid choice
-    assert "invalid choice" in game.respond_to.call_args_list[0].args[1]
+    #dito for invalid target
+    assert "invalid target" in game.respond_to.call_args_list[0].args[1]
 
 
 def test_give_unknown_name_is_invalid_and_scores_nothing(build_game, game_targeted_choice_module):
@@ -120,7 +120,7 @@ def test_give_unknown_name_is_invalid_and_scores_nothing(build_game, game_target
 
     board.append_agent_points.assert_not_called()
     assert game.respond_to.call_count == 2
-    assert all("invalid choice" in c.args[1] for c in game.respond_to.call_args_list)
+    assert all("invalid target" in c.args[1] for c in game.respond_to.call_args_list)
 
 
 def test_give_model_choices_exclude_current_player(build_game, game_targeted_choice_module):
@@ -134,7 +134,7 @@ def test_give_model_choices_exclude_current_player(build_game, game_targeted_cho
     c.take_turn_standard.return_value = _decision("Alice")
 
     game.respond_to.side_effect = [_decision("", "r1", "t1"), _decision("", "r2", "t2"), _decision("", "r3", "t3")]
-    game._choose_name_field = MagicMock(return_value={"action": (str, "field")})
+    game._choose_name_field = MagicMock(return_value={"target_name": (str, "field")})
     game_targeted_choice_module.DynamicModelFactory.create_model_ = MagicMock(return_value=object())
 
     game.run_game_give()
@@ -148,7 +148,7 @@ def test_give_model_choices_exclude_current_player(build_game, game_targeted_cho
     assert observed_lists == expected_lists
 
 
-def test_run_targeted_round_supports_target_name_when_action_missing(build_game):
+def test_run_targeted_round_supports_target_name(build_game):
     a = MagicMock(); a.name = "Alice"
     b = MagicMock(); b.name = "Bob"
     game, board = build_game([a, b])

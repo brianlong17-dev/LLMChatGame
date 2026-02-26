@@ -4,6 +4,14 @@ class GamePromptLibrary:
     pd_split = 3
     pd_steal = 5
     pd_both_steal = 1
+    
+    model_field_error = "error_string"
+    
+    model_field_choose_name = "target_name"
+    invalid_target_message = (
+        "{player_name} chose '{target_name}'... but that's an invalid target. No points changed hands."
+    )
+    
     pd_desc_string = f"Stealing from a a splitter: {pd_steal} points and 0 points. Both split: {pd_split} points each, both steal: {pd_both_steal} point each."
     pd_game_prompt = (
             f"🚨 PRISONER'S DILEMMA 🚨\n"
@@ -20,6 +28,7 @@ class GamePromptLibrary:
         f"In this round, you will get to pick a pal. The player you pick will receive {targeted_games_points} points! "
         f"Everyone is happy! Well... except any player with no friends! hehe")
     give_game_player_intro = ("{player_name}! You're up- what player are you choosing, and why?")
+
     @classmethod
     def prisonersDilemmaIntro(cls, choose_partner: bool, winner_picks_first = True):
         splitPoints = cls.pd_split

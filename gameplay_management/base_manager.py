@@ -6,6 +6,7 @@ from core.gameboard import ConsoleRenderer
 from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
 from prompts.prompts import PromptLibrary
+from prompts.gamePrompts import GamePromptLibrary
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     # 2. This is only imported during static analysis (linting)
@@ -102,7 +103,7 @@ class BaseManager: #base class
     
     def _choose_name_field(self, allowed_names, reason_for_choosing_prompt):
         choice_reason_prompt = f"The exact name of the agent. {reason_for_choosing_prompt}"
-        return self.create_choice_field("action", allowed_names, choice_reason_prompt)
+        return self.create_choice_field(GamePromptLibrary.model_field_choose_name, allowed_names, choice_reason_prompt)
 
     def _make_player_turn(self, player: Debater, user_prompt: str, response_model, action_fields=None):
         

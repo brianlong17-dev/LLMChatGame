@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 
 from gameplay_management.vote_mechanicsMixin import VoteMechanicsMixin
+from prompts.votePrompts import VotePromptLibrary
 
 
 def _player(name):
@@ -31,7 +32,7 @@ def test_validate_immunity_all_players_immune_clears_and_broadcasts():
 
     assert result == []
     game_board.host_broadcast.assert_called_once()
-    assert "All players have immunity this round" in game_board.host_broadcast.call_args.args[0]
+    assert game_board.host_broadcast.call_args.args[0] == VotePromptLibrary.immunity_all_players_reset
 
 
 def test_immunity_string_includes_immune_and_eligible_names():
@@ -44,5 +45,5 @@ def test_immunity_string_includes_immune_and_eligible_names():
     assert "Alice" in text
     assert "Bob" in text
     assert "Cara" in text
-    assert "have immunity" in text
-    assert "up for elimination" in text
+    assert VotePromptLibrary.immunity_players_prefix in text
+    assert VotePromptLibrary.elimination_players_prefix in text
