@@ -33,7 +33,8 @@ class Debater(BaseAgent):
             "updated_persona_summary": "persona",
             "updated_strategy_to_win": "strategy_to_win",
             "mathematicalAssessment": "mathematicalAssessment",
-            "lifeLesson": "life_lessons"
+            "lifeLesson": "life_lessons",
+            "speaking_style": "speaking_style"
         }
         
     def logic_fields(self):
@@ -45,7 +46,10 @@ class Debater(BaseAgent):
         return {
             "updated_persona_summary": (str, Field(description=PromptLibrary.desc_persona_update)),
             "updated_strategy_to_win": (str, Field(description=PromptLibrary.desc_agent_updated_strategy_to_win)),
-            "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons))
+            "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons)),
+            "speaking_style": (str, Field(description=PromptLibrary.desc_agent_speaking_style))
+            #ideas - pass the current speaking style in- makes more intentional? keep old versions in a history, for dev to see evolution 
+            
         }
 
     def cognitive_fields(self):
@@ -81,6 +85,8 @@ class Debater(BaseAgent):
                 if not is_duplicate:
                     current_attr_value.append(clean_val)
             else:
+                if target_attr_name == "speaking_style":
+                    print(f"{self.name} SS: {value}")
                 setattr(self, target_attr_name, value)
     
     def _get_full_user_content(self, gameBoard, user_content, instruction_override=None) :
