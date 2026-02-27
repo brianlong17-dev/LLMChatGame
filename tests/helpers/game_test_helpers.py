@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from agents.player import Debater
 from core.gameboard import GameBoard
 from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
+from gameplay_management.game_guess import GameGuess
 from gameplay_management.game_targeted_choice import GameTargetedChoice
 from gameplay_management.vote_mechanicsMixin import VoteMechanicsMixin
 
@@ -86,6 +87,22 @@ def build_pd_game(agent_specs, initial_scores=None):
 
     simulation = SimpleNamespace(agents=agents)
     game = GamePrisonersDilemma(board, simulation)
+    return game, board, agents, clients
+
+
+def build_guess_game(agent_specs, initial_scores=None):
+    clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
+    agents = [make_debater(name, clients[name]) for name in agent_specs]
+
+    board = GameBoard(NoopGameMaster())
+    board.initialize_agents(agents)
+    if initial_scores:
+        for name, score in initial_scores.items():
+            if name in board.agent_scores:
+                board.agent_scores[name] = score
+
+    simulation = SimpleNamespace(agents=agents)
+    game = GameGuess(board, simulation)
     return game, board, agents, clients
 
 

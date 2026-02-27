@@ -19,7 +19,7 @@ def test_handle_manual_pairing_uses_configured_name_field_target_name():
     simulation = SimpleNamespace(agents=[chooser, bob, cara])
     game = GameMechanicsMixin(game_board, simulation)
 
-    game.get_strategic_player = lambda available_agents, _winner_picks_first: chooser
+    game.get_strategic_players = lambda available_agents, _winner_picks_first: [chooser]
     available = [chooser, bob, cara]
 
     pair = game._handle_manual_pairing(available, winner_picks_first=True)

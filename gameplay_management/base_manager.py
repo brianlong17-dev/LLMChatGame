@@ -1,5 +1,6 @@
 from __future__ import annotations
 import random
+import time
 from typing import Literal
 from pydantic import Field
 from core.gameboard import ConsoleRenderer
@@ -19,11 +20,12 @@ class BaseManager: #base class
         self.gameBoard = gameBoard
         self.simulationEngine = simulationEngine
         
-    def publicPrivateResponse(self, agent: BaseAgent, result):
+    def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0):
         public_message, private_message = result.public_response, result.private_thoughts
         self.gameBoard.broadcast_public_action(agent, public_message)
         #TODO send thru gameboard- future proofing turning on/off - lives in a setting, the printer has no state
         ConsoleRenderer.print_private(agent, f"{private_message}\n", print_name = False)
+        time.sleep(delay)#only when you're thead pooling!
        
     
     def _output_discussion_round_text(self, player, result):
@@ -63,7 +65,7 @@ class BaseManager: #base class
     def _agent_by_name(self, name):
         return next((agent for agent in self.simulationEngine.agents if agent.name == name), None)
     
-    def get_strategic_player(self, available_agents, top_player = True) -> Debater:
+    def get_strategic_players(self, available_agents, top_player = True, multiple = False) -> list[Debater]:
         """
         Selects a player from available_agents based on rank.
         mode="top": Picks from the leaders.
@@ -74,15 +76,18 @@ class BaseManager: #base class
                         if name in agent_names}
         # Guard against empty lists
         if not current_scores:
-            return None
+            return []
         if top_player:
             target_score = max(current_scores.values())
         else:
             target_score = min(current_scores.values())
             
         eligible_players = [name for name, points in current_scores.items() if points == target_score]
-        selected_player = random.choice(eligible_players)
-        return self._agent_by_name(selected_player)
+        random.shuffle(eligible_players)
+        if multiple: 
+            return [self._agent_by_name(p) for p in eligible_players]
+        else: 
+            return [self._agent_by_name(eligible_players[0])]
 
     
     def _shuffled_agents(self):

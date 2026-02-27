@@ -9,9 +9,7 @@ class GameTargetedChoice(GameMechanicsMixin):
         return create_model("Error", error_string=(str, message))
     
     def get_error_string(self, model_class):
-        if hasattr(model_class, "model_fields") and GamePromptLibrary.model_field_error in model_class.model_fields:
-            return model_class().error_string
-        if hasattr(model_class, "__fields__") and GamePromptLibrary.model_field_error in model_class.__fields__:
+        if GamePromptLibrary.model_field_error in model_class.model_fields:
             return model_class().error_string
         return None
 

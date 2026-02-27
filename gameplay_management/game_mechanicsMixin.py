@@ -31,7 +31,7 @@ class GameMechanicsMixin(BaseManager):
     def _handle_manual_pairing(self, available_agents, winner_picks_first = True):
         """Helper to manage the 'choice' logic for a single pair."""
         
-        chooser = self.get_strategic_player(available_agents, winner_picks_first) 
+        chooser = self.get_strategic_players(available_agents, winner_picks_first)[0] #, multiple=False
         available_agents.remove(chooser)
         
         available_agents_names = [a.name for a in available_agents]

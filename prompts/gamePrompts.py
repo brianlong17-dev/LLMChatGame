@@ -5,6 +5,8 @@ class GamePromptLibrary:
     pd_steal = 5
     pd_both_steal = 1
     
+    points_per_survived_vote = 2
+    
     model_field_error = "error_string"
     
     model_field_choose_name = "target_name"

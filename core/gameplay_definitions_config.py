@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Callable, Optional, List
 from gameplay_management.base_manager import *
+from gameplay_management.game_guess import GameGuess
 from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
 from gameplay_management.game_targeted_choice import GameTargetedChoice
 from gameplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
@@ -30,6 +31,14 @@ class ImmunityDefinition(BaseModel):
 ##############################################
 # GAMES                                      #
 ##############################################
+
+GUESS= GameDefinition(
+    display_name="Guess the number",
+    rules_description="Guess the correct number to win points !",
+    execute_game=GameGuess.run_game_guess_the_number
+)
+
+
 GIVER= GameDefinition(
     display_name="Giver",
     rules_description="Choose a player to recieve points !",
@@ -75,6 +84,18 @@ PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER = GameDefinition(
 ##############################################
 # Eliminations                               #
 ##############################################
+
+EACH_PLAYER_VOTES_TO_REMOVE_BOTTOM_TWO = VoteDefinition(
+    display_name="Two players with the lowest scores face elimination.",
+    rules_description="Two players with the lowest scores face elimination. Each player will vote who they want to send home",
+    execute_game=VoteMechanicsMixin.run_voting_bottom_two_only_two
+)
+
+EACH_PLAYER_VOTES_TO_REMOVE_BOTTOM_TWO_MULTIPLE = VoteDefinition(
+    display_name="The players with the lowest scores face elimination.",
+    rules_description="The two players with the lowest scores are up for elimination. In the event of a tie for the bottom spots, all tied players will also face the vote. more players will face elimination Each player will vote who they want to send home",
+    execute_game=VoteMechanicsMixin.run_voting_bottom_two_multiple
+)
 
 EACH_PLAYER_VOTES_TO_REMOVE = VoteDefinition(
     display_name="Each player votes which player they want to remove",
