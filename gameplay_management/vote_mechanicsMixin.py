@@ -1,6 +1,6 @@
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from typing import List
+from typing import List, Optional, Sequence
 from gameplay_management.base_manager import *
 from prompts.gamePrompts import GamePromptLibrary
 from prompts.votePrompts import VotePromptLibrary
@@ -13,9 +13,13 @@ class VoteMechanicsMixin(BaseManager):
     ###############
     #   Helper    #
     ###############
-    def _validate_immunity(self, immunity_players):
-        if immunity_players == None:
+    def _validate_immunity(self, immunity_players: Optional[Sequence[str]]) -> list[str]:
+        if immunity_players is None:
             return []
+        invalid_types = [type(player).__name__ for player in immunity_players if not isinstance(player, str)]
+        if invalid_types:
+            raise TypeError(f"immunity_players must be list[str], got invalid item types: {invalid_types}")
+        immunity_players = list(dict.fromkeys(immunity_players))
         if len(self.simulationEngine.agents) == len(immunity_players):
             host_message = VotePromptLibrary.immunity_all_players_reset
             self.gameBoard.host_broadcast(host_message)
@@ -42,7 +46,7 @@ class VoteMechanicsMixin(BaseManager):
         else:
             print(f"NOT FOUND: " + player_name)
     
-    def immunity_string(self, immunity_players, players_up_for_elimination):
+    def immunity_string(self, immunity_players: Sequence[str], players_up_for_elimination: Sequence[str]) -> str:
         immunity_string = ""
         if immunity_players:
             immunity_string = (
@@ -65,7 +69,7 @@ class VoteMechanicsMixin(BaseManager):
         strings = [string1, string2, string3, string4, string5]
         return random.choice(strings)
 
-    def _players_up_for_elimination(self, immunity_players) -> List['Debater']:
+    def _players_up_for_elimination(self, immunity_players: Optional[Sequence[str]]) -> List['Debater']:
         immunity_players = immunity_players or []
         return  [a for a in self.simulationEngine.agents if a.name not in immunity_players]
         
@@ -85,7 +89,7 @@ class VoteMechanicsMixin(BaseManager):
         #-----------------
         return vote_result
            
-    def _collect_votes(self, players_up_for_elimination, pass_allowed = False):
+    def _collect_votes(self, players_up_for_elimination: Sequence[str], pass_allowed: bool = False):
         votes = []
         votingResults = []
         voting_futures = []
@@ -123,7 +127,7 @@ class VoteMechanicsMixin(BaseManager):
             self.publicPrivateResponse(agent, vote_response)
         return votes, votingResults
    
-    def process_vote_rounds(self, players_up_for_elimination, revote_count = 0, initial_votes = None):
+    def process_vote_rounds(self, players_up_for_elimination: Sequence[str], revote_count: int = 0, initial_votes = None):
         
         if revote_count > 3:
             self.gameBoard.host_broadcast(VotePromptLibrary.voting_round_random_elimination_msg)
@@ -183,7 +187,7 @@ class VoteMechanicsMixin(BaseManager):
     ###############
     #   Running   #
     ###############        
-    def run_voting_winner_chooses(self, immunity_players = None, with_pass_option = False):
+    def run_voting_winner_chooses(self, immunity_players: Optional[Sequence[str]] = None, with_pass_option: bool = False):
         immunity_players = self._validate_immunity(immunity_players)
             
         leading_player= self.get_strategic_players(self.simulationEngine.agents, top_player = True)[0]
@@ -207,7 +211,7 @@ class VoteMechanicsMixin(BaseManager):
         self.publicPrivateResponse(leading_player, response)
         self.eliminate_player_by_name(response.target_name)
     
-    def run_voting_round_basic_dont_miss(self, immunity_players, dont_miss = True):
+    def run_voting_round_basic_dont_miss(self, immunity_players: Optional[Sequence[str]], dont_miss: bool = True):
         self.run_voting_round_basic(immunity_players, dont_miss = True)
     
    
@@ -223,16 +227,15 @@ class VoteMechanicsMixin(BaseManager):
             pool = [p for p in pool if p not in selected_players]
         return selected_players
     
-    def run_voting_bottom_two_only_two(self, immunity_players = None, multiple = False):
+    def run_voting_bottom_two_only_two(self, immunity_players: Optional[Sequence[str]] = None, multiple: bool = False):
         return self.run_voting_bottom_players(immunity_players, multiple = False, count = 2)
     
-    def run_voting_bottom_two_multiple(self, immunity_players = None, multiple = True):
+    def run_voting_bottom_two_multiple(self, immunity_players: Optional[Sequence[str]] = None, multiple: bool = True):
         return self.run_voting_bottom_players(immunity_players, multiple = True, count = 2)
     
     
-    def run_voting_bottom_players(self, immunity_players = None, dont_miss=True, multiple = False, count = 2):
-        if not immunity_players:
-            immunity_players = [] #for security should be none in parameter
+    def run_voting_bottom_players(self, immunity_players: Optional[Sequence[str]] = None, dont_miss: bool = True, multiple: bool = False, count: int = 2):
+        immunity_players = self._validate_immunity(immunity_players)
         
         host_intro_msg = (f"In this round, the bottom {count} players face elimination.\n")
         if multiple:
@@ -247,7 +250,7 @@ class VoteMechanicsMixin(BaseManager):
         
         players_up_for_elimination = self.get_bottom_players(players_up_for_elimination, min = 2, multiple=multiple)
         
-        host_intro_msg += self.immunity_string(self._names(immunity_players), 
+        host_intro_msg += self.immunity_string(immunity_players, 
                                                self._names(players_up_for_elimination))
         
         self.gameBoard.host_broadcast(host_intro_msg)
@@ -257,7 +260,7 @@ class VoteMechanicsMixin(BaseManager):
             self._dispense_victim_points(victim_name, voting_results)
         self.eliminate_player_by_name(victim_name)
               
-    def run_voting_round_basic(self, immunity_players = None, with_pass_option = False, dont_miss = False):
+    def run_voting_round_basic(self, immunity_players: Optional[Sequence[str]] = None, with_pass_option: bool = False, dont_miss: bool = False):
         
         immunity_players = self._validate_immunity(immunity_players)
         if len(self.simulationEngine.agents) <= 2:
@@ -277,7 +280,7 @@ class VoteMechanicsMixin(BaseManager):
             self._dispense_victim_points(victim_name, voting_results)
         self.eliminate_player_by_name(victim_name)
            
-    def run_voting_lowest_points_removed(self, immunity_players = None, with_pass_option = False):
+    def run_voting_lowest_points_removed(self, immunity_players: Optional[Sequence[str]] = None, with_pass_option: bool = False):
         #immunity is irrelevant here 
         
         player = self.get_strategic_players(self.simulationEngine.agents, top_player = False)[0]

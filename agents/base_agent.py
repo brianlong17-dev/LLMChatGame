@@ -10,6 +10,7 @@ class BaseAgent:
         self.higher_model_name = higher_model_name or model_name
         #self.form = initial_form
         self.color = color
+        self.use_higher_model = False
     
     
     def lazy_responses(self):
@@ -28,9 +29,14 @@ class BaseAgent:
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content}
             ]
-        
+        if self.use_higher_model:
+            api_model = self.higher_model_name
+            self.use_higher_model = False
+            #for now , switch on everytime
+        else:
+            api_model = self.model_name
         response = self.client.create(
-            model=self.model_name,
+            model=api_model,
             response_model=response_model,
             messages=messages
         )

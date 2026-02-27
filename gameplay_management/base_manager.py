@@ -1,7 +1,7 @@
 from __future__ import annotations
 import random
 import time
-from typing import Literal
+from typing import Literal, Sequence
 from pydantic import Field
 from core.gameboard import ConsoleRenderer
 from agents.base_agent import BaseAgent
@@ -59,7 +59,7 @@ class BaseManager: #base class
         
     
     
-    def _names(self, agents):
+    def _names(self, agents: Sequence["Debater"]) -> list[str]:
         return [agent.name for agent in agents]
     
     def _agent_by_name(self, name):

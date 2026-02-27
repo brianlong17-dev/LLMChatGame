@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from pydantic import BaseModel
-from typing import Callable, Optional, List
+from typing import Any, Callable
 from gameplay_management.base_manager import *
 from gameplay_management.game_guess import GameGuess
+from gameplay_management.game_perform import GamePerformSobStory
 from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
 from gameplay_management.game_targeted_choice import GameTargetedChoice
 from gameplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
@@ -10,18 +13,24 @@ from gameplay_management.vote_mechanicsMixin import VoteMechanicsMixin
 
 from prompts.gamePrompts import GamePromptLibrary
 
+
+GameExecuteFn = Callable[[Any], Any]
+VoteExecuteFn = Callable[[Any, list[str] | None], Any]
+ImmunityExecuteFn = Callable[[Any], list[str]]
+
+
 class GameDefinition(BaseModel):
-    execute_game: Callable
+    execute_game: GameExecuteFn
     display_name: str
     rules_description: str
 
 class VoteDefinition(BaseModel):
-    execute_game: Callable
+    execute_game: VoteExecuteFn
     display_name: str
     rules_description: str
 
 class ImmunityDefinition(BaseModel):
-    execute_game: Callable
+    execute_game: ImmunityExecuteFn
     display_name: str
     rules_description: str
     #actually not the place for this since its flexible 
@@ -37,6 +46,13 @@ GUESS= GameDefinition(
     rules_description="Guess the correct number to win points !",
     execute_game=GameGuess.run_game_guess_the_number
 )
+
+SOB_STORY= GameDefinition(
+    display_name="Perform your sob story",
+    rules_description="Each player performs, and is scored by their fellow contestants!",
+    execute_game=GamePerformSobStory.run_game_sob_story
+)
+
 
 
 GIVER= GameDefinition(

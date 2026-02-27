@@ -8,7 +8,7 @@ class PromptLibrary:
     desc_message = "Your spoken words. What will you say? Stay in character. What you say is revealed to the group"
     desc_agent_lifeLessons = ("A new lesson to you mind that you will take forward. This will shape your future descisions. Take key lessons only, so you don't cloud your decision making.")
     desc_agent_mathematicalAssessment = ("What's your assessment of the scoreboard and your place in it?")
-    desc_agent_speaking_style = ("How the character speaks — vocabulary, tone, cadence. Only populate if the character's speaking style is evolving; leave blank otherwise.")
+    desc_agent_speaking_style = ("OPTIONAL- NORMALLY EMPTY. UPDATE ONLY WITH EVOLUTION. How the character speaks — vocabulary, tone, cadence. Only populate if the character's speaking style is evolving; leave blank otherwise.")
     
     desc_basic_thought = "Your internal thoughts. Strategy, feelings, and private observations."
     desc_basic_public_response = "What you actually say out loud to the group. Stay in character!"

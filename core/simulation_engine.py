@@ -81,15 +81,27 @@ class SimulationEngine:
             
             self.trigger_new_round()
             if recipe.vote_type:
-                immune_players = [] # Use a standard list!
+                immune_players: list[str] = []
                 
                 if recipe.immunity_types:
                     for immunity in recipe.immunity_types:
                         result = immunity.execute_game(self.game_manager)
-                        if isinstance(result, list):
-                            immune_players.extend(result)
-                        else:
-                            immune_players.append(result)
+                        if not isinstance(result, list):
+                            raise TypeError(
+                                f"Immunity '{immunity.display_name}' must return list[str], got {type(result).__name__}"
+                            )
+                        if not all(isinstance(name, str) for name in result):
+                            raise TypeError(
+                                f"Immunity '{immunity.display_name}' must return list[str], got non-string values: {result!r}"
+                            )
+                        active_player_names = {agent.name for agent in self.agents}
+                        invalid_names = [name for name in result if name not in active_player_names]
+                        if invalid_names:
+                            raise ValueError(
+                                f"Immunity '{immunity.display_name}' returned unknown player name(s): {invalid_names}"
+                            )
+                        immune_players.extend(result)
+                immune_players = list(dict.fromkeys(immune_players))
             self.gameBoard.system_broadcast(f"\n🗳️ TRIGGERING VOTE: {recipe.vote_type.display_name}")
             self.gameBoard.system_broadcast(recipe.vote_type.rules_description)
             

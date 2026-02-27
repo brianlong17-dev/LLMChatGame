@@ -8,23 +8,23 @@ class ImmunityMechanicsMixin(BaseManager):
         super().__init__(gameBoard, simulationEngine) 
         
                     
-    def get_wildcard_player_immunity(self):
+    def get_wildcard_player_immunity(self) -> list[str]:
         # This is an example of a dynamic immunity type that the judge could call on. It gives immunity to the player with the most chaotic playstyle.
         response = self.gameBoard.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names, "chaotic")
         print(response)
         return [response.target_name]
 
-    def get_wildcard_player_random_trait(self):
+    def get_wildcard_player_random_trait(self) -> list[str]:
         traits = ["chaotic", "kind", "vengeful", "calculating"]
         trait = random.choice(traits)
         response = self.gameBoard.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names, trait)
         print(response)
         return [response.target_name]
     
-    def get_highest_points_players_immunity_only_one(self):
+    def get_highest_points_players_immunity_only_one(self) -> list[str]:
         return self.get_highest_points_players_immunity(only_one = True)
     
-    def get_highest_points_players_immunity(self, only_one = False):
+    def get_highest_points_players_immunity(self, only_one: bool = False) -> list[str]:
         # This is an example of a dynamic immunity type that the judge could call on. It gives immunity to the player with the highest points.
         max_points = max(self.gameBoard.agent_scores.values())
         highest_players = [name for name, points in self.gameBoard.agent_scores.items() if points == max_points]
