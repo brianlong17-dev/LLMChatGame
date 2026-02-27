@@ -11,8 +11,17 @@ if TYPE_CHECKING:
 class Debater(BaseAgent):
     
     
-    def __init__(self, name: str, initial_persona: str, initial_form: str,client, model_name: str, speaking_style: str = ""):
-        super().__init__(name, client, model_name)
+    def __init__(
+        self,
+        name: str,
+        initial_persona: str,
+        initial_form: str,
+        client,
+        model_name: str,
+        higher_model_name: str = None,
+        speaking_style: str = "",
+    ):
+        super().__init__(name, client, model_name, higher_model_name=higher_model_name)
         self.rating = 0
         self.persona = initial_persona
         self.form = initial_form #I think it helps them be defined 

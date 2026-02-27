@@ -7,8 +7,8 @@ from models.player_models import BaseResponse
 from prompts.prompts import PromptLibrary
 
 class GameMaster(BaseAgent):
-    def __init__(self, client, model_name: str, name ="Summariser"):
-        super().__init__(name, client, model_name)
+    def __init__(self, client, model_name: str, higher_model_name: str = None, name ="Summariser"):
+        super().__init__(name, client, model_name, higher_model_name=higher_model_name)
         self.color = "YELLOW"
         
     def _system_prompt(self, gameBoard):

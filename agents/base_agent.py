@@ -2,11 +2,12 @@ from collections import deque
 from abc import ABC, abstractmethod
 
 class BaseAgent:
-    def __init__(self, name: str, client, model_name: str, color = "BLUE"):
+    def __init__(self, name: str, client, model_name: str, higher_model_name: str = None, color = "BLUE"):
         self.name = name
         #self.persona = initial_persona
         self.client = client
         self.model_name = model_name
+        self.higher_model_name = higher_model_name or model_name
         #self.form = initial_form
         self.color = color
     

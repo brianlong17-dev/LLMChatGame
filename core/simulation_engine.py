@@ -23,12 +23,18 @@ from .gameboard import GameBoard
  
     
 class SimulationEngine:
-    def __init__(self, model_name: str = "gemini-2.0-flash-lite", number_of_players = 5):
+    def __init__(
+        self,
+        model_name: str = "gemini-2.0-flash-lite",
+        higher_model_name: str = "gemini-2.5-flash",
+        number_of_players = 5,
+    ):
         load_dotenv()
         self.client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
         self.model_name = model_name
-        self.game_master = GameMaster(self.client, model_name)
-        self.generator = CharacterGenerator(self.client, self.model_name)
+        self.higher_model_name = higher_model_name
+        self.game_master = GameMaster(self.client, model_name, higher_model_name=self.higher_model_name)
+        self.generator = CharacterGenerator(self.client, self.model_name, higher_model_name=self.higher_model_name)
         self.phase_number = 0
         self.gameBoard = GameBoard(self.game_master)
         self.game_manager = UnifiedController(self.gameBoard, self)

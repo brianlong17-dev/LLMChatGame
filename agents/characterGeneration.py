@@ -18,12 +18,13 @@ class CharacterGenerator:
     'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
     marches = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March", "Theodore 'Laurie' Laurence", "Mr. Laurence", "Aunt March"]
     
-    regulars = ['Kendall Roy', 'Shiv Roy', 'Harry Potter', 'Buffy Summers']
+    regulars = ['Lucille Bluth', 'Kendall Roy', 'Shiv Roy', 'Harry Potter', 'Buffy Summers']
     schemers = ['Anna Delvey', 'Petyr Baelish', 'Albus Dumbledore']#'Lady Macbeth', 'Albus Dumbledore', 'Gollum', 'Amy March', 
     agros = [ 'Donald Trump', 'Jair Bolsonaro', "Michael O'Leary", 'Elon Musk', 'Kanye West', 'Logan Roy']#'Rick Sanchez', 'Mr. Burns'
     logicos = ['HAL 9000', 'GLaDOS', 'Spock', 'Detective Columbo', 'Benoit Blanc']
     foils = ['Morty Smith', 'Michael Scott']
     pools= [regulars, schemers, agros, logicos, foils]
+    for_sure = ['Lucille Bluth', 'Morty Smith', "Michael O'Leary"]
 
     full_characters = [
     'Donald Trump', 'Margaret Thatcher', 'Ronald Regan',
@@ -48,9 +49,10 @@ class CharacterGenerator:
     'Holden Caulfield', 'Lisbeth Salander', 'Morty Smith', 'Rick Sanches'
 ]
     characters = goats
-    def __init__(self, client, model_name: str):
+    def __init__(self, client, model_name: str, higher_model_name: str = None):
         self.client = client
         self.model_name = model_name
+        self.higher_model_name = higher_model_name or model_name
 
     def genericPlayers(self, number_of_players):
         templates = [
@@ -73,7 +75,14 @@ class CharacterGenerator:
             name, personality, appearance = templates[i % len(templates)]
             
             debaters.append(
-                Debater(name, personality, appearance, client=self.client, model_name=self.model_name)
+                Debater(
+                    name,
+                    personality,
+                    appearance,
+                    client=self.client,
+                    model_name=self.model_name,
+                    higher_model_name=self.higher_model_name,
+                )
             )
             
         return debaters
@@ -84,14 +93,18 @@ class CharacterGenerator:
         random.shuffle(self.pools)
         
         for i in range(count):
-            # Use modulo to loop back to the first pool if count > 5
-            current_pool = self.pools[i % len(self.pools)]
+            if self.for_sure:
+                current_pool = self.for_sure
+            else:
+                # Use modulo to loop back to the first pool if count > 5
+                current_pool = self.pools[i % len(self.pools)]
             
             if current_pool:
                 # Pick, remove, and add to cast
                 name = random.choice(current_pool)
                 current_pool.remove(name)
-                cast.append(name)
+                if not (name in cast):
+                    cast.append(name)
                
         return [self.generate_debater(character_name) for character_name in cast]
        
@@ -123,5 +136,6 @@ class CharacterGenerator:
             initial_form=profile.form, #is this being used?
             client=self.client,
             model_name=self.model_name,
+            higher_model_name=self.higher_model_name,
             speaking_style=profile.speaking_style
         )
