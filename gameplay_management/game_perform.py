@@ -115,7 +115,7 @@ class GamePerformSobStory(GameMechanicsMixin):
                     str,
                     Field(
                         description=(
-                            "What lens are you judging through? Emotional authenticity? "
+                            "What lens are you judging through? Emotional authenticity? Language? Is it beautifully expressed?"
                             "Delivery? Strategic value to you? How you feel about this player personally?"
                         )
                     ),
@@ -127,7 +127,7 @@ class GamePerformSobStory(GameMechanicsMixin):
                             "Is there a game reason to score high or low? "
                             "Can you low-ball without blowback — remember, they'll be judging you too. "
                             "Consistently low scores will be remembered and returned. "
-                            "A 5 or 6 is a non-answer — it makes no friends and no enemies."
+                            "Genuinely consider giving a 10 if it's great."
                         )
                     ),
                 ),
@@ -184,5 +184,5 @@ class GamePerformSobStory(GameMechanicsMixin):
         )
         self.gameBoard.host_broadcast(
             f"🎭 SOB STORY results — {round_summary_str}\n"
-            f"🏆 Overall standings — {overall_str}"
+            f"🏆 Overall standings — {overall_str}\n"
         )
