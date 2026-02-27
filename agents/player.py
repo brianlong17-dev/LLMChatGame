@@ -33,7 +33,8 @@ class Debater(BaseAgent):
             "updated_persona_summary": "persona",
             "updated_strategy_to_win": "strategy_to_win",
             "mathematicalAssessment": "mathematicalAssessment",
-            "lifeLesson": "life_lessons"
+            "lifeLesson": "life_lessons",
+            "speaking_style": "speaking_style"
         }
         
     def logic_fields(self):
@@ -45,7 +46,9 @@ class Debater(BaseAgent):
         return {
             "updated_persona_summary": (str, Field(description=PromptLibrary.desc_persona_update)),
             "updated_strategy_to_win": (str, Field(description=PromptLibrary.desc_agent_updated_strategy_to_win)),
-            "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons))
+            "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons)),
+            "speaking_style": (str, Field(description="ONLY RETURN TO MODIFY EXISTING SPEAKING STYLE, ELSE BLANK. Optional- speaking style- how your character speaks, the charactaristics of how they use their words. If you want to evolve your existing 'Speaking Style', if you feel your character is evolving")),
+            
         }
 
     def cognitive_fields(self):
