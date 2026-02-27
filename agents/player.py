@@ -47,7 +47,8 @@ class Debater(BaseAgent):
             "updated_persona_summary": (str, Field(description=PromptLibrary.desc_persona_update)),
             "updated_strategy_to_win": (str, Field(description=PromptLibrary.desc_agent_updated_strategy_to_win)),
             "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons)),
-            "speaking_style": (str, Field(description="ONLY RETURN TO MODIFY EXISTING SPEAKING STYLE, ELSE BLANK. Optional- speaking style- how your character speaks, the charactaristics of how they use their words. If you want to evolve your existing 'Speaking Style', if you feel your character is evolving")),
+            "speaking_style": (str, Field(description=PromptLibrary.desc_agent_speaking_style))
+            #ideas - pass the current speaking style in- makes more intentional? keep old versions in a history, for dev to see evolution 
             
         }
 
@@ -84,6 +85,8 @@ class Debater(BaseAgent):
                 if not is_duplicate:
                     current_attr_value.append(clean_val)
             else:
+                if target_attr_name == "speaking_style":
+                    print(f"{self.name} SS: {value}")
                 setattr(self, target_attr_name, value)
     
     def _get_full_user_content(self, gameBoard, user_content, instruction_override=None) :
