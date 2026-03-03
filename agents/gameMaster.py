@@ -27,7 +27,8 @@ class GameMaster(BaseAgent):
         agent_names = gameBoard.agent_names
         #---------------
         choice_definition = (Literal[*agent_names], Field(description=parameter))
-        fields = {"target_name" : choice_definition}
+        public_reason = (str, Field(description="The public announcement as to why this player was chosen. Give answer in the third person passive voice."))
+        fields = {"target_name" : choice_definition, "public_reason" : public_reason}
         response_model = create_model("choose_agent_based_on_parameter", __base__=BaseResponse, **fields)
         user_content = (f"You need to choose a single player that best represents this parameter: '{parameter}'.")
         return self.get_response(user_content, response_model, gameBoard, system_content = None)

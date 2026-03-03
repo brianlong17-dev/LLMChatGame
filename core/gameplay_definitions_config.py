@@ -6,10 +6,13 @@ from gameplay_management.base_manager import *
 from gameplay_management.game_guess import GameGuess
 from gameplay_management.game_perform import GamePerformSobStory
 from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
-from gameplay_management.game_targeted_choice import GameTargetedChoice
+from gameplay_management.game_targeted.game_targeted_choice import GameTargetedChoice
+from gameplay_management.game_targeted.game_targeted_give import GameTargetedChoiceGive
+from gameplay_management.game_targeted.game_targeted_sacrifice import GameTargetedChoiceSacrifice
+from gameplay_management.game_targeted.game_targeted_steal import GameTargetedChoiceSteal
 from gameplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
 from gameplay_management.game_mechanicsMixin import GameMechanicsMixin
-from gameplay_management.vote_mechanicsMixin import VoteMechanicsMixin
+from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMixin
 
 from prompts.gamePrompts import GamePromptLibrary
 
@@ -41,101 +44,101 @@ class ImmunityDefinition(BaseModel):
 # GAMES                                      #
 ##############################################
 
-GUESS= GameDefinition(
-    display_name="Guess the number",
-    rules_description="Guess the correct number to win points !",
-    execute_game=GameGuess.run_game_guess_the_number
-)
+# GUESS= GameDefinition(
+#     display_name="Guess the number",
+#     rules_description="Guess the correct number to win points !",
+#     execute_game=GameGuess.run_game_guess_the_number
+# )
 
-SOB_STORY= GameDefinition(
-    display_name="Perform your sob story",
-    rules_description="Each player performs, and is scored by their fellow contestants!",
-    execute_game=GamePerformSobStory.run_game_sob_story
-)
+# SOB_STORY= GameDefinition(
+#     display_name="Perform your sob story",
+#     rules_description="Each player performs, and is scored by their fellow contestants!",
+#     execute_game=GamePerformSobStory.run_game_sob_story
+# )
 
 
 
-GIVER= GameDefinition(
-    display_name="Giver",
-    rules_description="Choose a player to recieve points !",
-    execute_game=GameTargetedChoice.run_game_give
-)
+# GIVER= GameDefinition(
+#     display_name="Giver",
+#     rules_description="Choose a player to recieve points !",
+#     execute_game=GameTargetedChoiceGive.run_game
+# )
 
-STEALER= GameDefinition(
-    display_name="Stealer",
-    rules_description="Choose a player to steal points from!",
-    execute_game=GameTargetedChoice.run_game_steal
-)
+# STEALER= GameDefinition(
+#     display_name="Stealer",
+#     rules_description="Choose a player to steal points from!",
+#     execute_game=GameTargetedChoiceSteal.run_game
+# )
 
-SACRIFICER= GameDefinition(
-    display_name="Sacrificer",
-    rules_description="Use your own points to hurt another player",
-    execute_game=GameTargetedChoice.run_game_sacrifice_points
-)
+# SACRIFICER= GameDefinition(
+#     display_name="Sacrificer",
+#     rules_description="Use your own points to hurt another player",
+#     execute_game=GameTargetedChoiceSacrifice.run_game
+# )
 
-PRISONERS_DILEMMA= GameDefinition(
-    display_name="Prisoner's Dilemma",
-    rules_description=f"At random, players will be assigned parters. {GamePromptLibrary.pd_desc_string}",
-    execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma  # Note: no parentheses! We are passing the method itself.
-)
+# PRISONERS_DILEMMA= GameDefinition(
+#     display_name="Prisoner's Dilemma",
+#     rules_description=f"At random, players will be assigned parters. {GamePromptLibrary.pd_desc_string}",
+#     execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma  # Note: no parentheses! We are passing the method itself.
+# )
 
-PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_RANDOM= GameDefinition(
-    display_name="Prisoner's Dilemma",
-    rules_description=f"In a random order, players will get to choose their partners. {GamePromptLibrary.pd_desc_string}",
-    execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma_choose_partner  # Note: no parentheses! We are passing the method itself.
-)
+# PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_RANDOM= GameDefinition(
+#     display_name="Prisoner's Dilemma",
+#     rules_description=f"In a random order, players will get to choose their partners. {GamePromptLibrary.pd_desc_string}",
+#     execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma_choose_partner  # Note: no parentheses! We are passing the method itself.
+# )
 
-PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_WINNER = GameDefinition(
-    display_name="Prisoner's Dilemma",
-    rules_description=f"The player with the highest score will get to pick their partner, and so on. Each pair will play a round. {GamePromptLibrary.pd_desc_string}",
-    execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma_choose_partner_winner  # Note: no parentheses! We are passing the method itself.
-)
+# PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_WINNER = GameDefinition(
+#     display_name="Prisoner's Dilemma",
+#     rules_description=f"The player with the highest score will get to pick their partner, and so on. Each pair will play a round. {GamePromptLibrary.pd_desc_string}",
+#     execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma_choose_partner_winner  # Note: no parentheses! We are passing the method itself.
+# )
 
-PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER = GameDefinition(
-    display_name="Prisoner's Dilemma",
-    rules_description=f"The player with the lowest score will get to pick their partner, and so on. {GamePromptLibrary.pd_desc_string}",
-    execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma_choose_partner_loser  # Note: no parentheses! We are passing the method itself.
-)
+# PRISONERS_DILEMMA_CHOOSE_PARTNER_ORDER_LOSER = GameDefinition(
+#     display_name="Prisoner's Dilemma",
+#     rules_description=f"The player with the lowest score will get to pick their partner, and so on. {GamePromptLibrary.pd_desc_string}",
+#     execute_game=GamePrisonersDilemma.run_game_prisoners_dilemma_choose_partner_loser  # Note: no parentheses! We are passing the method itself.
+# )
 
 ##############################################
 # Eliminations                               #
 ##############################################
 
-EACH_PLAYER_VOTES_TO_REMOVE_BOTTOM_TWO = VoteDefinition(
-    display_name="Two players with the lowest scores face elimination.",
-    rules_description="Two players with the lowest scores face elimination. Each player will vote who they want to send home",
-    execute_game=VoteMechanicsMixin.run_voting_bottom_two_only_two
-)
+# EACH_PLAYER_VOTES_TO_REMOVE_BOTTOM_TWO = VoteDefinition(
+#     display_name="Two players with the lowest scores face elimination.",
+#     rules_description="Two players with the lowest scores face elimination. Each player will vote who they want to send home",
+#     execute_game=VoteMechanicsMixin.run_voting_bottom_two_only_two
+# )
 
-EACH_PLAYER_VOTES_TO_REMOVE_BOTTOM_TWO_MULTIPLE = VoteDefinition(
-    display_name="The players with the lowest scores face elimination.",
-    rules_description="The two players with the lowest scores are up for elimination. In the event of a tie for the bottom spots, all tied players will also face the vote. more players will face elimination Each player will vote who they want to send home",
-    execute_game=VoteMechanicsMixin.run_voting_bottom_two_multiple
-)
+# EACH_PLAYER_VOTES_TO_REMOVE_BOTTOM_TWO_MULTIPLE = VoteDefinition(
+#     display_name="The players with the lowest scores face elimination.",
+#     rules_description="The two players with the lowest scores are up for elimination. In the event of a tie for the bottom spots, all tied players will also face the vote. more players will face elimination Each player will vote who they want to send home",
+#     execute_game=VoteMechanicsMixin.run_voting_bottom_two_multiple
+# )
 
-EACH_PLAYER_VOTES_TO_REMOVE = VoteDefinition(
-    display_name="Each player votes which player they want to remove",
-    rules_description="The player that receives the most votes will be removed from the game...",
-    execute_game=VoteMechanicsMixin.run_voting_round_basic
-)
+# EACH_PLAYER_VOTES_TO_REMOVE = VoteDefinition(
+#     display_name="Each player votes which player they want to remove",
+#     rules_description="The player that receives the most votes will be removed from the game...",
+#     execute_game=VoteMechanicsMixin.run_voting_round_basic
+# )
 
-EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS = VoteDefinition(
-    display_name="Vote a player out, but don't miss.",
-    rules_description="Each player votes which player they want to remove. Any players voted for but not removed will gain a point for each vote against them.",
-    execute_game=VoteMechanicsMixin.run_voting_round_basic_dont_miss
-)
+# EACH_PLAYER_VOTES_TO_REMOVE_BEST_NOT_MISS = VoteDefinition(
+#     display_name="Vote a player out, but don't miss.",
+#     rules_description="Each player votes which player they want to remove. Any players voted for but not removed will gain a point for each vote against them.",
+#     execute_game=VoteMechanicsMixin.run_voting_round_basic_dont_miss
+# )
 
-LOWEST_POINTS_REMOVED = VoteDefinition(
-    display_name="Player with the lowest points is removed from the game",
-    rules_description="The player with the lowest points will be removed from the game IMMEDATELY..",
-    execute_game=VoteMechanicsMixin.run_voting_lowest_points_removed
-)
+# LOWEST_POINTS_REMOVED = VoteDefinition(
+#     display_name="Player with the lowest points is removed from the game",
+#     rules_description="The player with the lowest points will be removed from the game IMMEDATELY..",
+#     execute_game=VoteMechanicsMixin.run_voting_lowest_points_removed
+# )
 
-WINNER_CHOOSES = VoteDefinition(
-    display_name="The Leader Executes",
-    rules_description="The player leading the scores will choose who leaves the game IMMEDATELY..",
-    execute_game=VoteMechanicsMixin.run_voting_winner_chooses
-)
+# WINNER_CHOOSES = VoteDefinition(
+#     display_name="The Leader Executes",
+#     rules_description="The player leading the scores will choose who leaves the game IMMEDATELY..",
+#     execute_game=VoteMechanicsMixin.run_voting_winner_chooses
+# )
 
 ##############################################
 # Immunities                                 #

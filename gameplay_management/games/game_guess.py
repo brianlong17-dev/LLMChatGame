@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 import random
-from gameplay_management.game_mechanicsMixin import GameMechanicsMixin
+from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
 from models.player_models import DynamicModelFactory
 
 
@@ -11,13 +11,12 @@ class GameGuess(GameMechanicsMixin):
         pass
     
     def display_name(self):
-        return "Guess the number!"
+        return "Guess"
     
     def rules_description(self):
         number_range = self.cfg().guess_number_range
         return (
-            f"I'm thinking of a number between 1 and {number_range}. "
-            f"Guess correctly to win {number_range} points!"
+            f"Guess the correct number to win!"
         )
 
     # ------------------------------------------------------------------
@@ -57,7 +56,7 @@ class GameGuess(GameMechanicsMixin):
         #number_range = self.gameBoard.phase_factory.number_range_for_guessing
         #TODO  get this from the phaseFactory
         
-        number_range = 4 #phase_factory.guess_number_range
+        number_range = self.cfg().guess_number_range #phase_factory.guess_number_range
         winning_number = random.randint(1, number_range)
         points_for_correct = number_range
 

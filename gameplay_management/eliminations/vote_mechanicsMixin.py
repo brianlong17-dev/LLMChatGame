@@ -57,7 +57,7 @@ class VoteMechanicsMixin(BaseManager):
             f"\n{VotePromptLibrary.elimination_players_prefix}\n"
             f" {', '.join(players_up_for_elimination)}\n"
         )
-        return f"{immunity_string}{players_up_for_elimination_string}"
+        return f"{immunity_string}{players_up_for_elimination_string}\n"
             
     def get_execution_string(self, victim):
         name = victim.name
@@ -187,108 +187,5 @@ class VoteMechanicsMixin(BaseManager):
     ###############
     #   Running   #
     ###############        
-    def run_voting_winner_chooses(self, immunity_players: Optional[Sequence[str]] = None, with_pass_option: bool = False):
-        immunity_players = self._validate_immunity(immunity_players)
-            
-        leading_player= self.get_strategic_players(self.simulationEngine.agents, top_player = True)[0]
-        other_agent_names = [name for name in self.gameBoard.agent_names if name != leading_player.name]
-        leading_player_message = VotePromptLibrary.winner_chooses_host_msg.format(
-            leading_player_name=leading_player.name,
-            other_agent_names=", ".join(other_agent_names),
-        )
-        self.gameBoard.host_broadcast(leading_player_message)
-        context_msg = VotePromptLibrary.winner_chooses_context_msg
-        choice_prompt = VotePromptLibrary.winner_chooses_choice_prompt
-        additional_thought_nudge = VotePromptLibrary.winner_chooses_thought_nudge
-        #--------------
-        
-        action_fields = self.create_choice_field("target_name", other_agent_names, field_description= choice_prompt)
-        model = DynamicModelFactory.create_model_(leading_player, "leader_vote_player_off", 
-                    additional_thought_nudge=additional_thought_nudge, action_fields=action_fields)
-        response = leading_player.take_turn_standard(context_msg, self.gameBoard, model)
-        #-------------
-        
-        self.publicPrivateResponse(leading_player, response)
-        self.eliminate_player_by_name(response.target_name)
-    
-    def run_voting_round_basic_dont_miss(self, immunity_players: Optional[Sequence[str]], dont_miss: bool = True):
-        self.run_voting_round_basic(immunity_players, dont_miss = True)
-    
-   
-    def get_bottom_players(self, players_up_for_elimination, min = 2, multiple = False):
-        selected_players = []
-        pool = list(players_up_for_elimination)
-        while len(selected_players) < min and pool:
-            #remaining = count - len(selected_players)
-            batch = self.get_strategic_players(pool, top_player = False, multiple = multiple)
-            if not batch:
-                break
-            selected_players.extend(batch)
-            pool = [p for p in pool if p not in selected_players]
-        return selected_players
-    
-    def run_voting_bottom_two_only_two(self, immunity_players: Optional[Sequence[str]] = None, multiple: bool = False):
-        return self.run_voting_bottom_players(immunity_players, multiple = False, count = 2)
-    
-    def run_voting_bottom_two_multiple(self, immunity_players: Optional[Sequence[str]] = None, multiple: bool = True):
-        return self.run_voting_bottom_players(immunity_players, multiple = True, count = 2)
     
     
-    def run_voting_bottom_players(self, immunity_players: Optional[Sequence[str]] = None, dont_miss: bool = True, multiple: bool = False, count: int = 2):
-        immunity_players = self._validate_immunity(immunity_players)
-        
-        host_intro_msg = (f"In this round, the bottom {count} players face elimination.\n")
-        if multiple:
-            host_intro_msg += (f"In the case more than {count} players share the bottom scores, than more than {count} players may face elimination.\n")
-        if dont_miss:
-            host_intro_msg +=  f"Any player who receives votes but isn't eliminated will receive a point per failed vote"#self._dont_miss_string#actually something in the promptLibarary
-        
-        players_up_for_elimination = self._players_up_for_elimination(immunity_players)
-        if len(players_up_for_elimination) < 2:
-            print("Not enough players!")
-            return
-        
-        players_up_for_elimination = self.get_bottom_players(players_up_for_elimination, min = 2, multiple=multiple)
-        
-        host_intro_msg += self.immunity_string(immunity_players, 
-                                               self._names(players_up_for_elimination))
-        
-        self.gameBoard.host_broadcast(host_intro_msg)
-        
-        victim_name, voting_results = self.process_vote_rounds(self._names(players_up_for_elimination))
-        if dont_miss:
-            self._dispense_victim_points(victim_name, voting_results)
-        self.eliminate_player_by_name(victim_name)
-              
-    def run_voting_round_basic(self, immunity_players: Optional[Sequence[str]] = None, with_pass_option: bool = False, dont_miss: bool = False):
-        
-        immunity_players = self._validate_immunity(immunity_players)
-        if len(self.simulationEngine.agents) <= 2:
-            print("WARNING: Only 2 players. Shoudln't run here")
-            #maybe run other vote instead
-    
-        players_up_for_elimination = [a.name for a in self._players_up_for_elimination(immunity_players)]
-        pass_rules = f"You may ONLY vote for an active player currently in the game. If you vote for an eliminated player, or refuse to vote, your vote will automatically count as a vote against YOURSELF."
-        host_message = (f"🚨🚨🚨 IT'S TIME TO VOTE. "
-                        f"It's time to vote. Each player will vote for one player they want to REMOVE from the game. "
-                        f"The player that receives the most votes will leave the game IMMEDIATELY."
-                        f"{self.immunity_string(immunity_players, players_up_for_elimination, )}\n"
-                        f"\n\n{pass_rules}")
-        self.gameBoard.host_broadcast(host_message)
-        victim_name, voting_results = self.process_vote_rounds(players_up_for_elimination)
-        if dont_miss:
-            self._dispense_victim_points(victim_name, voting_results)
-        self.eliminate_player_by_name(victim_name)
-           
-    def run_voting_lowest_points_removed(self, immunity_players: Optional[Sequence[str]] = None, with_pass_option: bool = False):
-        #immunity is irrelevant here 
-        
-        player = self.get_strategic_players(self.simulationEngine.agents, top_player = False)[0]
-        self.gameBoard.host_broadcast(f"🚨🚨🚨 The time... has come. "
-                                     f"The player with the lowest score, will be removed from the game."
-                                     f"In the event of a tie, a player will be chosen at random.\n\n"
-                                     f"The player with the lowest score and will therefore, be removed from the competition is... {player.name}")
-                                     
-       
-        self.eliminate_player_by_name(player.name)
-   

@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 from pydantic import Field
 
-from gameplay_management.game_mechanicsMixin import GameMechanicsMixin
+from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
 from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 

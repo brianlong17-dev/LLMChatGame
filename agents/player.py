@@ -4,7 +4,7 @@ from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 from prompts.prompts import PromptLibrary
 from agents.base_agent import BaseAgent
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 if TYPE_CHECKING:
     from gameplay_management import *
 
@@ -56,7 +56,7 @@ class Debater(BaseAgent):
             "updated_persona_summary": (str, Field(description=PromptLibrary.desc_persona_update)),
             "updated_strategy_to_win": (str, Field(description=PromptLibrary.desc_agent_updated_strategy_to_win)),
             "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons)),
-            "speaking_style": (str, Field(description=PromptLibrary.desc_agent_speaking_style))
+            "speaking_style":  (Optional[str], Field(default=None,description=PromptLibrary.desc_agent_speaking_style))
             #ideas - pass the current speaking style in- makes more intentional? keep old versions in a history, for dev to see evolution 
             
         }

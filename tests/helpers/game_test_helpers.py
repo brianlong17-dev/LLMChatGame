@@ -2,10 +2,10 @@ from types import SimpleNamespace
 
 from agents.player import Debater
 from core.gameboard import GameBoard
-from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
-from gameplay_management.game_guess import GameGuess
-from gameplay_management.game_targeted_choice import GameTargetedChoice
-from gameplay_management.vote_mechanicsMixin import VoteMechanicsMixin
+from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
+from gameplay_management.games.game_guess import GameGuess
+from gameplay_management.game_targeted.game_targeted_choice import GameTargetedChoice
+from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMixin
 
 
 def turn_payload(target_name=None, public_response="pub", private_thoughts="priv", **extra_fields):

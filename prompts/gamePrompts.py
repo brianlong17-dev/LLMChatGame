@@ -13,15 +13,33 @@ class GamePromptLibrary:
     invalid_target_message = (
         "{player_name} chose '{target_name}'... but that's an invalid target. No points changed hands."
     )
+    #------------------------ votes ----------------------- #
+    dont_miss_string = "A player that receives votes but is not eliminated will receive {points} points per failed vote. "
     
-    pd_desc_string = f"Stealing from a a splitter: {pd_steal} points and 0 points. Both split: {pd_split} points each, both steal: {pd_both_steal} point each."
+    
+    #------------------------ sob story ----------------------- #
+    sob_story_host_intro = (
+            "💔 SOB STORY!\n"
+            "Every reality contestant has one — a traumatic past, a hurdle they overcame, "
+            "the people left behind. Now is your chance to share your vulnerability.\n"
+            "Your fellow contestants will judge your story on a scale of 1-10. "
+            "Did it pull at the heartstrings? Was it honest, vulnerable — and do they even like you?"
+        )
+    
+    sob_story_prompt = (
+            "Write your sob story. Pour your heart out — or don't. "
+            "Make it heartwarming, heartstring-tugging, honest, vulnerable, "
+            "absurd, strategic... whatever you think will move your fellow contestants. "
+            "Your public response IS your story."
+        )
+    
+    
+    #------------------------ Prisoner's Dilemma ----------------------- #
     pd_game_prompt = (
             f"🚨 PRISONER'S DILEMMA 🚨\n"
             "You have been paired with {opponent_name}.\n"
             f"Remember:\n"
-            f"- If you both SPLIT, you both get {pd_split} points.\n"
-            f"- If you STEAL and they SPLIT, you get {pd_steal} points and they get 0.\n"
-            f"- If you both STEAL, you both get {pd_both_steal} point.\n"
+            "{points_rules_string}"
             f"Based on your game history and personality, make your choice."
         )
     
@@ -32,31 +50,21 @@ class GamePromptLibrary:
     give_game_player_intro = ("{player_name}! You're up- what player are you choosing, and why?")
 
     @classmethod
-    def prisonersDilemmaIntro(cls, choose_partner: bool, winner_picks_first = True):
-        splitPoints = cls.pd_split
-        stealPoints = cls.pd_steal
-        bothSteal = cls.pd_both_steal
-        pairing_string = ("At random, players will get to choose who to couple up with for the game")
+    def prisonersDilemmaIntro(cls, choose_partner: bool, loser_picks_first: bool, points_rules_string: str):
+        pairing_string = ("Players will be paired up at random.")
         winner_picks_string = ("")
         if choose_partner:
             pairing_string = "Players will get to choose who to couple up with for the game"
-            if winner_picks_first:
-                winner_picks_string = "The player with the most points gets to pick their partner first, and so on"
-            else:
-                winner_picks_string = "To level the playing field, our player with the lowest points will pick their partner first, and so on up the line"
-            
-            
+            if loser_picks_first:
+                winner_picks_string = "The player with the lowest points will pick their partner first, and so on up the line."
+            #else random order
         
         # 1. Broadcast the rules
         intro_message = (
-            f"It's time to play a game to build points. "
-            f"It's time to find out who your real friends are. Who to trust, and who to play. "
-            f"The game: Prisoner's Dilemma.\n"
+            f"It's time to play: Prisoner's Dilemma.\n"
             f"{pairing_string}\n"
             f"{winner_picks_string}\n"
             f"In each pairing you get a choice: SPLIT or STEAL.\n"
-            f"- If both players decide to SPLIT, they will receive {splitPoints} points each.\n"
-            f"- If one player decides to STEAL while the other splits, the stealer receives {stealPoints} points, and the victim gets 0.\n"
-            f"- If both choose to STEAL, they will receive {bothSteal} point each. \n\n")
+            f"{points_rules_string}\n\n")
         
         return intro_message
