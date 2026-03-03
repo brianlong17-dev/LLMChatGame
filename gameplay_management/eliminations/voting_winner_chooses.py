@@ -10,7 +10,7 @@ class VoteWinnerChooses(VoteMechanicsMixin):
         return "The Leader Executes"
 
     def rules_description(self):
-        return "The player leading the scores will choose who leaves the game IMMEDATELY.."
+        return "The player leading the scores will choose who leaves the game IMMEDIATELY.."
 
     def run_vote(self, immunity_players: Optional[Sequence[str]]):
         self.run_voting_winner_chooses(immunity_players)

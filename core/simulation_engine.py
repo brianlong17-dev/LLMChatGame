@@ -65,7 +65,7 @@ class SimulationEngine:
                     )
         if not all(isinstance(name, str) for name in immunity_names):
             raise TypeError(
-                f"Immunity '{immunity_type.display_name}' must return list[str], got non-string values: {immunity_names!r}"
+                f"Immunity '{immunity_type.display_name(self.game_master)}' must return list[str], got non-string values: {immunity_names!r}"
             )
         active_player_names = {agent.name for agent in self.agents}
         invalid_names = [name for name in immunity_names if name not in active_player_names]
@@ -86,20 +86,13 @@ class SimulationEngine:
             self.game_manager.run_discussion_round()
         
         if recipe.mini_game:
-            if issubclass(recipe.mini_game, GameMechanicsMixin):
-                self.trigger_new_round()
-                game_name = recipe.mini_game.display_name(self.game_manager)
-                game_rules = recipe.mini_game.rules_description(self.game_manager)
-                self.gameBoard.system_broadcast(f"🎲 GAME EVENT: {game_name}\n")
-                self.gameBoard.system_broadcast(f"GAME RULES: {game_rules}\n")
-                recipe.mini_game.run_game(self.game_manager)
-            else:
+            self.trigger_new_round()
+            game_name = recipe.mini_game.display_name(self.game_manager)
+            game_rules = recipe.mini_game.rules_description(self.game_manager)
+            self.gameBoard.system_broadcast(f"🎲 GAME EVENT: {game_name}\n")
+            self.gameBoard.system_broadcast(f"GAME RULES: {game_rules}\n")
+            recipe.mini_game.run_game(self.game_manager)
             
-                #this printing has to be moved.
-                self.gameBoard.system_broadcast(f"🎲 GAME EVENT: {recipe.mini_game.display_name}\n")
-                #self.gameBoard.system_broadcast(recipe.mini_game.rules_description)
-                #The game has its own print? It's a live print I guess its better?
-                recipe.mini_game.execute_game(self.game_manager)
         
         for _ in range(recipe.pre_vote_discussion_rounds):
             self.trigger_new_round()
