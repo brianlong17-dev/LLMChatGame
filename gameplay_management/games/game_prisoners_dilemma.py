@@ -1,23 +1,44 @@
 from concurrent.futures import ThreadPoolExecutor
-from gameplay_management.game_mechanicsMixin import GameMechanicsMixin
+from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
 from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 import random
 
 class GamePrisonersDilemma(GameMechanicsMixin):
-                
-    def run_game_prisoners_dilemma_choose_partner(self):
-       self.run_game_prisoners_dilemma(choose_partner = True)
-       
-    def run_game_prisoners_dilemma_choose_partner_winner(self):
-       self.run_game_prisoners_dilemma(choose_partner = True)
+
+    def display_name(self):
+        return "Prisoner's Dilemma"
     
-    def run_game_prisoners_dilemma_choose_partner_loser(self):
-       self.run_game_prisoners_dilemma(choose_partner = True, winner_picks_first = False)
+    def rules_description(self):
+        #This is a brief summary 
+        return (
+            f"Players will choose to split or steal to win points. {self.pairing_method_string()}"
+        )
+        
+    def pairing_method_string(self):
+        cfg = self.cfg()
+        pairing_method = cfg.pd_pairing_method
+        pairing_text = "Players will be paired randomly. "
+        if pairing_method == cfg.pd_pairing_choice_random:
+            pairing_text = "In a random order, players get to choose their partner."
+        if pairing_method == cfg.pd_pairing_choice_lowest:
+            pairing_text = "In order of lowest score, players get to choose their partner."
+        return pairing_text
     
+    def points_rules_string(self):
+        cfg = self.cfg()
+        pd_split=cfg.pd_points_split
+        pd_steal=cfg.pd_points_steal  
+        pd_both_steal=cfg.pd_points_both_steal
+        points_str = (
+            f"- If you both SPLIT, you both get {pd_split} points.\n"
+            f"- If you STEAL and they SPLIT, you get {pd_steal} points and they get 0.\n"
+            f"- If you both STEAL, you both get {pd_both_steal} point.\n")
+        return points_str
+  
     def get_split_or_steal(self, player, opponent):
-        #return player.split_or_steal(self.gameBoard, opponent)
-        user_content = GamePromptLibrary.pd_game_prompt.format(opponent_name=opponent.name)
+        user_content = GamePromptLibrary.pd_game_prompt.format(opponent_name=opponent.name, 
+                                                               points_rules_string=self.points_rules_string())
         #-----------------------------
         choices = ["split", "steal"]
         action_fields = self.create_choice_field("action", choices)
@@ -29,9 +50,10 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         return response
     
     def _calculate_pd_payout(self, choice0, choice1, name0, name1):
-        splitPoints = GamePromptLibrary.pd_split
-        bothSteal= GamePromptLibrary.pd_both_steal
-        stealPoints = GamePromptLibrary.pd_steal
+        cfg = self.cfg()
+        splitPoints=cfg.pd_points_split
+        stealPoints=cfg.pd_points_steal  
+        bothSteal=cfg.pd_points_both_steal
         choice0 = choice0.strip().lower().replace(".", "")
         choice1 = choice1.strip().lower().replace(".", "")
             
@@ -48,23 +70,36 @@ class GamePrisonersDilemma(GameMechanicsMixin):
             (0, 0, f"Someone hallucinated a move! No points awarded."))
         return p0_gain, p1_gain, msg
     
-    def run_game_prisoners_dilemma(self, choose_partner = False, winner_picks_first = True):
-        splitPoints = GamePromptLibrary.pd_split
-        bothSteal= GamePromptLibrary.pd_both_steal
-        stealPoints = GamePromptLibrary.pd_steal
-        intro_message = GamePromptLibrary.prisonersDilemmaIntro(choose_partner, winner_picks_first)
+    def run_game(self):
+        cfg = self.cfg()
+        choose_partner = False
+        loser_picks_first = False
+        if cfg.pd_pairing_method == cfg.pd_pairing_choice_random:
+            choose_partner = True
+            loser_picks_first = False
+        elif cfg.pd_pairing_method == cfg.pd_pairing_choice_lowest:
+            choose_partner = True
+            loser_picks_first = True
+        
+            
+        self.run_game_prisoners_dilemma(choose_partner, loser_picks_first)
+        
+    def run_game_prisoners_dilemma(self, choose_partner = False, loser_picks_first = False):
+        cfg = self.cfg()
+        intro_message = GamePromptLibrary.prisonersDilemmaIntro(choose_partner, loser_picks_first,
+            self.points_rules_string())
         self.gameBoard.host_broadcast(intro_message)
 
         # 2. Pairing Logic
         available_agents = list(self.simulationEngine.agents)
         random.shuffle(available_agents)
-        pairs, leftover_player = self._generate_pairings(available_agents, choose_partner, winner_picks_first)
+        pairs, leftover_player = self._generate_pairings(available_agents, choose_partner, loser_picks_first)
        
             
         # Handle the leftover player if there is an odd number of agents
         if leftover_player:
-            self.gameBoard.host_broadcast(f"{leftover_player.name} is the odd one out this round! They get to sit back and automatically receive {splitPoints} points\n\n")
-            self.gameBoard.append_agent_points(leftover_player.name, splitPoints)
+            self.gameBoard.host_broadcast(f"{leftover_player.name} is the odd one out this round! They get to sit back and automatically receive {cfg.pd_odd_player_auto_points} points\n\n")
+            self.gameBoard.append_agent_points(leftover_player.name, cfg.pd_odd_player_auto_points)
 
         # 3. Execute the pairings
         for agent0, agent1 in pairs:
@@ -97,6 +132,3 @@ class GamePrisonersDilemma(GameMechanicsMixin):
                 reaction = self.respond_to(agent, result_host_message)
                 self.publicPrivateResponse(agent, reaction)
                 
-                
-    
-    

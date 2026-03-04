@@ -1,18 +1,29 @@
 from concurrent.futures import ThreadPoolExecutor
 import random
-from gameplay_management.game_mechanicsMixin import GameMechanicsMixin
+from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
 from models.player_models import DynamicModelFactory
 
 
 
 class GameGuess(GameMechanicsMixin):
+    
+    def take_turns_threaded(self, agents, model, the_lambda, use_threads = True):
+        pass
+    
+    def display_name(self):
+        return "Guess"
+    
+    def rules_description(self):
+        number_range = self.cfg().guess_number_range
+        return (
+            f"Guess the correct number to win!"
+        )
 
     # ------------------------------------------------------------------
     # Guess the Number
     # ------------------------------------------------------------------
 
     def _get_number_guess(self, player, user_content, response_model):
-        #why a method?
         response = player.take_turn_standard(user_content, self.gameBoard, response_model)
         return player, response
 
@@ -22,13 +33,13 @@ class GameGuess(GameMechanicsMixin):
 
         if correct:
             names = ", ".join(p.name for p in correct)
-            parts.append(f"🎯 Correct! {names} guessed the number and each earn {number_range} points!")
+            parts.append(f"✅ Correct! {names} guessed the number and each earn {number_range} points!\n\n")
 
         if incorrect:
             names = ", ".join(
                 f"{p.name} (guessed {g})" for p, g in incorrect
             )
-            parts.append(f"❌ Wrong! {names} missed the mark.")
+            parts.append(f"❌ Wrong! {names} missed the mark.\n\n")
 
         if invalid:
             names = ", ".join(p.name for p in invalid)
@@ -36,18 +47,16 @@ class GameGuess(GameMechanicsMixin):
 
         return "  ".join(parts) if parts else "No valid guesses this round."
 
-    def run_game_guess_the_number(self):
-        """
-        Each player simultaneously guesses a number between 1 and *number_range*.
-        Correct guessers earn *number_range* points.
+    def run_game(self):
+        self.run_game_guess_the_number()
+        
+    def run_game_guess_the_number(self): #just none while i set up
 
-        number_range is read from game_board.phase_factor.number_range_for_guessing
-        with a safe default of 3.
-        """
         # --- Config -----------------------------------------------------------
         #number_range = self.gameBoard.phase_factory.number_range_for_guessing
         #TODO  get this from the phaseFactory
-        number_range = 4
+        
+        number_range = self.cfg().guess_number_range #phase_factory.guess_number_range
         winning_number = random.randint(1, number_range)
         points_for_correct = number_range
 

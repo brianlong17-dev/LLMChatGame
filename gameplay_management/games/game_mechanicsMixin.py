@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 class GameMechanicsMixin(BaseManager):
     
-    def _generate_pairings(self, agents, choose_partner, winner_picks_first = True):
+    def _generate_pairings(self, agents, choose_partner, loser_picks_first = True):
         """Pairs agents and returns a list of tuples and the leftover agent."""
         pairs = []
         # Work on a copy if you don't want to mutate the original list
@@ -18,7 +18,7 @@ class GameMechanicsMixin(BaseManager):
         
         while len(available) >= 2:
             if choose_partner:
-                pair = self._handle_manual_pairing(available, winner_picks_first)
+                pair = self._handle_manual_pairing(available, loser_picks_first)
             else:
                 pair = (available.pop(), available.pop())
                 
@@ -28,11 +28,14 @@ class GameMechanicsMixin(BaseManager):
         leftover = available[0] if available else None
         return pairs, leftover
     
-    def _handle_manual_pairing(self, available_agents, winner_picks_first = True):
+    def _handle_manual_pairing(self, available_agents, loser_picks_first = True):
         """Helper to manage the 'choice' logic for a single pair."""
+        if loser_picks_first:
+            chooser = self.get_strategic_players(available_agents, False)[0] #, multiple=False
+            available_agents.remove(chooser)
+        else: 
+            chooser = available_agents.pop()#already shuffled
         
-        chooser = self.get_strategic_players(available_agents, winner_picks_first)[0] #, multiple=False
-        available_agents.remove(chooser)
         
         available_agents_names = [a.name for a in available_agents]
         user_content = (

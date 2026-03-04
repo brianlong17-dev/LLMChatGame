@@ -1,7 +1,8 @@
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor
 import random
 import time
-from typing import Literal
+from typing import Callable, Literal, Sequence
 from pydantic import Field
 from core.gameboard import ConsoleRenderer
 from agents.base_agent import BaseAgent
@@ -19,14 +20,28 @@ class BaseManager: #base class
     def __init__(self, gameBoard, simulationEngine):
         self.gameBoard = gameBoard
         self.simulationEngine = simulationEngine
-        
+    
     def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0):
         public_message, private_message = result.public_response, result.private_thoughts
         self.gameBoard.broadcast_public_action(agent, public_message)
         #TODO send thru gameboard- future proofing turning on/off - lives in a setting, the printer has no state
         ConsoleRenderer.print_private(agent, f"{private_message}\n", print_name = False)
         time.sleep(delay)#only when you're thead pooling!
-       
+    
+    def _run_tasks(
+        self,
+        tasks: list[tuple], #list of argue
+        worker: Callable[..., tuple],
+        parallel: bool = True,
+    ) -> list[tuple]:
+        if not tasks:
+            return []
+        if parallel:
+            with ThreadPoolExecutor() as executor:
+                futures = [executor.submit(worker, *task) for task in tasks]
+                return [f.result() for f in futures]
+        return [worker(*task) for task in tasks]
+
     
     def _output_discussion_round_text(self, player, result):
         public_text = result.public_response
@@ -59,7 +74,7 @@ class BaseManager: #base class
         
     
     
-    def _names(self, agents):
+    def _names(self, agents: Sequence["Debater"]) -> list[str]:
         return [agent.name for agent in agents]
     
     def _agent_by_name(self, name):
@@ -122,3 +137,6 @@ class BaseManager: #base class
             action_fields=action_fields
         )
         return player.take_turn_standard(context_msg, self.gameBoard, model)
+    
+    def cfg(self):
+        return self.simulationEngine.gameplay_config

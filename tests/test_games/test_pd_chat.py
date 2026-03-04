@@ -16,7 +16,7 @@ def test_run_pd_odd_player_gets_auto_split_points():
         }
     )
     a1, a2, a3 = agents
-    game._generate_pairings = lambda _available, _choose_partner, _winner_picks_first: ([(a1, a2)], a3)
+    game._generate_pairings = lambda _available, _choose_partner, _loser_picks_first: ([(a1, a2)], a3)
 
     game.run_game_prisoners_dilemma(choose_partner=False)
 
@@ -38,12 +38,12 @@ def test_run_pd_passes_manual_pairing_flags():
     p1, p2 = agents
     seen = {}
 
-    def _generate_pairings(_available, choose_partner, winner_picks_first):
-        seen["flags"] = (choose_partner, winner_picks_first)
+    def _generate_pairings(_available, choose_partner, loser_picks_first):
+        seen["flags"] = (choose_partner, loser_picks_first)
         return ([(p1, p2)], None)
 
     game._generate_pairings = _generate_pairings
-    game.run_game_prisoners_dilemma(choose_partner=True, winner_picks_first=False)
+    game.run_game_prisoners_dilemma(choose_partner=True, loser_picks_first=False)
 
     assert seen["flags"] == (True, False)
 

@@ -20,7 +20,7 @@ def test_run_game_steal_standard_workflow_takes_full_prompt_points(monkeypatch):
         initial_scores={"Alice": 10, "Bob": 10},
     )
 
-    monkeypatch.setattr("gameplay_management.game_targeted_choice.GamePromptLibrary.targeted_games_points", 4)
+    monkeypatch.setattr("gameplay_management.game_targeted.game_targeted_choice.GamePromptLibrary.targeted_games_points", 4)
     game.run_game_steal()
 
     assert board.agent_scores == {"Alice": 10, "Bob": 10}

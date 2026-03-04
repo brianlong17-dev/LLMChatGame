@@ -1,7 +1,8 @@
 from types import SimpleNamespace
 
+from core.game_config import GameConfig
 from core.gameboard import GameBoard
-from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
+from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
 from tests.helpers.game_test_helpers import NoopGameMaster
 
 def test_split_vs_steal_logic():
@@ -20,7 +21,7 @@ def test_split_vs_steal_logic():
     ]
 
     board = GameBoard(NoopGameMaster())
-    game = GamePrisonersDilemma(board, SimpleNamespace(agents=[]))
+    game = GamePrisonersDilemma(board, SimpleNamespace(agents=[], gameplay_config=GameConfig()))
     
     for c0, c1, exp0, exp1, desc in scenarios:
         # Act

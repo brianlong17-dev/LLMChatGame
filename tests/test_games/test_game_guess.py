@@ -33,7 +33,7 @@ def test_guess_awards_points_to_all_correct_guessers(monkeypatch):
         }
     )
 
-    monkeypatch.setattr("gameplay_management.game_guess.random.randint", lambda _a, _b: 2)
+    monkeypatch.setattr("gameplay_management.games.game_guess.random.randint", lambda _a, _b: 2)
 
     game.run_game_guess_the_number()
 
@@ -60,7 +60,7 @@ def test_guess_treats_non_numeric_and_out_of_range_as_invalid(monkeypatch):
         }
     )
 
-    monkeypatch.setattr("gameplay_management.game_guess.random.randint", lambda _a, _b: 1)
+    monkeypatch.setattr("gameplay_management.games.game_guess.random.randint", lambda _a, _b: 1)
 
     game.run_game_guess_the_number()
 
@@ -88,7 +88,7 @@ def test_guess_uses_constrained_choice_field_for_decisions(monkeypatch):
         }
     )
 
-    monkeypatch.setattr("gameplay_management.game_guess.random.randint", lambda _a, _b: 3)
+    monkeypatch.setattr("gameplay_management.games.game_guess.random.randint", lambda _a, _b: 3)
 
     game.run_game_guess_the_number()
 
@@ -122,7 +122,7 @@ def test_guess_reaction_phase_calls_each_player_once(monkeypatch):
         }
     )
 
-    monkeypatch.setattr("gameplay_management.game_guess.random.randint", lambda _a, _b: 4)
+    monkeypatch.setattr("gameplay_management.games.game_guess.random.randint", lambda _a, _b: 4)
 
     game.run_game_guess_the_number()
 
@@ -171,7 +171,7 @@ def test_guess_reads_number_range_from_phase_factory_when_available(monkeypatch)
 
     # Future intent: game should read this value instead of a hardcoded range.
     board.phase_factory = SimpleNamespace(number_range_for_guessing=7)
-    monkeypatch.setattr("gameplay_management.game_guess.random.randint", lambda _a, _b: 7)
+    monkeypatch.setattr("gameplay_management.games.game_guess.random.randint", lambda _a, _b: 7)
 
     game.run_game_guess_the_number()
 

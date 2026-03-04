@@ -13,10 +13,12 @@ import instructor
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from agents.characterGeneration import CharacterGenerator
-from core.gameplay_definitions_config import *
-from core.phases import PhaseRecipe, PhaseRecipeFactory
+from core.console_renderer import ConsoleRenderer
+from core.game_config import GameConfig
+from core.phases import PhaseRecipe, PhaseRecipeFactory, PhaseRecipeFactoryDefault
 from agents.base_agent import *
 from agents.gameMaster import GameMaster
+from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
 from gameplay_management.unified_controller import UnifiedController
 from models.player_models import *
 from .gameboard import GameBoard
@@ -28,6 +30,7 @@ class SimulationEngine:
         model_name: str = "gemini-2.0-flash-lite",
         higher_model_name: str = "gemini-2.5-flash",
         number_of_players = 5,
+        phase_factory = PhaseRecipeFactoryDefault
     ):
         load_dotenv()
         self.client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
@@ -38,7 +41,9 @@ class SimulationEngine:
         self.phase_number = 0
         self.gameBoard = GameBoard(self.game_master)
         self.game_manager = UnifiedController(self.gameBoard, self)
-        
+        self.phase_factory = phase_factory
+        self.gameplay_config = GameConfig()
+            
     def initialiseGameBoard(self):
         self.gameBoard.initialize_agents(self.agents)
     
@@ -52,12 +57,27 @@ class SimulationEngine:
         #We want to print this so the summariser can see it
         self.gameBoard.system_broadcast(self.gameBoard.agent_scores)
         self.gameBoard.newRound()
-        
+    
+    def _validate_immunity(self, immunity_type, immunity_names):
+        if not isinstance(immunity_names, list):
+                raise TypeError(
+                        f"Immunity '{immunity_type.display_name}' must return list[str], got {type(immunity_names).__name__}"
+                    )
+        if not all(isinstance(name, str) for name in immunity_names):
+            raise TypeError(
+                f"Immunity '{immunity_type.display_name(self.game_master)}' must return list[str], got non-string values: {immunity_names!r}"
+            )
+        active_player_names = {agent.name for agent in self.agents}
+        invalid_names = [name for name in immunity_names if name not in active_player_names]
+        if invalid_names:
+            raise ValueError(
+                f"Immunity '{immunity_type.display_name}' returned unknown player name(s): {invalid_names}"
+            )
         
     def runPhase(self, recipe: PhaseRecipe):
         
         self.printPhaseHeader()
-        host_intro, system_summary = recipe.phase_intro_string(self.phase_number, len(self.agents))
+        host_intro, system_summary = recipe.phase_intro_string(self.phase_number, len(self.agents), self.game_manager)
         self.gameBoard.host_broadcast(host_intro)
         self.gameBoard.broadcast_public_action("", system_summary, "SYS")
         
@@ -67,11 +87,12 @@ class SimulationEngine:
         
         if recipe.mini_game:
             self.trigger_new_round()
-            #this printing has to be moved.
-            self.gameBoard.system_broadcast(f"🎲 GAME EVENT: {recipe.mini_game.display_name}\n")
-            #self.gameBoard.system_broadcast(recipe.mini_game.rules_description)
-            #The game has its own print? It's a live print I guess its better?
-            recipe.mini_game.execute_game(self.game_manager)
+            game_name = recipe.mini_game.display_name(self.game_manager)
+            game_rules = recipe.mini_game.rules_description(self.game_manager)
+            self.gameBoard.system_broadcast(f"🎲 GAME EVENT: {game_name}\n")
+            self.gameBoard.system_broadcast(f"GAME RULES: {game_rules}\n")
+            recipe.mini_game.run_game(self.game_manager)
+            
         
         for _ in range(recipe.pre_vote_discussion_rounds):
             self.trigger_new_round()
@@ -81,19 +102,19 @@ class SimulationEngine:
             
             self.trigger_new_round()
             if recipe.vote_type:
-                immune_players = [] # Use a standard list!
+                immune_players: list[str] = []
                 
                 if recipe.immunity_types:
-                    for immunity in recipe.immunity_types:
-                        result = immunity.execute_game(self.game_manager)
-                        if isinstance(result, list):
-                            immune_players.extend(result)
-                        else:
-                            immune_players.append(result)
-            self.gameBoard.system_broadcast(f"\n🗳️ TRIGGERING VOTE: {recipe.vote_type.display_name}")
-            self.gameBoard.system_broadcast(recipe.vote_type.rules_description)
+                    for immunity_type in recipe.immunity_types:
+                        result = immunity_type.run_immunity(self.game_manager)
+                        self._validate_immunity(immunity_type, result)
+                        immune_players.extend(result)
+                immune_players = list(dict.fromkeys(immune_players))
+            self.gameBoard.system_broadcast(f"🗳️ - TRIGGERING VOTE - {recipe.vote_type.display_name(self.game_manager)}\n")
+                                          #  f"- {recipe.vote_type.rules_description(self.game_manager)}")
+                                          # rules should be handled in game by host.
             
-            recipe.vote_type.execute_game(self.game_manager, immunity_players=immune_players)
+            recipe.vote_type.run_vote(self.game_manager, immunity_players=immune_players)
         
         
         for i in range(recipe.post_vote_discussion_rounds):
@@ -116,16 +137,16 @@ class SimulationEngine:
             self.agents = self.generator.generate_balanced_cast(number_of_players)
         print(PromptLibrary.line_break)
          
-    def run(self, game_introduction: str, rounds_per_discussion_phase=1, number_of_players = 2, generic_players=False):
-        #print(f"\n🚀 Simulation Started: {topic}\n" + "="*50)
+    def run(self, number_of_players = 2, generic_players=False):
         self.set_up_players(number_of_players, generic_players)
         self.initialiseGameBoard()
         
-        
+        game_introduction  = self.phase_factory.game_intro()
         self.gameBoard.host_broadcast(f"\n{game_introduction}")
         while len(self.agents) > 1:
             self.phase_number += 1
-            self.runPhase(PhaseRecipeFactory.get_phase_recipe(self.phase_number, len(self.agents)))
+            phase = self.phase_factory.get_phase_recipe_test_immunities(self.phase_number, len(self.agents), self.gameplay_config)
+            self.runPhase(phase)
             
         print(f"🏆 FINAL SURVIVOR: {self.agents[0].name}")
         
