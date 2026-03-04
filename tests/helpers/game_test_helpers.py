@@ -1,11 +1,9 @@
 from types import SimpleNamespace
 
 from agents.player import Debater
+from core.game_config import GameConfig
 from core.gameboard import GameBoard
-from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
-from gameplay_management.games.game_guess import GameGuess
-from gameplay_management.game_targeted.game_targeted_choice import GameTargetedChoice
-from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMixin
+from gameplay_management.unified_controller import UnifiedController
 
 
 def turn_payload(target_name=None, public_response="pub", private_thoughts="priv", **extra_fields):
@@ -68,8 +66,8 @@ def build_targeted_choice_game(agent_specs, initial_scores=None):
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents)
-    game = GameTargetedChoice(board, simulation)
+    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    game = UnifiedController(board, simulation)
     game._shuffled_agents = lambda: list(simulation.agents)
     return game, board, agents, clients
 
@@ -85,8 +83,8 @@ def build_pd_game(agent_specs, initial_scores=None):
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents)
-    game = GamePrisonersDilemma(board, simulation)
+    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    game = UnifiedController(board, simulation)
     return game, board, agents, clients
 
 
@@ -101,8 +99,9 @@ def build_guess_game(agent_specs, initial_scores=None):
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents)
-    game = GameGuess(board, simulation)
+    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    simulation.gameplay_config.guess_number_range = 4
+    game = UnifiedController(board, simulation)
     return game, board, agents, clients
 
 
@@ -118,6 +117,6 @@ def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents)
-    manager = VoteMechanicsMixin(board, simulation)
+    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    manager = UnifiedController(board, simulation)
     return manager, board, agents, clients

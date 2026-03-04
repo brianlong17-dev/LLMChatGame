@@ -4,21 +4,8 @@ from typing import List, Optional, Type
 from pydantic import BaseModel, ConfigDict
 
 from core.game_config import GameConfig
-from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMixin
-from gameplay_management.eliminations.voting_bottom_two import VoteBottomTwo
-from gameplay_management.eliminations.voting_each_player import VoteEachPlayer
-from gameplay_management.eliminations.voting_lowest_points import VoteLowestPoints
-from gameplay_management.eliminations.voting_winner_chooses import VoteWinnerChooses
-from gameplay_management.game_targeted.game_targeted_give import GameTargetedChoiceGive
-from gameplay_management.game_targeted.game_targeted_sacrifice import GameTargetedChoiceSacrifice
-from gameplay_management.game_targeted.game_targeted_steal import GameTargetedChoiceSteal
-from gameplay_management.games.game_guess import GameGuess
-from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
-from gameplay_management.games.game_perform import GamePerformSobStory
-from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
-from gameplay_management.immunities.highest_points_immunity import HighestPointsImmunity
-from gameplay_management.immunities.wildcard_immunity import WildcardImmunity
-from gameplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
+
+from gameplay_management.unified_controller import *
 
 class PhaseRecipe(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -170,39 +157,29 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         
     @classmethod
     def get_phase_recipe_test_games(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
-        
-        
-        if phase_number == 1:
-            cfg.pd_pairing_method = cfg.pd_pairing_choice_none
-            return cls.quick_phase(GamePerformSobStory, None, [])
-        
-        if phase_number == 2:
-            cfg.pd_pairing_method = cfg.pd_pairing_choice_none
-            return cls.quick_phase(GamePrisonersDilemma, None, [])
-        if phase_number == 3:
-            cfg.pd_pairing_method = cfg.pd_pairing_choice_random
-            return cls.quick_phase(GamePrisonersDilemma, None, [])
-        elif phase_number == 4:
-            cfg.pd_pairing_method = cfg.pd_pairing_choice_lowest
-            return cls.quick_phase(GamePrisonersDilemma, None, [])
-        games = [
-            GameGuess,
+    
+        simple_games = [GameGuess,
             GamePrisonersDilemma,
             GameTargetedChoiceGive,
             GameTargetedChoiceSteal,
-            GameTargetedChoiceSacrifice,
-            GamePerformSobStory
-        ]
-        idx = phase_number - 1 - 2 #top hard coded phase
-        if idx < len(games):
-            game = games[idx]
-            
-        if speed == 3:
-            return cls.chatty_phase(game, voting, [])
-        if speed == 2:
-            return cls.mid_phase(game, voting, [])
-        else:
+            GamePerformSobStory]
+        
+        sg_len = len(simple_games)
+        if phase_number <= sg_len:
+            game =  simple_games[phase_number - 1]
             return cls.quick_phase(game, None, [])
+        
+        if phase_number == sg_len + 1:
+            cfg.pd_pairing_method = cfg.pd_pairing_choice_none
+            return cls.quick_phase(GamePrisonersDilemma, None, [])
+        if phase_number == sg_len + 2:
+            cfg.pd_pairing_method = cfg.pd_pairing_choice_random
+            return cls.quick_phase(GamePrisonersDilemma, None, [])
+        elif phase_number == sg_len + 3:
+            cfg.pd_pairing_method = cfg.pd_pairing_choice_lowest
+            return cls.quick_phase(GamePrisonersDilemma, None, [])
+        
+        
     
     @classmethod
     def get_phase_recipe_test_immunities(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):

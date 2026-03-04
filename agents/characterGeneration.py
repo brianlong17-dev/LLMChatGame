@@ -1,4 +1,5 @@
 import random
+from typing import List
 from pydantic import BaseModel, Field
 from agents.player import Debater
 
@@ -12,7 +13,7 @@ class CharacterProfile(BaseModel):
 class CharacterGenerator:
     swearers = ['Rick Sanches', 'Tony Soprano', 'Logan Roy', 'Tony Montana', 'Katya Zamolodchikova', 'Lois Griffin', 'Gordon Ramsay']
     
-    goats = ['Detective Columbo', 'Hermione Granger', 'Lady Macbeth', 'Morty Smith', 'Rick Sanches', 'Catherine Earnshaw', 'Gollum', 'Heathcliffe', 'Mr. Burns', "Donald Trump", 'Dennis Reynolds', 'Michael Scott', 'GLaDOS']
+    goats = ['Detective Columbo', 'Hermione Granger', 'Lady Macbeth', 'Morty Smith', 'Catherine Earnshaw', 'Gollum', 'Heathcliffe', 'Mr. Burns', "Donald Trump", 'Dennis Reynolds', 'Michael Scott', 'GLaDOS']
     
     politics = [
     'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
@@ -24,7 +25,7 @@ class CharacterGenerator:
     logicos = ['HAL 9000', 'GLaDOS', 'Spock', 'Detective Columbo', 'Benoit Blanc']
     foils = ['Morty Smith', 'Michael Scott']
     pools= [regulars, schemers, agros, logicos, foils]
-    for_sure = ['Lucille Bluth', 'Morty Smith', "Michael O'Leary"]
+    for_sure = ['Lucille Bluth', 'Morty Smith', "Michael O'Leary", 'Lady Macbeth', 'Avatar Aang']
 
     full_characters = [
     'Donald Trump', 'Margaret Thatcher', 'Ronald Regan',
@@ -108,12 +109,17 @@ class CharacterGenerator:
                
         return [self.generate_debater(character_name) for character_name in cast]
        
-    def generate_random_debater(self) -> 'Debater':
+    def generate_random_debater(self, count) -> 'Debater':
         """Selects a random character from the list and builds a Debater."""
-        character_name = random.choice(self.characters)
-        # Remove from list if you want to ensure no duplicates in the same game
-        self.characters.remove(character_name) 
-        return self.generate_debater(character_name)
+        cast = []
+        pool = list(self.characters)
+        for i in range(count):
+            character_name = random.choice(self.characters)
+            # Remove from list if you want to ensure no duplicates in the same game
+            self.characters.remove(character_name) 
+            cast.append(character_name)
+        
+        return [self.generate_debater(character_name) for character_name in cast]
 
     def generate_debater(self, character_name: str) -> 'Debater':
         """Calls the LLM to flesh out the character profile and returns a Debater object."""

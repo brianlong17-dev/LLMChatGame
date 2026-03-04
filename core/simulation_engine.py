@@ -61,7 +61,7 @@ class SimulationEngine:
     def _validate_immunity(self, immunity_type, immunity_names):
         if not isinstance(immunity_names, list):
                 raise TypeError(
-                        f"Immunity '{immunity_type.display_name}' must return list[str], got {type(immunity_names).__name__}"
+                        f"Immunity '{immunity_type.display_name(self.game_master)}' must return list[str], got {type(immunity_names).__name__}"
                     )
         if not all(isinstance(name, str) for name in immunity_names):
             raise TypeError(
@@ -145,7 +145,7 @@ class SimulationEngine:
         self.gameBoard.host_broadcast(f"\n{game_introduction}")
         while len(self.agents) > 1:
             self.phase_number += 1
-            phase = self.phase_factory.get_phase_recipe_test_immunities(self.phase_number, len(self.agents), self.gameplay_config)
+            phase = self.phase_factory.get_phase_recipe_test_games(self.phase_number, len(self.agents), self.gameplay_config)
             self.runPhase(phase)
             
         print(f"🏆 FINAL SURVIVOR: {self.agents[0].name}")

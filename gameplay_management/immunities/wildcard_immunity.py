@@ -16,12 +16,16 @@ class WildcardImmunity(ImmunityMechanicsMixin):
             self.gameBoard.agent_names,
             "chaotic",
         )
+        winner = self._agent_by_name(response.target_name)
+        if not winner:
+            print(f"wildcard target - name not found:  {response.target_name}")
+            return []
         host_string = (f"The player chosen for the wildcard immunity is... {response.target_name}. "
                        f"The producers say: '{response.public_reason}' \n"
                        f"Well done, {response.target_name}!")
         
         self.gameBoard.host_broadcast(host_string)
-        winner = self._agent_by_name(response.target_name)
+        
         winner_response = self.respond_to(winner , host_string)
         self.publicPrivateResponse(winner, winner_response)
         return [response.target_name]
