@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from gameplay_management.eliminations.voting_each_player import VoteEachPlayer
 from tests.helpers.game_test_helpers import build_vote_game, host_messages, turn_payload
 
 
@@ -174,17 +175,18 @@ def test_run_voting_lowest_points_removed_announces_and_eliminates_lowest():
 
     game.run_voting_lowest_points_removed()
 
-    assert "Bob" in host_messages(board)[0]
+    assert "Bob" in host_messages(board)[1]
     assert eliminated == ["Bob"]
 
 
-def test_run_voting_round_basic_dont_miss_forwards_to_basic_with_flag():
+def test_run_vote_reads_cfg_for_dont_miss_flag():
     game, _board, _agents, _clients = build_vote_game({})
     seen = []
+    game.cfg().vote_dont_miss = True
     game.run_voting_round_basic = lambda immunity_players, dont_miss=False: seen.append(
         (immunity_players, dont_miss)
     )
 
-    game.run_voting_round_basic_dont_miss(["Alice"])
+    VoteEachPlayer.run_vote(game, ["Alice"])
 
     assert seen == [(["Alice"], True)]

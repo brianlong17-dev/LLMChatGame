@@ -1,7 +1,8 @@
 from types import SimpleNamespace
 
+from core.game_config import GameConfig
 from core.gameboard import GameBoard
-from gameplay_management.game_prisoners_dilemma import GamePrisonersDilemma
+from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
 from tests.helpers.game_test_helpers import NoopGameMaster, QueuedClient, make_debater
 
 
@@ -15,7 +16,7 @@ def test_get_split_or_steal_flow():
 
     board = GameBoard(NoopGameMaster())
     board.initialize_agents([player, opponent])
-    simulation = SimpleNamespace(agents=[player, opponent])
+    simulation = SimpleNamespace(agents=[player, opponent], gameplay_config=GameConfig())
     pd_game = GamePrisonersDilemma(board, simulation)
 
     result = pd_game.get_split_or_steal(player, opponent)

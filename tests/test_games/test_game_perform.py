@@ -20,7 +20,7 @@ class NoopGameMaster:
 
 def _load_game_perform_class():
     try:
-        module = importlib.import_module("gameplay_management.game_perform")
+        module = importlib.import_module("gameplay_management.games.game_perform")
     except Exception as exc:
         pytest.fail(f"GamePerform is not importable yet: {exc}")
     return module.GamePerformSobStory

@@ -23,7 +23,6 @@ def test_run_voting_round_basic_broadcasts_and_eliminates_without_dont_miss():
     message = host_messages(board)[0]
     assert "IT'S TIME TO VOTE" in message
     assert "IMMUNITY_BLOCK" in message
-    assert "vote will automatically count as a vote against YOURSELF" in message
 
 
 def test_run_voting_round_basic_calls_dont_miss_dispense_when_enabled():

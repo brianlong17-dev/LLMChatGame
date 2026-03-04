@@ -25,6 +25,7 @@ def _make_engine(agent_names):
     engine = SimulationEngine.__new__(SimulationEngine)
     engine.phase_number = 1
     engine.agents = [SimpleNamespace(name=name) for name in agent_names]
+    engine.game_master = SimpleNamespace()
     engine.gameBoard = _BoardStub()
     engine.game_manager = SimpleNamespace(run_discussion_round=lambda: None)
     engine.printPhaseHeader = lambda: None
@@ -38,13 +39,13 @@ def _make_recipe(immunity_types, vote_exec):
         mini_game=None,
         pre_vote_discussion_rounds=0,
         vote_type=SimpleNamespace(
-            display_name="Vote",
+            display_name=lambda _manager: "Vote",
             rules_description="rules",
-            execute_game=vote_exec,
+            run_vote=vote_exec,
         ),
         post_vote_discussion_rounds=0,
         immunity_types=immunity_types,
-        phase_intro_string=lambda _phase, _count: ("intro", "summary"),
+        phase_intro_string=lambda _phase, _count, _manager: ("intro", "summary"),
     )
 
 
@@ -53,8 +54,11 @@ def test_run_phase_raises_if_immunity_returns_non_list():
     recipe = _make_recipe(
         [
             SimpleNamespace(
-                display_name="Bad immunity",
-                execute_game=lambda _manager: "Alice",
+                # current engine validation path expects callable display_name here
+                # when formatting non-string immunity value errors.
+                # Use callable form to match production shape.
+                run_immunity=lambda _manager: "Alice",
+                display_name=lambda _gm: "Bad immunity",
             )
         ],
         vote_exec=lambda _manager, immunity_players=None: None,
@@ -69,8 +73,8 @@ def test_run_phase_raises_if_immunity_returns_non_string_entries():
     recipe = _make_recipe(
         [
             SimpleNamespace(
-                display_name="Bad immunity",
-                execute_game=lambda _manager: ["Alice", 123],
+                run_immunity=lambda _manager: ["Alice", 123],
+                display_name=lambda _gm: "Bad immunity",
             )
         ],
         vote_exec=lambda _manager, immunity_players=None: None,
@@ -85,8 +89,8 @@ def test_run_phase_raises_if_immunity_returns_unknown_player_name():
     recipe = _make_recipe(
         [
             SimpleNamespace(
-                display_name="Bad immunity",
-                execute_game=lambda _manager: ["Ghost"],
+                run_immunity=lambda _manager: ["Ghost"],
+                display_name=lambda _gm: "Bad immunity",
             )
         ],
         vote_exec=lambda _manager, immunity_players=None: None,
@@ -103,11 +107,11 @@ def test_run_phase_dedupes_immunity_names_before_vote_dispatch():
         [
             SimpleNamespace(
                 display_name="Immunity A",
-                execute_game=lambda _manager: ["Alice", "Bob"],
+                run_immunity=lambda _manager: ["Alice", "Bob"],
             ),
             SimpleNamespace(
                 display_name="Immunity B",
-                execute_game=lambda _manager: ["Bob", "Alice", "Alice"],
+                run_immunity=lambda _manager: ["Bob", "Alice", "Alice"],
             ),
         ],
         vote_exec=lambda _manager, immunity_players=None: seen.append(list(immunity_players)),
@@ -116,4 +120,3 @@ def test_run_phase_dedupes_immunity_names_before_vote_dispatch():
     SimulationEngine.runPhase(engine, recipe)
 
     assert seen == [["Alice", "Bob"]]
-

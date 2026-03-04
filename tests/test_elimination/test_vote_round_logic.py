@@ -60,7 +60,7 @@ def test_process_vote_rounds_complete_deadlock_uses_deadlock_message():
 def test_process_vote_rounds_after_max_revotes_randomly_eliminates(monkeypatch):
     game, board, _agents, _clients = build_vote_game({"Alice": [], "Bob": []})
     initial_votes = [SimpleNamespace(action="Alice")]
-    monkeypatch.setattr("gameplay_management.vote_mechanicsMixin.random.choice", lambda players: players[1])
+    monkeypatch.setattr("gameplay_management.eliminations.vote_mechanicsMixin.random.choice", lambda players: players[1])
 
     victim_name, returned_votes = game.process_vote_rounds(
         ["Alice", "Bob"], revote_count=4, initial_votes=initial_votes

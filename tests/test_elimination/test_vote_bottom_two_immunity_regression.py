@@ -14,7 +14,7 @@ def test_bottom_two_multiple_accepts_immunity_name_list_without_type_crash():
     game.eliminate_player_by_name = lambda _name: None
     game._dispense_victim_points = lambda _victim, _votes: None
 
-    game.run_voting_bottom_two_multiple(immunity_players=["Alice"])
+    game.run_voting_bottom_players(immunity_players=["Alice"], multiple=True)
 
     assert seen["process_players"] == [["Bob", "Cara"]]
 
@@ -31,10 +31,9 @@ def test_all_vote_modes_accept_name_based_immunity_lists():
     game._dispense_victim_points = lambda _victim, _votes: None
 
     game.run_voting_round_basic(immunity_players=["Alice"])
-    game.run_voting_bottom_two_only_two(immunity_players=["Alice"])
-    game.run_voting_bottom_two_multiple(immunity_players=["Alice"])
+    game.run_voting_bottom_players(immunity_players=["Alice"], multiple=False)
+    game.run_voting_bottom_players(immunity_players=["Alice"], multiple=True)
 
     assert seen["process"][0] == ["Bob", "Cara", "Dan"]
     assert seen["process"][1] == ["Bob", "Cara"]
     assert seen["process"][2] == ["Bob", "Cara"]
-
