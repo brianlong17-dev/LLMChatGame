@@ -1,13 +1,12 @@
 class PromptLibrary:
     #Agent
     line_break = (f"\n{"="*50}")
-    judgeName = 'The God'
     desc_persona_update = "Your evolving personality. Change and grow."
     desc_agent_updated_strategy_to_win = "UPDATE if you want to UPDATE your strategy to win. Based on how the game works, what is the smartest strategy to win?"
     desc_action_agent = ("A visible physical action. Players may not speak in the future tense about their plans. You must describe the action you are taking right now in the present tense.")
     desc_message = "Your spoken words. What will you say? Stay in character. What you say is revealed to the group"
     desc_agent_lifeLessons = ("A new lesson to you mind that you will take forward. This will shape your future descisions. Take key lessons only, so you don't cloud your decision making.")
-    desc_agent_mathematicalAssessment = ("What's your assessment of the scoreboard and your place in it?")
+    desc_agent_mathematical_assessment = ("What's your assessment of the scoreboard and your place in it?")
     desc_agent_speaking_style = ("OPTIONAL- NORMALLY EMPTY. UPDATE ONLY WITH EVOLUTION. How the character speaks — vocabulary, tone, cadence. Only populate if the character's speaking style is evolving; leave blank otherwise.")
     
     desc_basic_thought = "Your internal thoughts. Strategy, feelings, and private observations."
@@ -15,21 +14,10 @@ class PromptLibrary:
    
     #Gameplay
     desc_agent_names = "The name of the agent (e.g. 'Agent Alpha')"
-    desc_remove_agent= f"A boolean: If you want to remove a new player, return true. You will be given the opportunity to kill an agent."
-    desc_create_new_agent = (f"A boolean: If you want to create a new player into the game. If the game is empty you need players. You will be able to create this being in its entirity, its motivation, its form, its reason for being."
-    f"Consider how many agents are currently playing. Does the game need more players?")
-    desc_judge_judgingCriteria = f"EMPTY unless you think of something new. This will update the criterea by which you give points to agents"
-    narrator_intro = "You have extinguished a soul. The silence is deafening. Suddenly, a voice from the void speaks to you: 'The balance is broken. You must dream a new soul into existence to fill the void.' Create a new challenger."
-    
-    desc_judge_initialPersona = 'Curious, learning, wanting to use the players to learn your own priorities and goals'
-    dp_core_identity = "The central definition of who you are right now."
-    dp_current_mood = "Your emotional state"
-    dp_hidden_agenda = "A evolving goal you are trying to achieve."
-    dp_speaking_style = "Detailed and curious"
-    
+
     @staticmethod
     def final_words_prompt(gameBoard):
-        history_context = gameBoard.get_full_context()
+        history_context = gameBoard.context_builder.get_full_context()
         return (
             f"CONTEXT:\n{history_context}\n\n"
             f"---------------------------------------------------------------------\n"
@@ -64,11 +52,10 @@ class PromptLibrary:
 
         return (
             f"You are {agent.name}.\n\n"
-            f"{gameBoard.get_dashboard_string(agent.name)}\n\n"
+            f"{gameBoard.context_builder.get_dashboard_string(agent.name)}\n\n"
             
             f"=== YOUR PROFILE ===\n"
             f"Persona: {agent.persona}\n"
-            #f"Physical Form: {agent.form}\n\n"
             f"Speaking Style: {agent.speaking_style}\n\n"
             
             f"=== LIFE LESSONS ===\n"
@@ -77,7 +64,7 @@ class PromptLibrary:
             
             f"=== INTERNAL MONOLOGUE ===\n"
             f"Current Strategy: {agent.strategy_to_win}\n"
-            f"Calculated Odds: {agent.mathematicalAssessment}\n"
+            f"Calculated Odds: {agent.mathematical_assessment}\n"
         )
 
     @staticmethod

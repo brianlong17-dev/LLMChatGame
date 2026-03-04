@@ -150,7 +150,7 @@ class GamePerformSobStory(GameMechanicsMixin):
         host_intro = GamePromptLibrary.sob_story_host_intro
         self.gameBoard.host_broadcast(host_intro)
         agents = self._shuffled_agents()
-        run_in_parallel = False
+        run_in_parallel = True
 
         # --- Phase 1: Generate all stories in parallel (higher model) ---------
         stories = self._get_stories(agents, True)  # Because it's nested anyway, there is no point in running out of P

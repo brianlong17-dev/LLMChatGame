@@ -4,7 +4,6 @@ import random
 import time
 from typing import Callable, Literal, Sequence
 from pydantic import Field
-from core.gameboard import ConsoleRenderer
 from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
 from prompts.prompts import PromptLibrary
@@ -22,11 +21,9 @@ class BaseManager: #base class
         self.simulationEngine = simulationEngine
     
     def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0):
-        public_message, private_message = result.public_response, result.private_thoughts
-        self.gameBoard.broadcast_public_action(agent, public_message)
-        #TODO send thru gameboard- future proofing turning on/off - lives in a setting, the printer has no state
-        ConsoleRenderer.print_private(agent, f"{private_message}\n", print_name = False)
-        time.sleep(delay)#only when you're thead pooling!
+        #TODO depreciate
+        self.gameBoard.handle_public_private_output(agent, result, delay)
+        
     
     def _run_tasks(
         self,
@@ -44,21 +41,10 @@ class BaseManager: #base class
 
     
     def _output_discussion_round_text(self, player, result):
-        public_text = result.public_response
-        if getattr(result, "public_action", None):
-            public_text = f"[{result.public_action}]\n {public_text}"
-            
-        self.gameBoard.broadcast_public_action(player, public_text)
+        #TODO depreciate
+        self.gameBoard.handle_public_private_output(player, result, override = True)
         
-        turn_dict = result.model_dump()
-        fields_to_exclude = {"public_response", "public_action"}
-        for key, value in turn_dict.items():
-            if key not in fields_to_exclude:
-                # Optional: capitalize or format the key so it looks nicer in the console
-                formatted_key = key.replace('_', ' ').title() 
-                message = f"{formatted_key} : {value}"
-                ConsoleRenderer.print_private(player, message, print_name=False)
-    
+
     
     def run_discussion_round(self):
         for player in self.simulationEngine.agents:
@@ -69,7 +55,7 @@ class BaseManager: #base class
             basic_model = DynamicModelFactory.create_model_(player, "basic_turn")
             result = player.take_turn_standard(user_content, self.gameBoard, basic_model)
             #----------
-            self.gameBoard.new_turn_print()
+            self.gameBoard.new_turn_print() #why only here... probably on any public turn?
             self._output_discussion_round_text(player, result)
         
     

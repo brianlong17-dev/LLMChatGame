@@ -15,7 +15,6 @@ class Debater(BaseAgent):
         self,
         name: str,
         initial_persona: str,
-        initial_form: str,
         client,
         model_name: str,
         higher_model_name: str = None,
@@ -24,9 +23,8 @@ class Debater(BaseAgent):
         super().__init__(name, client, model_name, higher_model_name=higher_model_name)
         self.rating = 0
         self.persona = initial_persona
-        self.form = initial_form #I think it helps them be defined 
         self.strategy_to_win = "WATCH AND UPDATE WITH A PLAN"
-        self.mathematicalAssessment = ""
+        self.mathematical_assessment = ""
         self.life_lessons = deque(maxlen=8)
         self.speaking_style = speaking_style
         
@@ -41,14 +39,14 @@ class Debater(BaseAgent):
         return {
             "updated_persona_summary": "persona",
             "updated_strategy_to_win": "strategy_to_win",
-            "mathematicalAssessment": "mathematicalAssessment",
+            "mathematical_assessment": "mathematical_assessment",
             "lifeLesson": "life_lessons",
             "speaking_style": "speaking_style"
         }
         
     def logic_fields(self):
         return {
-            "mathematicalAssessment": (str, Field(description=PromptLibrary.desc_agent_mathematicalAssessment))
+            "mathematical_assessment": (str, Field(description=PromptLibrary.desc_agent_mathematical_assessment))
         }
     
     def internal_thinking_fields(self):
@@ -94,8 +92,6 @@ class Debater(BaseAgent):
                 if not is_duplicate:
                     current_attr_value.append(clean_val)
             else:
-                if target_attr_name == "speaking_style":
-                    print(f"{self.name} SS: {value}")
                 setattr(self, target_attr_name, value)
     
     def _get_full_user_content(self, gameBoard, user_content, instruction_override=None) :
@@ -105,7 +101,7 @@ class Debater(BaseAgent):
             instructions = instruction_override
         else:
             # Default to the standard "Play to Win" prompt
-            instructions = PromptLibrary.player_user_prompt(gameBoard.get_full_context())
+            instructions = PromptLibrary.player_user_prompt(gameBoard.context_builder.get_full_context())
 
         # 2. Combine
         full_user_content = f"{instructions}\n\n{user_content}"
