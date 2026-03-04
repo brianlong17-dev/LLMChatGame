@@ -37,7 +37,7 @@ class ContextBuilder:
         """Returns the compressed/summarized history of past rounds."""
         if len(self.game_board.round_entries) == 0:
             return "This is the first round. There is no prior history."
-        recent_rounds = list(self.game_board.round_entries)[self.game_board.full_rounds_text_amount:]
+        recent_rounds = list(self.game_board.round_entries)[-self.game_board.full_rounds_text_amount:]
         history_blocks = []
         for i, round_data in enumerate(recent_rounds):
             # Calculate the actual round number for the header

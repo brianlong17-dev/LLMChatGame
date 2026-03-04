@@ -120,7 +120,7 @@ class NoopGameSink(GameEventSink):
     def on_turn_header(self, turn_number): pass
     def on_public_action(self, speaker, message, color=""): pass
     def on_private_thought(self, speaker, message): pass
-
+    def delay(self, delay): pass
 
 class CapturingGameSink(GameEventSink):
     """
@@ -171,3 +171,6 @@ class CapturingGameSink(GameEventSink):
 
     def on_private_thought(self, speaker, message):
         self.private_thoughts.append({"speaker": speaker, "message": message})
+        
+    def delay(self, delay: float = 0.0) -> None:
+        pass

@@ -18,14 +18,14 @@ class PhaseRunner:
         game_baord.system_broadcast(game_baord.agent_scores)
         game_baord.newRound()
         
-    def printPhaseHeader(self, game_board):
+    def printPhaseHeader(self, game_board, phase_number):
         #TODO
-        game_board.game_sink.on_phase_header
+        game_board.game_sink.on_phase_header(phase_number)
         
     def run_phase(self, recipe: 'PhaseRecipe'):
         game_board = self.simulation_engine.gameBoard
         game_manager = self.simulation_engine.game_manager
-        self.printPhaseHeader(game_board)
+        self.printPhaseHeader(game_board, self.simulation_engine.phase_number)
         
         host_intro, system_summary = recipe.phase_intro_string(self.simulation_engine.phase_number, len(self.simulation_engine.agents), self.simulation_engine.game_manager)
         
@@ -70,7 +70,7 @@ class PhaseRunner:
         
         
         for i in range(recipe.post_vote_discussion_rounds):
-            if len(self.agents) <= 1:
+            if len(self.simulation_engine.agents) <= 1:
                 break #already over
             self.trigger_new_round(game_board)
             round_number = recipe.post_vote_discussion_rounds - i

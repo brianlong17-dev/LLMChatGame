@@ -19,7 +19,7 @@ class SimulationEngine:
     def __init__(self, game_master: GameMaster, generator: CharacterGenerator, 
                  phase_factory: PhaseRecipeFactory, game_sink: GameEventSink):
         
-        load_dotenv()
+        
         self.game_master = game_master
         self.generator = generator
         self.phase_factory = phase_factory
