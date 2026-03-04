@@ -104,6 +104,11 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
     @classmethod
     def get_game_rules(cls):
         "Players are eliminated until one winner remains."
+        
+    @classmethod
+    def get_phase_recipe(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
+        return cls.get_phase_recipe_test_master(phase_number, agent_number, cfg, voting, incl_games, speed)
+    
     
     @classmethod
     def get_phase_recipe_test_votes(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
@@ -167,7 +172,7 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         sg_len = len(simple_games)
         if phase_number <= sg_len:
             game =  simple_games[phase_number - 1]
-            return cls.quick_phase(game, None, [])
+            return cls.mid_phase(game, None, [])
         
         if phase_number == sg_len + 1:
             cfg.pd_pairing_method = cfg.pd_pairing_choice_none
@@ -199,7 +204,60 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         if phase_number == 4:
             cfg.vote_dont_miss = False
             return cls.quick_phase(GameGuess, VoteEachPlayer, [])
+    
+    @classmethod
+    def get_phase_recipe_test_master(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
+       
+        # 1. Define the test games
+        test_games = [
+            GameGuess,                   # Phase 1
+            GamePrisonersDilemma,         # Phase 2
+            GameTargetedChoiceGive,      # Phase 3
+            GameTargetedChoiceSteal,     # Phase 4
+            GameTargetedChoiceSacrifice, # Phase 5
+            GamePerformSobStory    # Phase 6
+        ]
         
+        # 2. Define Eliminations as tuples: (Voting_Method, [Immunities])
+        # Using None for rounds where we just want to play the game and build context
+        test_eliminations = [
+            (None, []),                                      # Phase 1: Safe round
+            (VoteBottomTwo , [HighestPointsImmunity]),       # Phase 2: Elimination 1
+            (None, []),                                      # Phase 3: Safe round
+            (VoteLowestPoints, [HighestPointsImmunity]),     # Phase 4: Elimination 2
+            (None, []),                                      # Phase 5: Safe round
+            (VoteEachPlayer, [WildcardImmunity])              # Phase 6: Elimination 3
+        ]
+
+        idx = phase_number - 1
+
+        # 3. Check if we've exhausted all test lists. If so, trigger the default endgame.
+        if idx >= len(test_games) and idx >= len(test_eliminations):
+            current_game = GamePrisonersDilemma
+            current_voting = VoteBottomTwo
+            current_immunities = []
+        else:
+            # 4. Safely pull from lists, defaulting to None/empty if the index exceeds that specific list
+            current_game = test_games[idx] if idx < len(test_games) else None
+            
+            if idx < len(test_eliminations):
+                current_voting, current_immunities = test_eliminations[idx]
+            else:
+                current_voting, current_immunities = None, []
+
+        # 5. Apply any necessary config tweaks based on the current setup
+        if current_voting == VoteBottomTwo:
+             cfg.vote_bottom_two_multiple = False
+        if current_game == GamePrisonersDilemma:
+             cfg.pd_pairing_method = cfg.pd_pairing_choice_lowest
+
+        # 6. Return the assembled phase based on the requested speed
+        if speed == 3:
+            return cls.chatty_phase(current_game, current_voting, current_immunities)
+        elif speed == 2:
+            return cls.mid_phase(current_game, current_voting, current_immunities)
+        else:
+            return cls.quick_phase(current_game, current_voting, current_immunities)
       
         
         

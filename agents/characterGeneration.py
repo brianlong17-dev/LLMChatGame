@@ -6,7 +6,6 @@ from agents.player import Debater
 # 1. Add this small model so Instructor knows what to return
 class CharacterProfile(BaseModel):
     persona: str = Field(description="A detailed, first-person personality description, core beliefs, and debate strategy for this historical figure.")
-    form: str = Field(description="Their brief physical appearance, and stance/immediate surrounding.")
     speaking_style: str = Field(description="Their speaking style, how they talk, to preserve the charcter from context bleed")
 
 # 2. The Generator Class
@@ -57,32 +56,30 @@ class CharacterGenerator:
 
     def genericPlayers(self, number_of_players):
         templates = [
-            
-            ('Agent Alpha', 'Bold and daring', 'small man'),
-            ('Agent Beta', 'Coy and cunning', 'small man'),
-            ('Agent Capa', 'Cool and calm', 'small man'),
-            ('Agent Delta', 'Handsome and charismatic', 'big guy'),
-            ('Agent Elphie', 'Shy and powerful', 'green girl'),
-            ('Agent Greg', 'Always managing to fail upward', 'tall guy'),
-            ('Agent Harriete', 'Curious and coy', 'young girl'),
-            ('Agent Inspector', 'Quirky and investigatory', 'gadget guy'),
-            ('Agent Jolly', 'Friendly to a fault', 'jolly guy'),
-            ('Agent Intelligent', 'Analytical andn insightful', 'tall guy')
-            
+            ('Agent Alpha', 'Recklessly visionary and always swinging for the fences', 'Rapid-fire, loud, and absolutely refuses to use punctuation.'),
+            ('Agent Beta', 'Machiavellian, ruthlessly pragmatic, and always plotting', 'Passive-aggressive corporate speak laced with subtle threats.'),
+            ('Agent Capa', 'Unflappably stoic, deeply cynical, and unimpressed', 'Monotone, painfully concise, and takes everything completely literally.'),
+            ('Agent Delta', 'Charmingly persuasive but logically bankrupt', 'Smooth, flowery rhetoric heavily reliant on meaningless buzzwords.'),
+            ('Agent Elphie', 'Socially anxious but intellectually terrifying', 'Stammering and apologetic, but casually drops devastating truth bombs.'),
+            ('Agent Greg', 'Spectacularly incompetent yet miraculously lucky', 'Bumbling, confused, and prone to enthusiastic, wildly incorrect non-sequiturs.'),
+            ('Agent Harriete', 'Relentlessly inquisitive and deceptively innocent', 'Socratic method on steroids; asks "innocent" questions to trap opponents.'),
+            ('Agent Inspector', 'Obsessed with minutiae and borderline paranoid', 'Speaks exclusively like a gritty 1940s noir detective narrating their own life.'),
+            ('Agent Jolly', 'Aggressively optimistic and nauseatingly wholesome', 'Suffocatingly cheerful, uses too much slang, and radiates toxic positivity.'),
+            ('Agent Intelligent', 'Hyper-rational to the point of complete social detachment', 'Highly structured, overly academic, and constantly cites fake statistical models.')
         ]
         
         debaters = []
         for i in range(number_of_players):
-            name, personality, appearance = templates[i % len(templates)]
+            name, personality, speaking_style = templates[i % len(templates)]
             
             debaters.append(
                 Debater(
                     name,
                     personality,
-                    appearance,
                     client=self.client,
                     model_name=self.model_name,
                     higher_model_name=self.higher_model_name,
+                    speaking_style = speaking_style
                 )
             )
             
@@ -124,7 +121,7 @@ class CharacterGenerator:
     def generate_debater(self, character_name: str) -> 'Debater':
         """Calls the LLM to flesh out the character profile and returns a Debater object."""
         print(f"Generating {character_name}...")
-        # Ask the LLM to hallucinate the persona and form
+        
         profile = self.client.create(
             model=self.model_name,
             response_model=CharacterProfile,
@@ -139,7 +136,6 @@ class CharacterGenerator:
         return Debater(
             name=character_name,
             initial_persona=profile.persona,
-            initial_form=profile.form, #is this being used?
             client=self.client,
             model_name=self.model_name,
             higher_model_name=self.higher_model_name,

@@ -6,7 +6,7 @@ from prompts.gamePrompts import GamePromptLibrary
 class VoteBottomTwo(VoteMechanicsMixin):
      
     def display_name(self):
-        return "Bottom on Bottom"
+        return "Bottom Two"
 
     def rules_description(self):
         return "The bottom two players will face the vote to be removed."

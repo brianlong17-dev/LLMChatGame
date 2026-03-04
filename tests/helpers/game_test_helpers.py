@@ -40,7 +40,6 @@ def make_debater(name, client, model_name="test-model"):
     return Debater(
         name=name,
         initial_persona=f"{name} persona",
-        initial_form=f"{name} form",
         client=client,
         model_name=model_name,
         speaking_style="normal",

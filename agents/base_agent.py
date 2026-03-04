@@ -8,7 +8,6 @@ class BaseAgent:
         self.client = client
         self.model_name = model_name
         self.higher_model_name = higher_model_name or model_name
-        #self.form = initial_form
         self.color = color
         self.use_higher_model = False
     
