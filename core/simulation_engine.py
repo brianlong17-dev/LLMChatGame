@@ -2,7 +2,7 @@ import os
 import instructor
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from agents.characterGeneration import CharacterGenerator
+from agents.character_generation.characterGeneration import CharacterGenerator
 from core.game_config import GameConfig
 from core.phase_runner import PhaseRunner
 from core.sinks.game_sink import GameEventSink
@@ -13,18 +13,20 @@ from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
 from gameplay_management.unified_controller import UnifiedController
 from models.player_models import *
 from .gameboard import GameBoard
+from agents.human_player import Human
  
     
 class SimulationEngine:
-    def __init__(self, game_master: GameMaster, generator: CharacterGenerator, 
-                 phase_factory: PhaseRecipeFactory, game_sink: GameEventSink):
+    def __init__(self, game_board: GameBoard, game_master: GameMaster, generator: CharacterGenerator, 
+                 phase_factory: PhaseRecipeFactory,):
         
         
         self.game_master = game_master
-        self.generator = generator
+        
         self.phase_factory = phase_factory
         
-        self.gameBoard = GameBoard(self.game_master, game_sink)
+        self.gameBoard = game_board
+        self.generator = generator
         self.game_manager = UnifiedController(self.gameBoard, self)
         self.gameplay_config = GameConfig()
         self.phase_runner = PhaseRunner(self)
@@ -46,8 +48,14 @@ class SimulationEngine:
             self.agents = self.generator.generate_balanced_cast(number_of_players)
         print(PromptLibrary.line_break)
          
-    def run(self, number_of_players = 2, generic_players=False):
+    def run(self, number_of_players = 2, generic_players=False, human_player = False):
+        #player set up will move
         self.set_up_players(number_of_players, generic_players)
+        if human_player:
+            name = input("Name?\n")
+            human_player = Human(name)
+            self.agents.append(human_player)
+            
         self.initialiseGameBoard()
         
         #-----------Intro------------#

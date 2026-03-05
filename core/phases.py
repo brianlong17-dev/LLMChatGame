@@ -86,7 +86,8 @@ class PhaseRecipeFactory:
     
     @classmethod
     def mid_phase(cls, game, vote, immunity=None):
-        return cls.make_phase(1, game, 0, vote, 0, immunity)     
+        vote_discussion = 1 if vote else 0
+        return cls.make_phase(1, game, vote_discussion, vote, 0, immunity)     
     
     @classmethod 
     def game_intro(cls):
@@ -107,8 +108,29 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         
     @classmethod
     def get_phase_recipe(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
-        return cls.get_phase_recipe_test_master(phase_number, agent_number, cfg, voting, incl_games, speed)
+        return cls.get_phase_compelling(phase_number, agent_number, cfg, voting, incl_games, speed)
     
+    @classmethod
+    def get_phase_compelling(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
+        
+        if agent_number == 2:
+            return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [])
+        if phase_number == 1:
+            cfg.set_guess_range(2)
+            return cls.mid_phase(GameGuess, None, [])
+        if phase_number == 2:
+            cfg.set_guess_range(3)
+            return cls.mid_phase(GameGuess, None, [])
+        if phase_number == 3:
+            return cls.mid_phase(GameTargetedChoiceGive, VoteBottomTwo, [])
+        if phase_number == 4:
+            return cls.mid_phase(GameTargetedChoiceSteal, VoteBottomTwo, [])
+        if phase_number == 5:
+            cfg.set_pd_pairing_lowest()
+            return cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [])
+        
+        return cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [])
+        
     
     @classmethod
     def get_phase_recipe_test_votes(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):

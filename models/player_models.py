@@ -1,9 +1,12 @@
 from typing import Dict, List, Literal, Type, TYPE_CHECKING
 from pydantic import BaseModel, Field, create_model, field_validator, validator
 from prompts.prompts import PromptLibrary
+
 import warnings
 if TYPE_CHECKING:
+    from agents.human_player import Human
     from agents.player import Debater
+    
 
 
 class BaseResponse(BaseModel):
@@ -12,6 +15,17 @@ class BaseResponse(BaseModel):
     
     
 class DynamicModelFactory:  
+    
+    @classmethod 
+    def create_human_model(cls, public_response_prompt, action_fields):
+        ordered_fields = {}
+        if action_fields:
+            ordered_fields.update(action_fields)
+        pub_prompt = public_response_prompt or PromptLibrary.desc_message
+        ordered_fields["public_response"] = (str, Field(description=pub_prompt))
+        ordered_fields["private_thoughts"] = (str, Field(description="Private thoughts..."))
+        return create_model('human_model', **ordered_fields)
+        
     
     @classmethod
     def create_model_(
@@ -25,6 +39,9 @@ class DynamicModelFactory:
         action_fields: Dict[str, tuple] = None,       # Actions required by the game (e.g. dropdowns)
         
     ) -> Type[BaseModel]:
+        if agent.is_human():
+            return cls.create_human_model(public_response_prompt, action_fields)
+            
         agent_logic_fields = agent.logic_fields()
         agent_complex_fields = agent.internal_thinking_fields()
         ordered_fields = {}

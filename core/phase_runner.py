@@ -25,8 +25,7 @@ class PhaseRunner:
     def run_phase(self, recipe: 'PhaseRecipe'):
         game_board = self.simulation_engine.gameBoard
         game_manager = self.simulation_engine.game_manager
-        self.printPhaseHeader(game_board, self.simulation_engine.phase_number)
-        
+        game_board.game_sink.on_phase_header(self.simulation_engine.phase_number)
         host_intro, system_summary = recipe.phase_intro_string(self.simulation_engine.phase_number, len(self.simulation_engine.agents), self.simulation_engine.game_manager)
         
         game_board.host_broadcast(host_intro)

@@ -94,6 +94,10 @@ class GameEventSink(ABC):
         when they're thread pooling.
         """
         
+    @abstractmethod
+    def on_points_update(self, points: dict[str, int]) -> None:
+        """Scoreboard changed outside of round boundaries."""
+        
      
         
 
@@ -121,6 +125,7 @@ class NoopGameSink(GameEventSink):
     def on_public_action(self, speaker, message, color=""): pass
     def on_private_thought(self, speaker, message): pass
     def delay(self, delay): pass
+    def on_points_update(self, points): pass
 
 class CapturingGameSink(GameEventSink):
     """
@@ -144,6 +149,7 @@ class CapturingGameSink(GameEventSink):
         self.turn_headers: list[int] = []
         self.public_actions: list[dict] = []
         self.private_thoughts: list[dict] = []
+        self.points_updates: list[dict[str, int]] = []
 
     def on_game_intro(self, message):
         self.game_intros.append(message)
@@ -174,3 +180,6 @@ class CapturingGameSink(GameEventSink):
         
     def delay(self, delay: float = 0.0) -> None:
         pass
+
+    def on_points_update(self, points: dict[str, int]) -> None:
+        self.points_updates.append(dict(points))

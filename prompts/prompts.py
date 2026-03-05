@@ -36,9 +36,8 @@ class PromptLibrary:
             f"Consider the current phase, what round you're in, and what comes next- If there is an elimination coming up, who will be going home?"
             f"Context:\n{history_context}\n\n"
             f"---------------------------------------------------------------------"
-            f"No matter what, say something with the intention of moving yourself forward. Be proactive, dive in, speak to get responses."
             f"---------------------------------------------------------------------"
-            f"Your Turn:")
+            f"\n\nYour Turn:")
     
     
     

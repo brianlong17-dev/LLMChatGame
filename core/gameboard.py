@@ -40,6 +40,7 @@ class GameBoard:
         
         #break this up
         self.round_number += 1
+        self.turn_number = 0
         self.round_entries.append(list(self.currentRound))
         roundSummary = self.game_master.summariseRound(self)
         
@@ -48,6 +49,8 @@ class GameBoard:
         self.round_summaries.append(roundSummary.round_summary)
         
         self.game_sink.on_round_summary(roundSummary.round_summary)
+        self.game_sink.delay(5.0)
+        self.game_sink.on_round_start(self.round_number, dict(self.agent_scores))
         self.currentRound.clear()
         self.broadcast_public_action("SYSTEM", f"BEGIN ROUND {self.round_number}")
     
@@ -121,8 +124,10 @@ class GameBoard:
     def append_agent_points(self, agent_name, points):
         new_score = max(0, self.agent_scores[agent_name] + points)
         self.agent_scores[agent_name] = new_score
+        self.game_sink.on_points_update(dict(self.agent_scores))
              
     def resetScores(self):
         for entry in self.agent_scores:
             self.agent_scores[entry] = 0
+        self.game_sink.on_points_update(dict(self.agent_scores))
                 

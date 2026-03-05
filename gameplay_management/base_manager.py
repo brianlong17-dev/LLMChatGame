@@ -49,7 +49,7 @@ class BaseManager: #base class
     def run_discussion_round(self):
         for player in self.simulationEngine.agents:
             if not self.gameBoard.agent_response_allowed.get(player.name, True):
-                continue #this is almost redundant because the judge is almost gone.
+                continue #this is almost redundant because the judge is almost gone. #TODO
             #-----------
             user_content =  "Time to discuss!"
             basic_model = DynamicModelFactory.create_model_(player, "basic_turn")

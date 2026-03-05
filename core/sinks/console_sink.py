@@ -25,8 +25,15 @@ class ConsoleGameEventSink(GameEventSink):
     def on_phase_intro(self, host_text: str, summary_text: str) -> None:
         ConsoleRenderer.print_public_action("HOST", host_text)
         ConsoleRenderer.print_public_action("", summary_text, "SYS")
-
+        
+    def on_round_end(self, round_number: int, scores: dict[str, int]) -> None:
+        #summary should be here.
+        pass
+    
+    
     def on_round_start(self, round_number: int, scores: dict[str, int]) -> None:
+        if True:
+            input("Press Enter to continue to the next round...")
         sorted_scores = sorted(scores.items(), key=lambda x: -x[1])
         lines = [f"\n{'='*30}", f"{'RANK':<6} {'AGENT':<15} {'SCORE':>5}", "-" * 30]
         for rank, (name, score) in enumerate(sorted_scores, 1):
@@ -59,3 +66,6 @@ class ConsoleGameEventSink(GameEventSink):
 
     def delay(self, delay: float = 0.0) -> None:
         time.sleep(delay)
+        
+    def on_points_update(self, points: dict[str, int]) -> None:
+        pass
