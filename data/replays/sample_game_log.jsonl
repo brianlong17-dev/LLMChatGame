@@ -1,0 +1,15 @@
+{"type":"on_game_intro","text":"Welcome to Swan Hatch. Only one survives.","phase":0}
+{"type":"on_phase_header","phase_number":1}
+{"type":"on_phase_intro","phase":1,"host_text":"Phase 1 begins.","summary_text":"Discuss and position yourselves before the game event."}
+{"type":"on_round_start","phase":1,"round_number":1,"scores":{"Ava":0,"Bryn":0,"Cato":0,"Dara":0}}
+{"type":"on_turn_header","phase":1,"turn_number":1}
+{"type":"on_public_action","phase":1,"speaker":"Ava","message":"I say we cooperate this round."}
+{"type":"on_private_thought","phase":1,"speaker":"Bryn","message":"I do not trust Ava yet."}
+{"type":"on_inner_workings","phase":1,"speaker":"Bryn","inner":{"strategy":"deflect","risk_score":0.42}}
+{"type":"on_round_summary","phase":1,"summary":"Trust is low; alliances are unstable."}
+{"type":"on_phase_header","phase_number":2}
+{"type":"on_phase_intro","phase":2,"host_text":"Phase 2 begins.","summary_text":"A vote will follow discussion."}
+{"type":"on_round_start","phase":2,"round_number":2,"scores":{"Ava":3,"Bryn":1,"Cato":2}}
+{"type":"on_public_action","phase":2,"speaker":"SYSTEM","message":"Dara has been eliminated.","eliminated":"Dara"}
+{"type":"on_round_summary","phase":2,"summary":"Ava leads, tension rising."}
+{"type":"on_game_over","phase":2,"winner_name":"Ava"}
