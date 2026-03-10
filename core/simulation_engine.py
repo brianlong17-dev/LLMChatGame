@@ -41,6 +41,7 @@ class SimulationEngine:
   
     def set_up_players(self, number_of_players, generic_players):
         #TODO this printing is temp
+        #TODO this should move to its own thing... I think the simulation engine should be passed agents 
         print(PromptLibrary.line_break)
         if generic_players:
             self.agents = self.generator.genericPlayers(number_of_players)
@@ -52,9 +53,10 @@ class SimulationEngine:
         #player set up will move
         self.set_up_players(number_of_players, generic_players)
         if human_player:
-            name = input("Name?\n")
+            name = 'Brian' # input("Name?\n")
             human_player = Human(name)
             self.agents.append(human_player)
+            self.gameBoard.has_human_player = True
             
         self.initialiseGameBoard()
         

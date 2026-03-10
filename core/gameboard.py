@@ -24,6 +24,8 @@ class GameBoard:
         self.removed_agent_names = []
         self.overall_game_rules = ""
         self.context_builder = ContextBuilder(game_board = self)
+        self.has_human_player = False #this is for some printing differences
+        self.testing_prompts = False
     
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
@@ -35,25 +37,22 @@ class GameBoard:
         #TODO - what is the point here- ? only on discussion turns? why?
         self.turn_number += 1
         self.game_sink.on_turn_header(self.turn_number)
-            
-    def newRound(self):
+    
+    def endRound(self):
+        roundSummary = self.game_master.summariseRound(self)
+        self.round_summaries.append(roundSummary.round_summary)
+        self.game_sink.on_round_summary(roundSummary.round_summary)
+        self.round_entries.append(list(self.currentRound))
+        self.currentRound.clear()
         
-        #break this up
+        
+    def newRound(self):
         self.round_number += 1
         self.turn_number = 0
-        self.round_entries.append(list(self.currentRound))
-        roundSummary = self.game_master.summariseRound(self)
-        
-        #roundSummaryString = "\n".join([f"{key}: {value}" for key, value in roundSummary])
-        
-        self.round_summaries.append(roundSummary.round_summary)
-        
-        self.game_sink.on_round_summary(roundSummary.round_summary)
-        self.game_sink.delay(5.0)
         self.game_sink.on_round_start(self.round_number, dict(self.agent_scores))
-        self.currentRound.clear()
-        self.broadcast_public_action("SYSTEM", f"BEGIN ROUND {self.round_number}")
-    
+        
+        
+        
     #--------- public output --------- #
     def _as_display_name(self, speaker: Union[str, BaseAgent]):
         if isinstance(speaker, str):

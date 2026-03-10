@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from gameplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
+from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
 
 
 class _TrackingGameMaster:

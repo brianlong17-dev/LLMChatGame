@@ -39,7 +39,7 @@ class DynamicModelFactory:
         action_fields: Dict[str, tuple] = None,       # Actions required by the game (e.g. dropdowns)
         
     ) -> Type[BaseModel]:
-        if agent.is_human():
+        if agent.is_human() and not agent.is_testing:
             return cls.create_human_model(public_response_prompt, action_fields)
             
         agent_logic_fields = agent.logic_fields()

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
    
         
-class BaseManager: #base class
+class BaseRound: #base class
     def __init__(self, gameBoard, simulationEngine):
         self.gameBoard = gameBoard
         self.simulationEngine = simulationEngine
@@ -23,7 +23,18 @@ class BaseManager: #base class
     def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0):
         #TODO depreciate
         self.gameBoard.handle_public_private_output(agent, result, delay)
-        
+    
+    @classmethod
+    def is_discussion(cls):
+        return False
+    
+    @classmethod
+    def is_game(cls):
+        return False
+    
+    @classmethod
+    def is_vote(cls):
+        return False
     
     def _run_tasks(
         self,
@@ -40,24 +51,7 @@ class BaseManager: #base class
         return [worker(*task) for task in tasks]
 
     
-    def _output_discussion_round_text(self, player, result):
-        #TODO depreciate
-        self.gameBoard.handle_public_private_output(player, result, override = True)
-        
-
     
-    def run_discussion_round(self):
-        for player in self.simulationEngine.agents:
-            if not self.gameBoard.agent_response_allowed.get(player.name, True):
-                continue #this is almost redundant because the judge is almost gone. #TODO
-            #-----------
-            user_content =  "Time to discuss!"
-            basic_model = DynamicModelFactory.create_model_(player, "basic_turn")
-            result = player.take_turn_standard(user_content, self.gameBoard, basic_model)
-            #----------
-            self.gameBoard.new_turn_print() #why only here... probably on any public turn?
-            self._output_discussion_round_text(player, result)
-        
     
     
     def _names(self, agents: Sequence["Debater"]) -> list[str]:

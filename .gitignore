@@ -5,6 +5,7 @@
 my-llm-project-output.md
 my-llm-project-output.txt
 output/
+data/
 
 # Editor/System junk
 .vscode/

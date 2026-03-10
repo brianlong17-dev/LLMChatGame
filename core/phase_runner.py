@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
+
 
 
 if TYPE_CHECKING:
@@ -22,16 +24,47 @@ class PhaseRunner:
         #TODO
         game_board.game_sink.on_phase_header(phase_number)
         
+    def run_vote_round_with_immunity_types(self, round, game_manager, immunity_types):
+        immune_players = []
+        if immunity_types:
+            for immunity_type in immunity_types:
+                result = immunity_type.run_immunity(game_manager) #TODO run_immunity should validate
+                immune_players.extend(result)
+        immune_players = list(dict.fromkeys(immune_players)) #remove any dupes
+        round.run_vote(game_manager, immunity_players=immune_players)
+
+    
+    
+    def run_round(self, round, game_board, game_manager, immunity_types):
+        
+        game_board.newRound()
+        if round.is_vote():
+            return self.run_vote_round_with_immunity_types(round, game_manager, immunity_types)
+        round.run_game(game_manager)
+        game_board.system_broadcast(game_board.agent_scores)
+        game_board.endRound()
+        #system sumamry 
+        #print scores.
+        
+        
     def run_phase(self, recipe: 'PhaseRecipe'):
         game_board = self.simulation_engine.gameBoard
         game_manager = self.simulation_engine.game_manager
+        
+        
         game_board.game_sink.on_phase_header(self.simulation_engine.phase_number)
-        host_intro, system_summary = recipe.phase_intro_string(self.simulation_engine.phase_number, len(self.simulation_engine.agents), self.simulation_engine.game_manager)
-        
+        host_intro = recipe.phase_intro_string(self.simulation_engine.phase_number, len(self.simulation_engine.agents), self.simulation_engine.game_manager)
+        system_summary = recipe.phase_summary_string(game_manager)
         game_board.host_broadcast(host_intro)
-        game_board.broadcast_public_action("", system_summary, "SYS")
-        #above can move
+        game_board.broadcast_public_action("", system_summary, "SYS") #these need their own thing
         
+        
+        #above can move
+        for round in recipe.rounds:
+            self.run_round(round, game_board, game_manager, recipe.immunity_types) #this isnt right. you shouldnt send this every time.
+         
+        
+        return
         for _ in range(recipe.pre_game_discussion_rounds):  
             self.trigger_new_round(game_board)
             self.simulation_engine.game_manager.run_discussion_round()
@@ -79,21 +112,4 @@ class PhaseRunner:
         
         return
     
-    #move
-    def _validate_immunity(self, immunity_type, immunity_names):
-        #goes without saying this has no business here
-        if not isinstance(immunity_names, list):
-                raise TypeError(
-                        f"Immunity '{immunity_type.display_name(self.simulation_engine.game_master)}' must return list[str], got {type(immunity_names).__name__}"
-                    )
-        if not all(isinstance(name, str) for name in immunity_names):
-            raise TypeError(
-                f"Immunity '{immunity_type.display_name(self.simulation_engine.game_master)}' must return list[str], got non-string values: {immunity_names!r}"
-            )
-        active_player_names = {agent.name for agent in self.simulation_engine.agents}
-        invalid_names = [name for name in immunity_names if name not in active_player_names]
-        if invalid_names:
-            raise ValueError(
-                f"Immunity '{immunity_type.display_name}' returned unknown player name(s): {invalid_names}"
-            )
-      
+    

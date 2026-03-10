@@ -1,4 +1,6 @@
-from gameplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
+import random
+
+from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
 
 
 class WildcardImmunity(ImmunityMechanicsMixin):
@@ -29,3 +31,12 @@ class WildcardImmunity(ImmunityMechanicsMixin):
         winner_response = self.respond_to(winner , host_string)
         self.publicPrivateResponse(winner, winner_response)
         return [response.target_name]
+
+    #TODO move to class maybe
+    def get_wildcard_player_random_trait(self) -> list[str]:
+        traits = ["chaotic", "kind", "vengeful", "calculating"]
+        trait = random.choice(traits)
+        response = self.gameBoard.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names, trait)
+        print(response)
+        return [response.target_name]
+    

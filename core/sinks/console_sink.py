@@ -32,15 +32,15 @@ class ConsoleGameEventSink(GameEventSink):
     
     
     def on_round_start(self, round_number: int, scores: dict[str, int]) -> None:
-        if True:
+        if False:
             input("Press Enter to continue to the next round...")
-        sorted_scores = sorted(scores.items(), key=lambda x: -x[1])
-        lines = [f"\n{'='*30}", f"{'RANK':<6} {'AGENT':<15} {'SCORE':>5}", "-" * 30]
-        for rank, (name, score) in enumerate(sorted_scores, 1):
-            prefix = "👑" if rank == 1 else "  "
-            lines.append(f"{rank:<6} {prefix} {name:<13} {score:>5}")
-        lines.append("=" * 45)
-        ConsoleRenderer.print_system_private("\n".join(lines))
+        #sorted_scores = sorted(scores.items(), key=lambda x: -x[1])
+        # lines = [f"\n{'='*30}", f"{'RANK':<6} {'AGENT':<15} {'SCORE':>5}", "-" * 30]
+        # for rank, (name, score) in enumerate(sorted_scores, 1):
+        #     prefix = "👑" if rank == 1 else "  "
+        #     lines.append(f"{rank:<6} {prefix} {name:<13} {score:>5}")
+        # lines.append("=" * 45)
+        ConsoleRenderer.print_public_action("SYSTEM", scores)
         ConsoleRenderer.print_public_action("SYSTEM", f"BEGIN ROUND {round_number}")
 
     def on_round_summary(self, summary: str) -> None:

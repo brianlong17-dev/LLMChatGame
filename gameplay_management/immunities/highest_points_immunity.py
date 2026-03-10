@@ -1,6 +1,6 @@
 import random
 
-from gameplay_management.immunity_mechanicsMixin import ImmunityMechanicsMixin
+from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
 
 
 class HighestPointsImmunity(ImmunityMechanicsMixin):

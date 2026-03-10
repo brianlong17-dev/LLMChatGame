@@ -6,13 +6,18 @@ from prompts.gamePrompts import GamePromptLibrary
 from prompts.votePrompts import VotePromptLibrary
     
    
-class VoteMechanicsMixin(BaseManager):
+class VoteMechanicsMixin(BaseRound):
     def __init__(self, gameBoard, simulationEngine):
         super().__init__(gameBoard, simulationEngine) 
     
     ###############
     #   Helper    #
     ###############
+    
+    @classmethod
+    def is_vote(self):
+        return True
+    
     def _validate_immunity(self, immunity_players: Optional[Sequence[str]]) -> list[str]:
         if immunity_players is None:
             return []

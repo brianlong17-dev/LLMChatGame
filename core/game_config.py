@@ -8,6 +8,8 @@ class GameConfig:
         
         self.testing_human_as_agent = False
         
+        self.discussion_round_topic = "Chat and strategise"
+        
         # --------------------------------------------------------------
         # Global / scoreboard defaults
         # --------------------------------------------------------------
