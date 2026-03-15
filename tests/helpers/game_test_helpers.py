@@ -81,10 +81,9 @@ class TestSimulation:
 
 
 def attach_test_runtime(board, simulation, game_manager, game_master=None):
-    board.game_master = game_master or NoopGameMaster()
-    board.phase_progress_string = ""
     simulation.gameBoard = board
     simulation.game_manager = game_manager
+    simulation.game_master = game_master or NoopGameMaster()
     board.phase_runner = PhaseRunner(simulation)
     return game_manager
 
@@ -165,7 +164,6 @@ def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
     agents = [make_debater(name, clients[name]) for name in agent_specs]
 
     board = GameBoard(TestGameSink())
-    board.execution_style = execution_style
     board.initialize_agents(agents)
     if initial_scores:
         for name, score in initial_scores.items():
@@ -173,6 +171,7 @@ def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
                 board.agent_scores[name] = score
 
     simulation = TestSimulation(agents)
+    simulation.gameplay_config.execution_style = execution_style
     manager = UnifiedController(board, simulation)
     attach_test_runtime(board, simulation, manager)
     return manager, board, agents, clients

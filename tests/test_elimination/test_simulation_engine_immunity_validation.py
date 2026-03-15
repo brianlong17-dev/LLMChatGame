@@ -12,7 +12,7 @@ def _immunity_type(display_name="Bad immunity"):
 
 def test_validate_immunity_raises_if_immunity_returns_non_list():
     with pytest.raises(TypeError, match="must return list\\[str\\]"):
-        ImmunityMechanicsMixin._validate_immunity(
+        ImmunityMechanicsMixin._validate_immunity_names(
             _immunity_type(),
             "Alice",
             SimpleNamespace(),
@@ -22,7 +22,7 @@ def test_validate_immunity_raises_if_immunity_returns_non_list():
 
 def test_validate_immunity_raises_if_immunity_returns_non_string_entries():
     with pytest.raises(TypeError, match="must return list\\[str\\]"):
-        ImmunityMechanicsMixin._validate_immunity(
+        ImmunityMechanicsMixin._validate_immunity_names(
             _immunity_type(),
             ["Alice", 123],
             SimpleNamespace(),
@@ -32,7 +32,7 @@ def test_validate_immunity_raises_if_immunity_returns_non_string_entries():
 
 def test_validate_immunity_raises_if_immunity_returns_unknown_player_name():
     with pytest.raises(ValueError, match="unknown player name"):
-        ImmunityMechanicsMixin._validate_immunity(
+        ImmunityMechanicsMixin._validate_immunity_names(
             _immunity_type(),
             ["Ghost"],
             SimpleNamespace(),
