@@ -5,12 +5,21 @@ class GameConfig:
     """
 
     def __init__(self):
+        
+        self.testing_human_as_agent = False
+        
+        self.discussion_round_topic = "Chat and strategise"
+        
+        self.inject_host_question = True
+        
+        self.execution_style = False
         # --------------------------------------------------------------
         # Global / scoreboard defaults
         # --------------------------------------------------------------
         self.starting_score = 0
         self.minimum_score_floor = 0
         self.points_per_survived_vote = 2
+        
 
         # --------------------------------------------------------------
         # Guess The Number
@@ -72,3 +81,16 @@ class GameConfig:
             "sacrifice": "Sacrificer",
             "sob_story": "Perform your sob story",
         }
+
+    def set_guess_range(self, number):
+        self.guess_number_range = number
+    
+    def set_pd_pairing_none(self):
+        self.pd_pairing_method = self.pd_pairing_choice_none
+    
+    def set_pd_pairing_random(self):
+        self.pd_pairing_method = self.pd_pairing_choice_random
+    
+    def set_pd_pairing_lowest(self):
+        self.pd_pairing_method = self.pd_pairing_choice_lowest
+    

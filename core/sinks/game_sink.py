@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Iterable, Union
 
 from agents.base_agent import BaseAgent
 
@@ -51,7 +51,7 @@ class GameEventSink(ABC):
     # -- Round lifecycle ------------------------------------------------------
 
     @abstractmethod
-    def on_round_start(self, round_number: int, scores: dict[str, int]) -> None:
+    def on_round_start(self, round_number: int, scores: str) -> None:
         """
         Signals a new round beginning. Scores are bundled here because
         on console they always print together, and on a frontend this
@@ -86,7 +86,25 @@ class GameEventSink(ABC):
         On a frontend this might be a collapsed/hoverable aside.
         """
         ...
-        
+
+    @abstractmethod
+    def on_inner_workings(
+        self,
+        speaker: Speaker,
+        inner_workings: Iterable[tuple[str, object]],
+        override: bool = False,
+    ) -> None:
+        """
+        Optional structured debug output derived from non-public response fields.
+        Implementations can ignore it unless override is enabled.
+        """
+        ...
+
+    @abstractmethod
+    def system_private(self, speaker: Speaker, message: str) -> None:
+        """System-only private output that should never enter public history."""
+        ...
+
     @abstractmethod
     def delay(self, delay: float = 0.0) -> None:
         """ 
@@ -94,8 +112,25 @@ class GameEventSink(ABC):
         when they're thread pooling.
         """
         
-     
-        
+    @abstractmethod
+    def on_points_update(self, points: dict[str, int]) -> None:
+        """Scoreboard changed outside of round boundaries."""
+        ...
+
+    @abstractmethod
+    def get_user_input_simple(self, field_name: str, description: str) -> str:
+        """Collect freeform input for a human-controlled player."""
+        ...
+
+    @abstractmethod
+    def get_user_input_multiple_choice(
+        self,
+        field_name: str,
+        description: str,
+        choices: list[str],
+    ) -> str:
+        """Collect a single choice for a human-controlled player."""
+        ...
 
 
 # ---------------------------------------------------------------------------
@@ -111,6 +146,12 @@ class GameEventSink(ABC):
 class NoopGameSink(GameEventSink):
     """Silently discards all events. Use in tests that don't care about output."""
 
+    def get_user_input_simple(self, field_name, description):
+        raise RuntimeError("NoopGameSink cannot collect user input")
+
+    def get_user_input_multiple_choice(self, field_name, description, choices):
+        raise RuntimeError("NoopGameSink cannot collect user input")
+
     def on_game_intro(self, message): pass
     def on_game_over(self, winner_name): pass
     def on_phase_header(self, phase_number): pass
@@ -120,7 +161,10 @@ class NoopGameSink(GameEventSink):
     def on_turn_header(self, turn_number): pass
     def on_public_action(self, speaker, message, color=""): pass
     def on_private_thought(self, speaker, message): pass
+    def on_inner_workings(self, speaker, inner_workings, override=False): pass
+    def system_private(self, speaker, message): pass
     def delay(self, delay): pass
+    def on_points_update(self, points): pass
 
 class CapturingGameSink(GameEventSink):
     """
@@ -131,7 +175,7 @@ class CapturingGameSink(GameEventSink):
         board = GameBoard(game_master, sink=sink)
         ...
         assert any("Alice" in str(e["speaker"]) for e in sink.public_actions)
-        assert sink.round_starts[0]["scores"]["Alice"] == 5
+        assert "Alice: 5" in sink.round_starts[0]["scores"]
     """
 
     def __init__(self):
@@ -144,6 +188,15 @@ class CapturingGameSink(GameEventSink):
         self.turn_headers: list[int] = []
         self.public_actions: list[dict] = []
         self.private_thoughts: list[dict] = []
+        self.system_messages: list[dict] = []
+        self.inner_workings: list[dict] = []
+        self.points_updates: list[dict[str, int]] = []
+
+    def get_user_input_simple(self, field_name, description):
+        raise RuntimeError("CapturingGameSink cannot collect user input")
+
+    def get_user_input_multiple_choice(self, field_name, description, choices):
+        raise RuntimeError("CapturingGameSink cannot collect user input")
 
     def on_game_intro(self, message):
         self.game_intros.append(message)
@@ -158,7 +211,7 @@ class CapturingGameSink(GameEventSink):
         self.phase_intros.append({"host_text": host_text, "summary_text": summary_text})
 
     def on_round_start(self, round_number, scores):
-        self.round_starts.append({"round_number": round_number, "scores": dict(scores)})
+        self.round_starts.append({"round_number": round_number, "scores": scores})
 
     def on_round_summary(self, summary):
         self.round_summaries.append(summary)
@@ -171,6 +224,21 @@ class CapturingGameSink(GameEventSink):
 
     def on_private_thought(self, speaker, message):
         self.private_thoughts.append({"speaker": speaker, "message": message})
+
+    def on_inner_workings(self, speaker, inner_workings, override=False):
+        self.inner_workings.append(
+            {
+                "speaker": speaker,
+                "inner_workings": list(inner_workings),
+                "override": override,
+            }
+        )
+
+    def system_private(self, speaker, message):
+        self.system_messages.append({"speaker": speaker, "message": message})
         
     def delay(self, delay: float = 0.0) -> None:
         pass
+
+    def on_points_update(self, points: dict[str, int]) -> None:
+        self.points_updates.append(dict(points))

@@ -14,5 +14,5 @@ def test_vote_definition_dispatch_runs_vote_and_applies_elimination_side_effects
     VoteEachPlayer.run_vote(manager, immunity_players=[])
 
     assert [agent.name for agent in manager.simulationEngine.agents] == ["Alice", "Cara"]
-    assert "Bob" in board.removed_agent_names
+    assert "Bob" in board.phase_runner.removed_agent_names()
     assert len(clients["Bob"].calls) == 1

@@ -1,10 +1,13 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
+
+from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
 
 
 
 if TYPE_CHECKING:
     from core.simulation_engine import SimulationEngine
-    from core.phases import PhaseRecipe
+    from core.phase_recipe import PhaseRecipe
 
 
 
@@ -12,89 +15,79 @@ if TYPE_CHECKING:
 class PhaseRunner:
     def __init__(self, simulation_engine: 'SimulationEngine'):
         self.simulation_engine = simulation_engine
+        self.current_recipe = None
+        self.current_round_index = 0
+        self.overall_game_rules = ""
+        self.set_up()
         
+    def set_up(self):
+        self.game_board = self.simulation_engine.gameBoard
+        self.game_manager = self.simulation_engine.game_manager
+
+    def agent_names(self):
+        return [agent.name for agent in self.simulation_engine.agents]
+    
+    def removed_agent_names(self):
+        return [agent.name for agent in self.simulation_engine.dead_agents]
+
+    def run_vote_round_with_immunity_types(self, round, immunity_types):
+        immune_players = []
+        if immunity_types:
+            for immunity_type in immunity_types:
+                result = immunity_type.run_immunity(self.game_manager) #TODO run_immunity should validate
+                immune_players.extend(result)
+        immune_players = list(dict.fromkeys(immune_players)) #remove any dupes
+        round.run_vote(self.game_manager, immunity_players=immune_players)
+
+    
+    def get_phase_progress_string(self):
+        return self.current_recipe.phase_progress_string(self.game_manager,
+                                                         self.current_round_index)
         
-    def trigger_new_round(self, game_baord):
-        game_baord.system_broadcast(game_baord.agent_scores)
-        game_baord.newRound()
+    def run_round(self, round, immunity_types):
+        self.current_round_index += 1
+        self.game_board.newRound()
+        if round.is_vote():
+            self.run_vote_round_with_immunity_types(round, immunity_types)
+        else:
+            round.run_game(self.game_manager)
         
-    def printPhaseHeader(self, game_board, phase_number):
-        #TODO
-        game_board.game_sink.on_phase_header(phase_number)
+        #self.game_board.system_broadcast(self.game_board.agent_scores)
+        round_summary = self.simulation_engine.game_master.summariseRound(self.game_board)
+        
+        self.game_board.endRound(round_summary)
+
         
     def run_phase(self, recipe: 'PhaseRecipe'):
-        game_board = self.simulation_engine.gameBoard
-        game_manager = self.simulation_engine.game_manager
-        self.printPhaseHeader(game_board, self.simulation_engine.phase_number)
         
-        host_intro, system_summary = recipe.phase_intro_string(self.simulation_engine.phase_number, len(self.simulation_engine.agents), self.simulation_engine.game_manager)
-        
-        game_board.host_broadcast(host_intro)
-        game_board.broadcast_public_action("", system_summary, "SYS")
-        #above can move
-        
-        for _ in range(recipe.pre_game_discussion_rounds):  
-            self.trigger_new_round(game_board)
-            self.simulation_engine.game_manager.run_discussion_round()
-        
-        if recipe.mini_game:
-            self.trigger_new_round(game_board)
-            game_name = recipe.mini_game.display_name(game_manager)
-            game_rules = recipe.mini_game.rules_description(game_manager)
-            game_board.system_broadcast(f"🎲 GAME EVENT: {game_name}\n")
-            game_board.system_broadcast(f"GAME RULES: {game_rules}\n")
-            recipe.mini_game.run_game(game_manager)
+        if recipe.overall_game_rules:
+            self.overall_game_rules = recipe.overall_game_rules
             
+        self.current_round_index = 0
+        self.set_up() #this is in case the game manager or board wasn't instanciated on the simulation engine yet...
         
-        for _ in range(recipe.pre_vote_discussion_rounds):
-            self.trigger_new_round(game_board)
-            game_manager.run_discussion_round()
+        self.current_recipe = recipe 
+        self.game_board.new_phase() 
         
-        if recipe.vote_type:
-            
-            self.trigger_new_round(game_board)
-            if recipe.vote_type:
-                immune_players: list[str] = []
+        host_intro = self.current_recipe.phase_intro_string(self.game_board.phase_number, 
+                                    len(self.agent_names()), self.game_manager)
+        system_phase_summary = self.current_recipe.phase_summary_string(self.game_manager)
+        
+        self.game_board.host_broadcast(host_intro)
+        self.game_board.system_broadcast(system_phase_summary, private = True)
+        
+        
+        
+        for round in recipe.rounds:
+            self.run_round(round, recipe.immunity_types)
+        
+        
+        agents = self.simulation_engine.agents
+        with ThreadPoolExecutor(max_workers=min(32, len(agents))) as executor:
+            for agent in agents:
+                executor.submit(agent.summarise_phase, self.game_board)
                 
-                if recipe.immunity_types:
-                    for immunity_type in recipe.immunity_types:
-                        result = immunity_type.run_immunity(game_manager)
-                        self._validate_immunity(immunity_type, result)
-                        immune_players.extend(result)
-                immune_players = list(dict.fromkeys(immune_players))
-            game_board.system_broadcast(f"🗳️ - TRIGGERING VOTE - {recipe.vote_type.display_name(game_manager)}\n")
-                                          #  f"- {recipe.vote_type.rules_description(self.game_manager)}")
-                                          # rules should be handled in game by host.
             
-            recipe.vote_type.run_vote(game_manager, immunity_players=immune_players)
-        
-        
-        for i in range(recipe.post_vote_discussion_rounds):
-            if len(self.simulation_engine.agents) <= 1:
-                break #already over
-            self.trigger_new_round(game_board)
-            round_number = recipe.post_vote_discussion_rounds - i
-            game_board.host_broadcast(f"You have {round_number} round(s) to discuss, before the next phase begins")
-            game_manager.run_discussion_round()
-                
-        
-        return
+        self.game_board.endPhase()
+  
     
-    #move
-    def _validate_immunity(self, immunity_type, immunity_names):
-        #goes without saying this has no business here
-        if not isinstance(immunity_names, list):
-                raise TypeError(
-                        f"Immunity '{immunity_type.display_name(self.simulation_engine.game_master)}' must return list[str], got {type(immunity_names).__name__}"
-                    )
-        if not all(isinstance(name, str) for name in immunity_names):
-            raise TypeError(
-                f"Immunity '{immunity_type.display_name(self.simulation_engine.game_master)}' must return list[str], got non-string values: {immunity_names!r}"
-            )
-        active_player_names = {agent.name for agent in self.simulation_engine.agents}
-        invalid_names = [name for name in immunity_names if name not in active_player_names]
-        if invalid_names:
-            raise ValueError(
-                f"Immunity '{immunity_type.display_name}' returned unknown player name(s): {invalid_names}"
-            )
-      

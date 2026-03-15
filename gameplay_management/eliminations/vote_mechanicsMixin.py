@@ -6,19 +6,22 @@ from prompts.gamePrompts import GamePromptLibrary
 from prompts.votePrompts import VotePromptLibrary
     
    
-class VoteMechanicsMixin(BaseManager):
+class VoteMechanicsMixin(BaseRound):
     def __init__(self, gameBoard, simulationEngine):
         super().__init__(gameBoard, simulationEngine) 
     
     ###############
     #   Helper    #
     ###############
+    
+    @classmethod
+    def is_vote(self):
+        return True
+    
     def _validate_immunity(self, immunity_players: Optional[Sequence[str]]) -> list[str]:
+        
         if immunity_players is None:
             return []
-        invalid_types = [type(player).__name__ for player in immunity_players if not isinstance(player, str)]
-        if invalid_types:
-            raise TypeError(f"immunity_players must be list[str], got invalid item types: {invalid_types}")
         immunity_players = list(dict.fromkeys(immunity_players))
         if len(self.simulationEngine.agents) == len(immunity_players):
             host_message = VotePromptLibrary.immunity_all_players_reset
@@ -35,12 +38,12 @@ class VoteMechanicsMixin(BaseManager):
             
             
             self.gameBoard.remove_agent_state(victim.name)
-            self.simulationEngine.agents.remove(victim)
+            self.simulationEngine.eliminate_player(victim)
             finalWordsResult = self.respond_to(victim, host_message, 
                                                instruction_override = instruction_override)
             print(finalWordsResult)
             self.publicPrivateResponse(victim, finalWordsResult)
-            if self.gameBoard.execution_style:
+            if self.cfg().execution_style:
                 executionString = self.get_execution_string(victim)
                 self.gameBoard.system_broadcast(executionString)
         else:

@@ -11,21 +11,20 @@ class ContextBuilder:
         self.game_board = game_board
         #some settings can probably move here
     
+    def current_round_formatted(self):
+        return  self._format_dialogue_list(self.game_board.currentRound)
+    
     def get_full_context(self):
-        """Combines them with clear markdown headers for the LLM to read."""
-        current_text = self._format_dialogue_list(self.game_board.currentRound)
-        round_summaries_formatted = ("\n".join(list(self.game_board.round_summaries)))
+        current_text = self.current_round_formatted()
+        rounds_count = max(len(self.game_board.current_phase_rounds), self.game_board.full_rounds_text_amount)
         context_string = (
-            f"### PAST ROUND SUMMARIES  ###\n"
-            f"{round_summaries_formatted}\n\n"
-            f"### PAST {self.game_board.full_rounds_text_amount} ROUNDS  ###\n"
-            f"{self.history_text()}\n\n"
+            f"### PAST {rounds_count} ROUNDS  ###\n"
+            f"{self.formatted_recent_rounds(rounds_count)}\n\n"
             f"### CURRENT ROUND DIALOGUE ###\n"
             f"{current_text}"
         )
-        #print(f"XXX: {context_string} \n YYY" )
         return context_string 
-    
+            
     
     def _format_dialogue_list(self, dialogue_list):
         """Helper to turn a list of dicts into a readable string."""
@@ -33,14 +32,14 @@ class ContextBuilder:
             return "No dialogue yet."
         return "\n".join([f"{entry['speaker']}: {entry['message']}" for entry in dialogue_list])
     
-    def history_text(self):
-        """Returns the compressed/summarized history of past rounds."""
+    def formatted_recent_rounds(self, count):
+        
         if len(self.game_board.round_entries) == 0:
             return "This is the first round. There is no prior history."
-        recent_rounds = list(self.game_board.round_entries)[-self.game_board.full_rounds_text_amount:]
+        
+        recent_rounds = list(self.game_board.round_entries)[-count:]
         history_blocks = []
         for i, round_data in enumerate(recent_rounds):
-            # Calculate the actual round number for the header
             past_round_num = self.game_board.round_number - len(recent_rounds) + i
             block = (
                 f"--- ROUND {past_round_num} ARCHIVE ---\n"
@@ -50,10 +49,24 @@ class ContextBuilder:
             
         return "\n\n".join(history_blocks)
     
+    def phase_rounds_string(self):
+        if len(self.game_board.current_phase_rounds) == 0:
+            return "This is the first round. There is no prior history."
+        history_blocks = []
+        rounds = self.game_board.current_phase_rounds
+        for i, round_data in enumerate(rounds):
+            # Calculate the actual round number for the header
+            
+            block = (
+                f"--- PHASE {self.game_board.phase_number} - ROUND {i + 1}---\n"
+                f"{self._format_dialogue_list(round_data)}"
+            )
+            history_blocks.append(block)
+        return "\n\n".join(history_blocks)
     
     def get_dashboard_string(self, agent_name: str) -> str:
-        agent_scores = self.game_board.agent_scores
-        """Generates a hard-facts reality check for an agent's system prompt."""
+        agent_scores = dict(self.game_board.agent_scores)
+        """Generates a score dashboard."""
         if agent_name not in agent_scores:
             return "=== STATUS: ELIMINATED ===\nYou are dead. Observe the living."
 
@@ -71,7 +84,7 @@ class ContextBuilder:
         # 2. Build the Visual Dashboard
         dash = []
         dash.append("=== REALITY CHECK DASHBOARD ===")
-        overall_game_rules = self.game_board.overall_game_rules
+        overall_game_rules = self.game_board.phase_runner.overall_game_rules
         if overall_game_rules:
             dash.append("OVERALL GAME:")
             dash.append(overall_game_rules)
@@ -98,13 +111,18 @@ class ContextBuilder:
         # C. The Roster (Who is left?)
         # (Optional: You might not need this if everyone is in the leaderboard above, 
         # but strictly separating 'Dead' is useful)
-        removed_agent_names = self.game_board.removed_agent_names
+        removed_agent_names = self.game_board.phase_runner.removed_agent_names()
         dead_str = ", ".join(removed_agent_names) if removed_agent_names else "None"
-        dash.append(f"GRAVEYARD: {dead_str} (Do not plot against them)")
-        
-        dash.append("===============================")
+        dash.append(f"EVICTED PLAYERS: {dead_str} (Already gone. Do not plot against them)")
+        dash.append(self.current_phase_progress())
         return "\n".join(dash)
-        
+    
+    def current_phase_progress(self):
+        string = ("===============================")
+        string += ("CURRENT PHASE PROGRESS:")
+        string +=  (self.game_board.phase_runner.get_phase_progress_string())
+        string += ("===============================")
+        return string
         
    
         

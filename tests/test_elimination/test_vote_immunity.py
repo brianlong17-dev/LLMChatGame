@@ -1,5 +1,3 @@
-import pytest
-
 from prompts.votePrompts import VotePromptLibrary
 from tests.helpers.game_test_helpers import build_vote_game, host_messages
 
@@ -15,13 +13,6 @@ def test_validate_immunity_all_players_immune_clears_and_broadcasts():
     result = game._validate_immunity(["Alice", "Bob", "Cara"])
     assert result == []
     assert host_messages(board)[-1] == VotePromptLibrary.immunity_all_players_reset
-
-
-def test_validate_immunity_rejects_non_string_entries():
-    game, _board, _agents, _clients = build_vote_game({"Alice": [], "Bob": []})
-
-    with pytest.raises(TypeError, match="must be list\\[str\\]"):
-        game._validate_immunity(["Alice", object()])
 
 
 def test_validate_immunity_dedupes_names_preserving_order():

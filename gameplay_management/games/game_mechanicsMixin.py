@@ -1,5 +1,5 @@
 from pydantic import Field
-from gameplay_management.base_manager import BaseManager
+from gameplay_management.base_manager import BaseRound
 from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 import random
@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Dict, Literal
 if TYPE_CHECKING:
     from agents.player import Debater
 
-class GameMechanicsMixin(BaseManager):
+class GameMechanicsMixin(BaseRound):
     
     def _generate_pairings(self, agents, choose_partner, loser_picks_first = True):
         """Pairs agents and returns a list of tuples and the leftover agent."""
@@ -27,6 +27,10 @@ class GameMechanicsMixin(BaseManager):
 
         leftover = available[0] if available else None
         return pairs, leftover
+    
+    @classmethod
+    def is_game(self):
+        return True
     
     def _handle_manual_pairing(self, available_agents, loser_picks_first = True):
         """Helper to manage the 'choice' logic for a single pair."""

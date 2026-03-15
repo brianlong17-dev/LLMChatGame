@@ -35,7 +35,7 @@ class GameTargetedChoiceSacrifice(GameTargetedChoice):
             if my_score <= 0:
                 error_response = (f"{player.name} has no points, so has no choice but to sit this one out.")
                 return self.get_error_model(error_response)
-            targets = [name for name in self.gameBoard.agent_names if name != player.name]
+            targets = [name for name in self.gameBoard.agent_names() if name != player.name]
             targets.append("Pass") 
             action_fields = self._choose_name_field(targets, "Choose a player to attack, or 'Pass'.")
             spend_field_desc = (

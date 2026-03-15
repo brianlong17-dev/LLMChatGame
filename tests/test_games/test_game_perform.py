@@ -6,7 +6,7 @@ import pytest
 
 from agents.player import Debater
 from core.gameboard import GameBoard
-from tests.helpers.game_test_helpers import QueuedClient, host_messages, turn_payload
+from tests.helpers.game_test_helpers import QueuedClient, TestGameSink, TestSimulation, attach_test_runtime, host_messages, turn_payload
 
 
 @pytest.fixture(autouse=True)
@@ -15,7 +15,8 @@ def no_test_delays(monkeypatch):
 
 
 class NoopGameMaster:
-    pass
+    def summariseRound(self, *_args, **_kwargs):
+        return SimpleNamespace(round_summary="")
 
 
 def _load_game_perform_class():
@@ -33,7 +34,6 @@ def _build_perform_game(agent_specs, initial_scores=None):
         Debater(
             name=name,
             initial_persona=f"{name} persona",
-            initial_form=f"{name} form",
             client=clients[name],
             model_name="test-model",
             higher_model_name="test-model-high",
@@ -42,15 +42,17 @@ def _build_perform_game(agent_specs, initial_scores=None):
         for name in agent_specs
     ]
 
-    board = GameBoard(NoopGameMaster())
+    game_master = NoopGameMaster()
+    board = GameBoard(TestGameSink())
     board.initialize_agents(agents)
     if initial_scores:
         for name, score in initial_scores.items():
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents)
+    simulation = TestSimulation(agents)
     game = game_cls(board, simulation)
+    attach_test_runtime(board, simulation, game, game_master=game_master)
     game._shuffled_agents = lambda: list(simulation.agents)
     return game, board, agents, clients
 

@@ -22,7 +22,7 @@ class GameTargetedChoiceGive(GameTargetedChoice):
         
         
         def give_points_model(player):
-            other_agent_names = [name for name in self.gameBoard.agent_names if name != player.name]
+            other_agent_names = [name for name in self.gameBoard.agent_names() if name != player.name]
             action_fields = self._choose_name_field(other_agent_names, game_instruction) #player intro is not correct here
             return DynamicModelFactory.create_model_(player, model_name="GivePointsModel", action_fields=action_fields) 
             

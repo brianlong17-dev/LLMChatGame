@@ -5,60 +5,85 @@ from pydantic import BaseModel, ConfigDict
 
 from core.game_config import GameConfig
 
+from gameplay_management.discussion_round import DiscussionRound
 from gameplay_management.unified_controller import *
 
 class PhaseRecipe(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    pre_game_discussion_rounds: int = 2
-    mini_game: Optional[Type[GameMechanicsMixin]] = None
-    pre_vote_discussion_rounds: int = 1
-    vote_type: Optional[Type[VoteMechanicsMixin]] = None
-    post_vote_discussion_rounds: int = 0
+    rounds: List[Type[BaseRound]] = None 
     immunity_types: Optional[List[Type[ImmunityMechanicsMixin]]] = None  # e.g., ["winner_immunity", "public_vote_immunity"]
+    overall_game_rules: Optional[str] = None #if not none will be sent to the phase runner for the context builder
     
+    def phase_summary_string(self, game_manager):
+        round_summary = '\n-----------------\n'
+        for round in self.rounds:
+            round_summary += f"{round.display_name(game_manager)} - {round.rules_description(game_manager)}\n"
+        round_summary += '-----------------\n'
+        return round_summary
+    
+    def phase_progress_string(self, game_manager, current_index):
+        round_summary = '\n-----------------\n'
+        current_index -= 1 
+        for i, round in enumerate(self.rounds):
+            if i < current_index:
+                status = "COMPLETED"
+            elif i == current_index:
+                status = "CURRENTLY ONGOING"
+            else:
+                status = "UPCOMING"
+            
+            round_summary += f"{round.display_name(game_manager)} - {status}\n"
+        round_summary += '-----------------\n'
+        round_summary += self.detailed_rules_string(game_manager, current_index)
+       
+        return round_summary 
+    
+    def detailed_rules_string(self, game_manager, current_index):
+        rules_string = '\n-----------------\n'
+        rules_string += '------- UPCOMING GAME RULES ----------\n'
+        for i, round in enumerate(self.rounds):
+            if i > current_index:
+                if round.is_game() or round.is_vote():
+                    rules_string += f"{round.display_name(game_manager)} - {round.rules_description(game_manager)}\n"
+        rules_string += '-----------------\n'
+        return rules_string
+        
+        
     def phase_intro_string(self, phase_number, num_players, game_manager): #game_manager
-        phase_description = f"🚨 WELCOME PLAYERS, TO PHASE {phase_number} 🚨\n"
+        #this should not be here
+        phase_description = f"🚨 WELCOME PLAYERS, TO PHASE {phase_number} 🚨. "
+        
         #TODO this is temp
+        
         if num_players == 2:
             phase_description = f"🚨 Only two players remain. Unfortunately only one player can win. Only one player will remain at the end of this phase. The player with the most points. Act accordingly. Accept your fate, or fight 🚨\n"
-        phase_description += f"In this round we will have: \n"
         
-        game_description = ""
-        vote_description = ""
-        pre_game_discussion_message = ""
-        pre_vote_discussion_message = ""
-        immunity_message = ""
+        #--------------------
         
-        dr_count = self.pre_game_discussion_rounds + self.pre_game_discussion_rounds + self.post_vote_discussion_rounds
+        phase_description += f"In this round we will have: "
         
-        if dr_count == 1:
-            phase_description += "A Discussion Round\n"
-        elif dr_count > 1:
-            phase_description += "Discussion Rounds\n"
-        if self.mini_game:
-            phase_description += "A Game Round\n"
-        if self.vote_type:
-            phase_description += f"An Elimination\n"
-        if self.vote_type and self.immunity_types:
-            immunity_message += f"HOWEVER! This elimination round has the following immunities in play:\n"
+        discussion_rounds = [round for round in self.rounds if round.is_discussion()]
+        if len(discussion_rounds) == 1:
+            phase_description += "A discussion round. "
+        elif len(discussion_rounds) > 1:
+            phase_description += "Discussion rounds. "
+            
+            
+        if any(round.is_game() for round in self.rounds):
+            phase_description += "A Game Round. "
+            
+        has_elimination = any(round.is_vote() for round in self.rounds)
+        if has_elimination:
+            phase_description += "An Elimination. "
+        
+        
+        if has_elimination and self.immunity_types:
+            immunity_message = f"HOWEVER! This elimination round has the following immunities in play:\n"
             for immunity in self.immunity_types:
                 immunity_message += f"- {immunity.display_name(game_manager)}: {immunity.rules_description(game_manager)}\n"
             phase_description += immunity_message
         
-        round_summary = '\n-----------------\n'
-        for _ in range(self.pre_game_discussion_rounds):
-            round_summary += f'Discussion round\n'
-        if self.mini_game:
-            round_summary += f"{self.mini_game.display_name(game_manager)} - {self.mini_game.rules_description(game_manager)}\n"
-        for _ in range(self.pre_vote_discussion_rounds):
-            round_summary += f'Discussion round\n'
-        if self.vote_type:
-            round_summary += f"{self.vote_type.display_name(game_manager)} - {self.vote_type.rules_description(game_manager)}\n"
-        for _ in range(self.post_vote_discussion_rounds):
-            round_summary += f'Discussion round\n'
-        round_summary += '-----------------\n'
-        
-        return phase_description, round_summary
+      
+        return phase_description
         
     
 
@@ -67,14 +92,23 @@ class PhaseRecipeFactory:
     @classmethod
     def make_phase(self, pre_game_discussion_rounds, game, pre_vote_discussion_rounds, 
                    vote, post_vote_discussion_rounds, immunity_types):
-        return PhaseRecipe(
-            pre_game_discussion_rounds=pre_game_discussion_rounds,
-            mini_game=game,
-            pre_vote_discussion_rounds=pre_vote_discussion_rounds,
-            vote_type=vote,
-            post_vote_discussion_rounds=post_vote_discussion_rounds,
-            immunity_types=immunity_types #"HighestPointPlayerImmunity(), WildcardImmunity()]
-        )
+        rounds = []
+        
+        for _ in range(pre_game_discussion_rounds):
+            rounds.append(DiscussionRound)
+        if game:
+            rounds.append(game)
+        
+        for _ in range(pre_vote_discussion_rounds):
+            rounds.append(DiscussionRound)
+        if vote:
+            rounds.append(vote)
+        for _ in range(post_vote_discussion_rounds):
+            rounds.append(DiscussionRound)
+            
+        return PhaseRecipe(rounds=rounds, immunity_types=immunity_types)
+        
+    
     
     @classmethod
     def quick_phase(cls, game, vote, immunity=None):
@@ -86,7 +120,8 @@ class PhaseRecipeFactory:
     
     @classmethod
     def mid_phase(cls, game, vote, immunity=None):
-        return cls.make_phase(1, game, 0, vote, 0, immunity)     
+        vote_discussion = 1 if vote else 0
+        return cls.make_phase(1, game, vote_discussion, vote, 0, immunity)     
     
     @classmethod 
     def game_intro(cls):
@@ -107,8 +142,35 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         
     @classmethod
     def get_phase_recipe(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
-        return cls.get_phase_recipe_test_master(phase_number, agent_number, cfg, voting, incl_games, speed)
+        return cls.get_phase_compelling(phase_number, agent_number, cfg, voting, incl_games, speed)
     
+    @classmethod
+    def get_phase_compelling(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
+        
+        cfg.vote_bottom_two_multiple = True
+        if agent_number == 2:
+            return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [])
+        
+        index_rounds = []
+        if phase_number == 1:
+            cfg.set_guess_range(2)
+            return cls.make_phase(1, GameGuess, 0, None, 0, None)  
+        if phase_number == 2:
+            cfg.set_guess_range(3)
+            return cls.make_phase(1, GameGuess, 1, VoteEachPlayer, 0, [HighestPointsImmunity, WildcardImmunity]) 
+            return cls.mid_phase(GameGuess, None, [])
+        if phase_number == 3:
+            return cls.mid_phase(GameTargetedChoiceGive, VoteEachPlayer, [HighestPointsImmunity, WildcardImmunity])
+        if phase_number == 4:
+            return cls.mid_phase(GameTargetedChoiceSteal, VoteBottomTwo, [])
+        if phase_number == 5:
+            return cls.mid_phase(GamePerformSobStory, VoteBottomTwo, [])
+        if phase_number == 6:
+            cfg.set_pd_pairing_lowest()
+            return cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [])
+        
+        return cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [])
+        
     
     @classmethod
     def get_phase_recipe_test_votes(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
@@ -199,7 +261,7 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         
         if phase_number == 3:
             cfg.vote_dont_miss = True
-            return cls.quick_phase(GameGuess, VoteEachPlayer, [WildcardImmunity])
+            return cls.quick_phase(GameGuess, VoteEachPlayer, [VoteEachPlayer])
         
         if phase_number == 4:
             cfg.vote_dont_miss = False

@@ -58,7 +58,7 @@ class GamePerformSobStory(GameMechanicsMixin):
                 ),
                 private_thoughts_prompt=(
                     "What are you really going for here? What impression do you want to leave?"
-                ),
+                )
             )
             story_tasks.append((player, story_prompt, response_model))
 

@@ -17,9 +17,12 @@ class _TrackingGameMaster:
 class _Board:
     def __init__(self, scores=None, names=None, gm=None):
         self.agent_scores = scores or {}
-        self.agent_names = names or []
+        self._agent_names = names or []
         self.game_master = gm
         self.host_messages = []
+
+    def agent_names(self):
+        return list(self._agent_names)
 
     def host_broadcast(self, message):
         self.host_messages.append(message)
@@ -27,7 +30,11 @@ class _Board:
 
 def _engine(cfg=None, names=None):
     agents = [SimpleNamespace(name=name) for name in (names or [])]
-    return SimpleNamespace(agents=agents, gameplay_config=cfg or SimpleNamespace(immunity_highest_points_only_one=False))
+    return SimpleNamespace(
+        agents=agents,
+        gameplay_config=cfg or SimpleNamespace(immunity_highest_points_only_one=False),
+        game_master=None,
+    )
 
 
 def test_highest_points_immunity_returns_all_tied_leaders_by_default():
@@ -72,11 +79,13 @@ def test_highest_points_immunity_only_one_variant_forces_single_selection(monkey
 def test_wildcard_immunity_uses_chaotic_trait_and_returns_target():
     gm = _TrackingGameMaster("Cara")
     board = _Board(names=["Alice", "Bob", "Cara"], gm=gm)
-    game = WildcardImmunity(board, _engine(names=["Alice", "Bob", "Cara"]))
+    engine = _engine(names=["Alice", "Bob", "Cara"])
+    engine.game_master = gm
+    game = WildcardImmunity(board, engine)
     game.respond_to = lambda *_args, **_kwargs: SimpleNamespace(public_response="", private_thoughts="")
     game.publicPrivateResponse = lambda *_args, **_kwargs: None
 
     result = game.run_immunity()
 
     assert result == ["Cara"]
-    assert gm.calls == [(board, ["Alice", "Bob", "Cara"], "chaotic")]
+    assert gm.calls == [(board, ["Alice", "Bob", "Cara"], "The most CHAOTIC player is the one that has the most unpredictable actions, and causes the most disruption to the other players. They are the wild card, and can be both a threat and an asset to the other players. They are often the most entertaining to watch, but also the most difficult to predict.")]

@@ -60,4 +60,5 @@ class GameTargetedChoice(GameMechanicsMixin):
             self.gameBoard.host_broadcast(result_host_string)
             reaction = self.respond_to(player_for_reaction, result_host_string)
             self.publicPrivateResponse(player_for_reaction, reaction)
+            self.gameBoard.system_broadcast(self.gameBoard.agent_scores, private = True)
    
