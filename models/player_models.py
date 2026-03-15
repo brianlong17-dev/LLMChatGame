@@ -39,15 +39,14 @@ class DynamicModelFactory:
         action_fields: Dict[str, tuple] = None,       # Actions required by the game (e.g. dropdowns)
         
     ) -> Type[BaseModel]:
-        if agent.is_human() and not agent.is_testing:
+        if agent.is_human(): # and not agent.is_testing:
             return cls.create_human_model(public_response_prompt, action_fields)
             
         agent_logic_fields = agent.logic_fields()
         agent_complex_fields = agent.internal_thinking_fields()
         ordered_fields = {}
         #........ Scratch pad
-        if game_logic_fields:
-            ordered_fields.update(game_logic_fields)
+        
         ordered_fields["who_are_you"] = (
                 str, Field(description=f"Remind yourself of who you are, so you don't get confused")
             )
@@ -57,6 +56,8 @@ class DynamicModelFactory:
         ordered_fields["bandwagon"] = (
                 str, Field(description=f"Is everyone jumping on a repleating a thought? Do you agree? If not, say so")
             )
+        if game_logic_fields:
+            ordered_fields.update(game_logic_fields)
             
         if agent_logic_fields:
             ordered_fields.update(agent_logic_fields)

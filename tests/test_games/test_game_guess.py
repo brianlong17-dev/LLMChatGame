@@ -41,7 +41,7 @@ def test_guess_awards_points_to_all_correct_guessers(monkeypatch):
     messages = host_messages(board)
     assert any("GUESS THE NUMBER" in m for m in messages)
     assert any("The number was... **2**" in m for m in messages)
-    assert any("Alice, Bob guessed the number and each earn 4 points" in m for m in messages)
+    assert any("Correct!" in m and "Alice, Bob guessed the number and each earn 4 points" in m for m in messages)
     for client in clients.values():
         client.assert_exhausted()
 
@@ -146,7 +146,9 @@ def test_build_result_string_mixed_groups():
 
     text = game._build_guess_the_number_result_string(correct, incorrect, invalid, 4)
 
+    assert "Correct!" in text
     assert "Alice guessed the number and each earn 4 points" in text
+    assert "Wrong!" in text
     assert "Bob (guessed 3) missed the mark" in text
     assert "Invalid guess from: Cara" in text
 

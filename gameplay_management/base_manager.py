@@ -101,6 +101,10 @@ class BaseRound: #base class
         choice_definition = (Literal[*choices], Field(description=field_description))
         return {field_name: choice_definition}
     
+    def create_basic_field(self, field_name, field_description):
+        field_definition = (str, Field(description=field_description))
+        return {field_name: field_definition}
+    
     def _choose_name_field(self, allowed_names, reason_for_choosing_prompt):
         choice_reason_prompt = f"The exact name of the agent. {reason_for_choosing_prompt}"
         return self.create_choice_field(GamePromptLibrary.model_field_choose_name, allowed_names, choice_reason_prompt)

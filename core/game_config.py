@@ -10,6 +10,8 @@ class GameConfig:
         
         self.discussion_round_topic = "Chat and strategise"
         
+        self.inject_host_question = True
+        
         # --------------------------------------------------------------
         # Global / scoreboard defaults
         # --------------------------------------------------------------

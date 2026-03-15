@@ -2,121 +2,57 @@ from types import SimpleNamespace
 
 import pytest
 
-from core.simulation_engine import SimulationEngine
+from core.phase_runner import PhaseRunner
+from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
 
 
-class _BoardStub:
-    def __init__(self):
-        self.host_messages = []
-        self.system_messages = []
-        self.public_messages = []
-
-    def host_broadcast(self, message):
-        self.host_messages.append(message)
-
-    def system_broadcast(self, message):
-        self.system_messages.append(message)
-
-    def broadcast_public_action(self, speaker, message, color=""):
-        self.public_messages.append((speaker, message, color))
+def _immunity_type(display_name="Bad immunity"):
+    return SimpleNamespace(display_name=lambda _gm: display_name)
 
 
-def _make_engine(agent_names):
-    engine = SimulationEngine.__new__(SimulationEngine)
-    engine.phase_number = 1
-    engine.agents = [SimpleNamespace(name=name) for name in agent_names]
-    engine.game_master = SimpleNamespace()
-    engine.gameBoard = _BoardStub()
-    engine.game_manager = SimpleNamespace(run_discussion_round=lambda: None)
-    engine.printPhaseHeader = lambda: None
-    engine.trigger_new_round = lambda: None
-    return engine
-
-
-def _make_recipe(immunity_types, vote_exec):
-    return SimpleNamespace(
-        pre_game_discussion_rounds=0,
-        mini_game=None,
-        pre_vote_discussion_rounds=0,
-        vote_type=SimpleNamespace(
-            display_name=lambda _manager: "Vote",
-            rules_description="rules",
-            run_vote=vote_exec,
-        ),
-        post_vote_discussion_rounds=0,
-        immunity_types=immunity_types,
-        phase_intro_string=lambda _phase, _count, _manager: ("intro", "summary"),
-    )
-
-
-def test_run_phase_raises_if_immunity_returns_non_list():
-    engine = _make_engine(["Alice", "Bob"])
-    recipe = _make_recipe(
-        [
-            SimpleNamespace(
-                # current engine validation path expects callable display_name here
-                # when formatting non-string immunity value errors.
-                # Use callable form to match production shape.
-                run_immunity=lambda _manager: "Alice",
-                display_name=lambda _gm: "Bad immunity",
-            )
-        ],
-        vote_exec=lambda _manager, immunity_players=None: None,
-    )
-
+def test_validate_immunity_raises_if_immunity_returns_non_list():
     with pytest.raises(TypeError, match="must return list\\[str\\]"):
-        SimulationEngine.runPhase(engine, recipe)
+        ImmunityMechanicsMixin._validate_immunity(
+            _immunity_type(),
+            "Alice",
+            SimpleNamespace(),
+            [SimpleNamespace(name="Alice"), SimpleNamespace(name="Bob")],
+        )
 
 
-def test_run_phase_raises_if_immunity_returns_non_string_entries():
-    engine = _make_engine(["Alice", "Bob"])
-    recipe = _make_recipe(
-        [
-            SimpleNamespace(
-                run_immunity=lambda _manager: ["Alice", 123],
-                display_name=lambda _gm: "Bad immunity",
-            )
-        ],
-        vote_exec=lambda _manager, immunity_players=None: None,
-    )
-
+def test_validate_immunity_raises_if_immunity_returns_non_string_entries():
     with pytest.raises(TypeError, match="must return list\\[str\\]"):
-        SimulationEngine.runPhase(engine, recipe)
+        ImmunityMechanicsMixin._validate_immunity(
+            _immunity_type(),
+            ["Alice", 123],
+            SimpleNamespace(),
+            [SimpleNamespace(name="Alice"), SimpleNamespace(name="Bob")],
+        )
 
 
-def test_run_phase_raises_if_immunity_returns_unknown_player_name():
-    engine = _make_engine(["Alice", "Bob"])
-    recipe = _make_recipe(
-        [
-            SimpleNamespace(
-                run_immunity=lambda _manager: ["Ghost"],
-                display_name=lambda _gm: "Bad immunity",
-            )
-        ],
-        vote_exec=lambda _manager, immunity_players=None: None,
-    )
-
+def test_validate_immunity_raises_if_immunity_returns_unknown_player_name():
     with pytest.raises(ValueError, match="unknown player name"):
-        SimulationEngine.runPhase(engine, recipe)
+        ImmunityMechanicsMixin._validate_immunity(
+            _immunity_type(),
+            ["Ghost"],
+            SimpleNamespace(),
+            [SimpleNamespace(name="Alice"), SimpleNamespace(name="Bob")],
+        )
 
 
-def test_run_phase_dedupes_immunity_names_before_vote_dispatch():
-    engine = _make_engine(["Alice", "Bob", "Cara"])
+def test_phase_runner_dedupes_immunity_names_before_vote_dispatch():
     seen = []
-    recipe = _make_recipe(
-        [
-            SimpleNamespace(
-                display_name="Immunity A",
-                run_immunity=lambda _manager: ["Alice", "Bob"],
-            ),
-            SimpleNamespace(
-                display_name="Immunity B",
-                run_immunity=lambda _manager: ["Bob", "Alice", "Alice"],
-            ),
-        ],
-        vote_exec=lambda _manager, immunity_players=None: seen.append(list(immunity_players)),
-    )
+    runner = PhaseRunner.__new__(PhaseRunner)
+    runner.game_manager = SimpleNamespace()
 
-    SimulationEngine.runPhase(engine, recipe)
+    round_obj = SimpleNamespace(
+        run_vote=lambda _manager, immunity_players=None: seen.append(list(immunity_players))
+    )
+    immunity_types = [
+        SimpleNamespace(run_immunity=lambda _manager: ["Alice", "Bob"]),
+        SimpleNamespace(run_immunity=lambda _manager: ["Bob", "Alice", "Alice"]),
+    ]
+
+    PhaseRunner.run_vote_round_with_immunity_types(runner, round_obj, immunity_types)
 
     assert seen == [["Alice", "Bob"]]

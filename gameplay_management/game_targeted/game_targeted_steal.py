@@ -20,10 +20,10 @@ class GameTargetedChoiceSteal(GameTargetedChoice):
         f"In this round, you will get to STEAL. Whatever player you pick, you will receive {points_amount} points... and they will LOSE them! "
         f"If you choose a player with less than {points_amount} points, their points wont go below zero, and you won't receive the full {points_amount} points." )
         player_intro = ("{player_name}! You're up- what player are you choosing to steal from, and why?") #can format this later?
-        game_instruction = (f"Choose one player from to steal {points_amount} points from. Explain why."
-            f"If you steal from a player with less than {points_amount}, you'll only get whatever points the have, maybe zero.")
-        thought_nudge = (f"Current scores: {self.gameBoard.agent_scores}"
-            f"If you try to steal from someone with 0 points, you essentially pass.")
+        game_instruction = (f"Choose one player from to steal {points_amount} points from."
+                            f"If you steal from a player with less than {points_amount}, you'll only get whatever points the have, maybe zero."
+                            f"The name of the player who's points you are going to STEAL:")
+        thought_nudge = (f"If you try to steal from someone with 0 points, you essentially pass.")
         
         def steal_points_model(player):
             other_agent_names = [name for name in self.gameBoard.agent_names if name != player.name]
@@ -48,6 +48,7 @@ class GameTargetedChoiceSteal(GameTargetedChoice):
                 result_host_string = (
                     f"Oooooh! {player.name} steals from {target_agent.name}! "
                     f"{player.name} gains {actual_steal} points, and {target_agent.name} loses them!"
+                    
                 )
                 player_for_reaction = target_agent
             

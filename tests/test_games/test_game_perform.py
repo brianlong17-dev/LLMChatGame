@@ -6,7 +6,7 @@ import pytest
 
 from agents.player import Debater
 from core.gameboard import GameBoard
-from tests.helpers.game_test_helpers import QueuedClient, host_messages, turn_payload
+from tests.helpers.game_test_helpers import QueuedClient, TestGameSink, host_messages, turn_payload
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +33,6 @@ def _build_perform_game(agent_specs, initial_scores=None):
         Debater(
             name=name,
             initial_persona=f"{name} persona",
-            initial_form=f"{name} form",
             client=clients[name],
             model_name="test-model",
             higher_model_name="test-model-high",
@@ -42,7 +41,7 @@ def _build_perform_game(agent_specs, initial_scores=None):
         for name in agent_specs
     ]
 
-    board = GameBoard(NoopGameMaster())
+    board = GameBoard(NoopGameMaster(), TestGameSink())
     board.initialize_agents(agents)
     if initial_scores:
         for name, score in initial_scores.items():

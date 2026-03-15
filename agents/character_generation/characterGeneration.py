@@ -66,14 +66,14 @@ class CharacterGenerator:
         with ThreadPoolExecutor(max_workers=min(32, len(cast))) as executor:
             return list(executor.map(self.generate_debater, cast))
        
-    def generate_random_debater(self, count) -> 'Debater':
+    def generate_random_debaters(self, count) -> 'Debater':
         """Selects a random character from the list and builds a Debater."""
         cast = []
         for _ in range(count):
             character_name = random.choice(self.characters)
             self.characters.remove(character_name) 
             cast.append(character_name)
-            self.game_board.system_broadcast(f"Selected: {character_name}...")
+            self.game_board.system_broadcast(f"Selected: {character_name}...", private=True)
         
         if not cast:
             return []
@@ -92,7 +92,7 @@ class CharacterGenerator:
                 {"role": "user", "content": f"Create a rich, first-person persona and a physical form description for the historical figure: {character_name}. Make them highly opinionated."}
             ]
         )
-        self.game_board.system_broadcast(f"Generated: {character_name}. Speaking style: \n {profile.speaking_style}.")
+        self.game_board.system_broadcast(f"Generated: {character_name}. Speaking style: \n {profile.speaking_style}.", private = True)
         
         
         # Build and return the Debater using the generated traits

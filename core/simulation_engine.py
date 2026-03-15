@@ -29,15 +29,11 @@ class SimulationEngine:
         self.generator = generator
         self.game_manager = UnifiedController(self.gameBoard, self)
         self.gameplay_config = GameConfig()
+        #has to be after game_board and game_manager
         self.phase_runner = PhaseRunner(self)
-        self.phase_number = 0
-        
             
     def initialiseGameBoard(self):
         self.gameBoard.initialize_agents(self.agents)
-    
-    def runPhase(self, recipe: PhaseRecipe):
-        self.phase_runner.run_phase(recipe)
   
     def set_up_players(self, number_of_players, generic_players):
         #TODO this printing is temp
@@ -46,7 +42,7 @@ class SimulationEngine:
         if generic_players:
             self.agents = self.generator.genericPlayers(number_of_players)
         else:
-            self.agents = self.generator.generate_balanced_cast(number_of_players)
+            self.agents = self.generator.generate_random_debaters(number_of_players)
         print(PromptLibrary.line_break)
          
     def run(self, number_of_players = 2, generic_players=False, human_player = False):
@@ -64,9 +60,8 @@ class SimulationEngine:
         self.gameBoard.game_sink.on_game_intro(self.phase_factory.game_intro())
         
         while len(self.agents) > 1:
-            self.phase_number += 1
-            phase = self.phase_factory.get_phase_recipe(self.phase_number, len(self.agents), self.gameplay_config)
-            self.runPhase(phase)
+            phase = self.phase_factory.get_phase_recipe(self.gameBoard.phase_number + 1, len(self.agents), self.gameplay_config)
+            self.phase_runner.run_phase(phase)
         #------------Fin------------#
         self.gameBoard.game_sink.on_game_over(self.agents[0].name)
   

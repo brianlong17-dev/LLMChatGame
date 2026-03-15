@@ -14,9 +14,15 @@ class GameBoard:
         self.agent_names = []
         self.round_number = 0
         self.turn_number = 0
+        self.phase_number = 0
+        self.current_phase_round_number = 0
+        
         self.execution_style = False
+        
         self.history = []
         self.currentRound = []
+        self.current_phase_rounds = []
+        
         self.round_entries = deque(maxlen=10)#dont rly need
         self.round_summaries = deque(maxlen=50)
         self.agent_scores: dict[str, int] = {}
@@ -26,6 +32,9 @@ class GameBoard:
         self.context_builder = ContextBuilder(game_board = self)
         self.has_human_player = False #this is for some printing differences
         self.testing_prompts = False
+        self.current_phase_recipe = None
+        
+        self.phase_progress_string = ""
     
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
@@ -40,17 +49,41 @@ class GameBoard:
     
     def endRound(self):
         roundSummary = self.game_master.summariseRound(self)
+        print("round summary: ")
+        print(roundSummary)
         self.round_summaries.append(roundSummary.round_summary)
         self.game_sink.on_round_summary(roundSummary.round_summary)
         self.round_entries.append(list(self.currentRound))
+        self.current_phase_rounds.append(list(self.currentRound))
         self.currentRound.clear()
         
         
     def newRound(self):
-        self.round_number += 1
-        self.turn_number = 0
-        self.game_sink.on_round_start(self.round_number, dict(self.agent_scores))
+        #self.system_broadcast(self.score_string(), private = False)
         
+        self.round_number += 1
+        self.current_phase_round_number += 1
+        self.turn_number = 0
+        self.game_sink.on_round_start(self.round_number, self.score_string()) #TODO with string
+        
+    def endPhase(self):
+        #should get phase summaries here
+        self.current_phase_round_number = 0
+        
+        pass
+    
+        
+    def new_phase(self, recipe, game_manager ):#this can be removed when games become stateless
+        
+        self.phase_number += 1
+        host_intro = recipe.phase_intro_string(self.phase_number, len(self.agent_names), game_manager)
+        system_phase_summary = recipe.phase_summary_string(game_manager)
+        
+        self.current_phase_rounds = []
+        self.game_sink.on_phase_header(self.phase_number) 
+        self.host_broadcast(host_intro)
+
+        self.system_broadcast( system_phase_summary, private = True) #these need their own thing, like an invisible sys print
         
         
     #--------- public output --------- #
@@ -87,8 +120,11 @@ class GameBoard:
         self._update_history(display_name, message)
         self.game_sink.on_public_action(speaker, message)
     
-    def system_broadcast(self, message):
-        self.broadcast_public_action("SYSTEM", message)
+    def system_broadcast(self, message, private = False):
+        if private:
+            self.game_sink.system_private("SYSTEM", message)
+        else:
+            self.broadcast_public_action("SYSTEM", message)
         
     def host_broadcast(self, message):
         self.broadcast_public_action("HOST", message)
@@ -124,6 +160,10 @@ class GameBoard:
         new_score = max(0, self.agent_scores[agent_name] + points)
         self.agent_scores[agent_name] = new_score
         self.game_sink.on_points_update(dict(self.agent_scores))
+
+    def score_string(self) -> str:
+        sorted_scores = sorted(self.agent_scores.items(), key=lambda item: item[1], reverse=True)
+        return ", ".join(f"{name}: {score}" for name, score in sorted_scores)
              
     def resetScores(self):
         for entry in self.agent_scores:

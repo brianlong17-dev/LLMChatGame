@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from core.game_config import GameConfig
 from core.gameboard import GameBoard
 from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
-from tests.helpers.game_test_helpers import NoopGameMaster, QueuedClient, make_debater, turn_payload
+from tests.helpers.game_test_helpers import NoopGameMaster, QueuedClient, TestGameSink, make_debater, turn_payload
 
 
 def test_handle_manual_pairing_uses_configured_name_field_target_name():
@@ -15,7 +15,7 @@ def test_handle_manual_pairing_uses_configured_name_field_target_name():
     bob = make_debater("Bob", bob_client)
     cara = make_debater("Cara", cara_client)
 
-    game_board = GameBoard(NoopGameMaster())
+    game_board = GameBoard(NoopGameMaster(), TestGameSink())
     game_board.initialize_agents([chooser, bob, cara])
     simulation = SimpleNamespace(agents=[chooser, bob, cara], gameplay_config=GameConfig())
     game = GameMechanicsMixin(game_board, simulation)

@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
-from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
+from gameplay_management.immunities.highest_points_immunity import HighestPointsImmunity
+from gameplay_management.immunities.wildcard_immunity import WildcardImmunity
 
 
 class _TrackingGameMaster:
@@ -10,7 +11,7 @@ class _TrackingGameMaster:
 
     def choose_agent_based_on_parameter(self, board, names, trait):
         self.calls.append((board, list(names), trait))
-        return SimpleNamespace(target_name=self.chosen)
+        return SimpleNamespace(target_name=self.chosen, public_reason="because")
 
 
 class _Board:
@@ -18,31 +19,45 @@ class _Board:
         self.agent_scores = scores or {}
         self.agent_names = names or []
         self.game_master = gm
+        self.host_messages = []
+
+    def host_broadcast(self, message):
+        self.host_messages.append(message)
+
+
+def _sim(names):
+    return SimpleNamespace(agents=[SimpleNamespace(name=name) for name in names], gameplay_config=SimpleNamespace(immunity_highest_points_only_one=False))
 
 
 def test_get_highest_points_players_immunity_returns_all_tied_leaders():
     game_board = _Board(scores={"Alice": 5, "Bob": 7, "Cara": 7, "Dan": 1})
-    game = ImmunityMechanicsMixin(game_board, SimpleNamespace(agents=[]))
-    assert game.get_highest_points_players_immunity() == ["Bob", "Cara"]
+    game = HighestPointsImmunity(game_board, _sim(["Alice", "Bob", "Cara", "Dan"]))
+    game.respond_to = lambda *_args, **_kwargs: None
+    game.publicPrivateResponse = lambda *_args, **_kwargs: None
+    assert game._highest_points_immunity() == ["Bob", "Cara"]
 
 
 def test_get_highest_points_players_immunity_only_one_selects_single_on_tie(monkeypatch):
     game_board = _Board(scores={"Alice": 8, "Bob": 8, "Cara": 2})
-    game = ImmunityMechanicsMixin(game_board, SimpleNamespace(agents=[]))
+    game = HighestPointsImmunity(game_board, _sim(["Alice", "Bob", "Cara"]))
+    game.respond_to = lambda *_args, **_kwargs: None
+    game.publicPrivateResponse = lambda *_args, **_kwargs: None
 
     monkeypatch.setattr(
-        "gameplay_management.immunity_mechanicsMixin.random.choice",
+        "gameplay_management.immunities.highest_points_immunity.random.choice",
         lambda items: items[1],
     )
-    assert game.get_highest_points_players_immunity_only_one() == ["Bob"]
+    assert game._highest_points_immunity(only_one=True) == ["Bob"]
 
 
 def test_get_wildcard_player_immunity_queries_chaotic_trait_and_returns_target():
     gm = _TrackingGameMaster("Cara")
     game_board = _Board(names=["Alice", "Bob", "Cara"], gm=gm)
-    game = ImmunityMechanicsMixin(game_board, SimpleNamespace(agents=[]))
+    game = WildcardImmunity(game_board, _sim(["Alice", "Bob", "Cara"]))
+    game.respond_to = lambda *_args, **_kwargs: None
+    game.publicPrivateResponse = lambda *_args, **_kwargs: None
 
-    result = game.get_wildcard_player_immunity()
+    result = game.run_immunity()
 
     assert result == ["Cara"]
     assert gm.calls == [(game_board, ["Alice", "Bob", "Cara"], "chaotic")]
@@ -51,10 +66,10 @@ def test_get_wildcard_player_immunity_queries_chaotic_trait_and_returns_target()
 def test_get_wildcard_player_random_trait_uses_selected_trait(monkeypatch):
     gm = _TrackingGameMaster("Alice")
     game_board = _Board(names=["Alice", "Bob"], gm=gm)
-    game = ImmunityMechanicsMixin(game_board, SimpleNamespace(agents=[]))
+    game = WildcardImmunity(game_board, _sim(["Alice", "Bob"]))
 
     monkeypatch.setattr(
-        "gameplay_management.immunity_mechanicsMixin.random.choice",
+        "gameplay_management.immunities.wildcard_immunity.random.choice",
         lambda items: "calculating",
     )
     result = game.get_wildcard_player_random_trait()
