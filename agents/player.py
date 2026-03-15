@@ -155,7 +155,6 @@ class Debater(BaseAgent):
         detailed_start_index = max(0, total_summaries - self.detailed_summary_count)
         
         string = ""
-        total_summaries = len(self.phase_summaries_detailed)
         
         for i, key in enumerate(sorted_keys):
             if i < detailed_start_index:

@@ -24,15 +24,6 @@ class ContextBuilder:
             f"{current_text}"
         )
         return context_string 
-    
-    def get_full_context_with_summaries(self):
-        
-        round_summaries_formatted = ("\n".join(list(self.game_board.round_summaries)))
-        context_string = (
-            f"### PAST ROUND SUMMARIES  ###\n"
-            f"{round_summaries_formatted}\n\n")
-        context_string += self.get_full_context()
-        return context_string
             
     
     def _format_dialogue_list(self, dialogue_list):
@@ -73,16 +64,6 @@ class ContextBuilder:
             history_blocks.append(block)
         return "\n\n".join(history_blocks)
     
-        
-    
-    def get_phase_context_string(self, phase_recipe):
-        #i see the vision here maybe #TODO
-        str = "====== Current Phase =====\n"
-        str += "Phase name -- COMPLETE\n"
-        str += "Phase name <- CURRENTLY IN PROGRESS\n"
-        str += "Phase name -- UPCOMING\n"
-        str += "====== Current Phase =====\n"
-            
     def get_dashboard_string(self, agent_name: str) -> str:
         agent_scores = dict(self.game_board.agent_scores)
         """Generates a score dashboard."""
@@ -103,7 +84,7 @@ class ContextBuilder:
         # 2. Build the Visual Dashboard
         dash = []
         dash.append("=== REALITY CHECK DASHBOARD ===")
-        overall_game_rules = self.game_board.overall_game_rules
+        overall_game_rules = self.game_board.phase_runner.overall_game_rules
         if overall_game_rules:
             dash.append("OVERALL GAME:")
             dash.append(overall_game_rules)
@@ -130,7 +111,7 @@ class ContextBuilder:
         # C. The Roster (Who is left?)
         # (Optional: You might not need this if everyone is in the leaderboard above, 
         # but strictly separating 'Dead' is useful)
-        removed_agent_names = self.game_board.removed_agent_names
+        removed_agent_names = self.game_board.phase_runner.removed_agent_names()
         dead_str = ", ".join(removed_agent_names) if removed_agent_names else "None"
         dash.append(f"EVICTED PLAYERS: {dead_str} (Already gone. Do not plot against them)")
         dash.append(self.current_phase_progress())
@@ -139,7 +120,7 @@ class ContextBuilder:
     def current_phase_progress(self):
         string = ("===============================")
         string += ("CURRENT PHASE PROGRESS:")
-        string +=  (self.game_board.phase_progress_string)
+        string +=  (self.game_board.phase_runner.get_phase_progress_string())
         string += ("===============================")
         return string
         

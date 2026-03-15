@@ -26,7 +26,7 @@ class GameTargetedChoiceSteal(GameTargetedChoice):
         thought_nudge = (f"If you try to steal from someone with 0 points, you essentially pass.")
         
         def steal_points_model(player):
-            other_agent_names = [name for name in self.gameBoard.agent_names if name != player.name]
+            other_agent_names = [name for name in self.gameBoard.agent_names() if name != player.name]
             action_fields = self._choose_name_field(other_agent_names, game_instruction)
             return DynamicModelFactory.create_model_(
                 agent=player, 

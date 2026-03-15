@@ -15,7 +15,7 @@ def test_eliminate_player_by_name_removes_player_and_collects_final_words():
 
     assert host_messages(board)[0] == VotePromptLibrary.elimination_host_msg.format(victim_name="Bob")
     assert [agent.name for agent in game.simulationEngine.agents] == ["Alice"]
-    assert "Bob" in board.removed_agent_names
+    assert "Bob" in board.phase_runner.removed_agent_names()
     assert len(clients["Bob"].calls) == 1
 
 

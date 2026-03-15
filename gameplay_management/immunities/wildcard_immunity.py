@@ -11,12 +11,16 @@ class WildcardImmunity(ImmunityMechanicsMixin):
         return (
             "The player deemed to be the most chaotic will receive immunity from the next vote. "
         )
+        
 
     def run_immunity(self) -> list[str]:
-        response = self.gameBoard.game_master.choose_agent_based_on_parameter(
+        parameter = ("The most CHAOTIC player is the one that has the most unpredictable actions, and causes the most disruption to the other players. "
+        "They are the wild card, and can be both a threat and an asset to the other players. They are often the most entertaining to watch, "
+        "but also the most difficult to predict.")
+        response = self.simulationEngine.game_master.choose_agent_based_on_parameter(
             self.gameBoard,
-            self.gameBoard.agent_names,
-            "chaotic",
+            self.gameBoard.agent_names(),
+            parameter,
         )
         winner = self._agent_by_name(response.target_name)
         if not winner:
@@ -36,7 +40,7 @@ class WildcardImmunity(ImmunityMechanicsMixin):
     def get_wildcard_player_random_trait(self) -> list[str]:
         traits = ["chaotic", "kind", "vengeful", "calculating"]
         trait = random.choice(traits)
-        response = self.gameBoard.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names, trait)
+        response = self.simulationEngine.game_master.choose_agent_based_on_parameter(self.gameBoard, self.gameBoard.agent_names(), trait)
         print(response)
         return [response.target_name]
     

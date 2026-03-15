@@ -1,15 +1,9 @@
-import os
-import instructor
-from pydantic import BaseModel, Field
-from dotenv import load_dotenv
 from agents.character_generation.characterGeneration import CharacterGenerator
 from core.game_config import GameConfig
 from core.phase_runner import PhaseRunner
-from core.sinks.game_sink import GameEventSink
-from core.phases import PhaseRecipe, PhaseRecipeFactory, PhaseRecipeFactoryDefault
+from core.phase_recipe import  PhaseRecipeFactory
 from agents.base_agent import *
 from agents.gameMaster import GameMaster
-from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
 from gameplay_management.unified_controller import UnifiedController
 from models.player_models import *
 from .gameboard import GameBoard
@@ -22,7 +16,6 @@ class SimulationEngine:
         
         
         self.game_master = game_master
-        
         self.phase_factory = phase_factory
         
         self.gameBoard = game_board
@@ -31,9 +24,18 @@ class SimulationEngine:
         self.gameplay_config = GameConfig()
         #has to be after game_board and game_manager
         self.phase_runner = PhaseRunner(self)
+        
+        
+        self.agents = []
+        self.dead_agents = []
             
     def initialiseGameBoard(self):
         self.gameBoard.initialize_agents(self.agents)
+        self.gameBoard.phase_runner = self.phase_runner
+        
+    def eliminate_player(self, agent):
+        self.agents.remove(agent)
+        self.dead_agents.append(agent)
   
     def set_up_players(self, number_of_players, generic_players):
         #TODO this printing is temp
@@ -52,7 +54,6 @@ class SimulationEngine:
             name = 'Brian' # input("Name?\n")
             human_player = Human(name)
             self.agents.append(human_player)
-            self.gameBoard.has_human_player = True
             
         self.initialiseGameBoard()
         

@@ -11,6 +11,7 @@ from gameplay_management.unified_controller import *
 class PhaseRecipe(BaseModel):
     rounds: List[Type[BaseRound]] = None 
     immunity_types: Optional[List[Type[ImmunityMechanicsMixin]]] = None  # e.g., ["winner_immunity", "public_vote_immunity"]
+    overall_game_rules: Optional[str] = None #if not none will be sent to the phase runner for the context builder
     
     def phase_summary_string(self, game_manager):
         round_summary = '\n-----------------\n'
@@ -21,6 +22,7 @@ class PhaseRecipe(BaseModel):
     
     def phase_progress_string(self, game_manager, current_index):
         round_summary = '\n-----------------\n'
+        current_index -= 1 
         for i, round in enumerate(self.rounds):
             if i < current_index:
                 status = "COMPLETED"

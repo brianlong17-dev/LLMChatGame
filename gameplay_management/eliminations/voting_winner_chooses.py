@@ -31,7 +31,7 @@ class VoteWinnerChooses(VoteMechanicsMixin):
         leading_player= self.get_strategic_players(self.simulationEngine.agents, top_player = True)[0]
         immunity_players = self._validate_immunity(immunity_players)
         up_for_elimination = [
-            name for name in self.gameBoard.agent_names 
+            name for name in self.gameBoard.agent_names()
             if name != leading_player.name and name not in immunity_players
         ]
         

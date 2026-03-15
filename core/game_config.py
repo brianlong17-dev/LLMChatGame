@@ -12,6 +12,7 @@ class GameConfig:
         
         self.inject_host_question = True
         
+        self.execution_style = False
         # --------------------------------------------------------------
         # Global / scoreboard defaults
         # --------------------------------------------------------------

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from agents.player import Debater
 from core.game_config import GameConfig
 from core.gameboard import GameBoard
+from core.phase_runner import PhaseRunner
 from gameplay_management.unified_controller import UnifiedController
 
 
@@ -60,7 +61,32 @@ class QueuedClient:
 
 
 class NoopGameMaster:
-    pass
+    def summariseRound(self, *_args, **_kwargs):
+        return SimpleNamespace(round_summary="")
+
+
+class TestSimulation:
+    __test__ = False
+
+    def __init__(self, agents, gameplay_config=None):
+        self.agents = list(agents)
+        self.dead_agents = []
+        self.gameplay_config = gameplay_config or GameConfig()
+        self.gameBoard = None
+        self.game_manager = None
+
+    def eliminate_player(self, agent):
+        self.agents.remove(agent)
+        self.dead_agents.append(agent)
+
+
+def attach_test_runtime(board, simulation, game_manager, game_master=None):
+    board.game_master = game_master or NoopGameMaster()
+    board.phase_progress_string = ""
+    simulation.gameBoard = board
+    simulation.game_manager = game_manager
+    board.phase_runner = PhaseRunner(simulation)
+    return game_manager
 
 
 def make_debater(name, client, model_name="test-model"):
@@ -85,15 +111,16 @@ def build_targeted_choice_game(agent_specs, initial_scores=None):
     clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
     agents = [make_debater(name, clients[name]) for name in agent_specs]
 
-    board = GameBoard(NoopGameMaster(), TestGameSink())
+    board = GameBoard(TestGameSink())
     board.initialize_agents(agents)
     if initial_scores:
         for name, score in initial_scores.items():
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    simulation = TestSimulation(agents)
     game = UnifiedController(board, simulation)
+    attach_test_runtime(board, simulation, game)
     game._shuffled_agents = lambda: list(simulation.agents)
     return game, board, agents, clients
 
@@ -102,15 +129,16 @@ def build_pd_game(agent_specs, initial_scores=None):
     clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
     agents = [make_debater(name, clients[name]) for name in agent_specs]
 
-    board = GameBoard(NoopGameMaster(), TestGameSink())
+    board = GameBoard(TestGameSink())
     board.initialize_agents(agents)
     if initial_scores:
         for name, score in initial_scores.items():
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    simulation = TestSimulation(agents)
     game = UnifiedController(board, simulation)
+    attach_test_runtime(board, simulation, game)
     return game, board, agents, clients
 
 
@@ -118,16 +146,17 @@ def build_guess_game(agent_specs, initial_scores=None):
     clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
     agents = [make_debater(name, clients[name]) for name in agent_specs]
 
-    board = GameBoard(NoopGameMaster(), TestGameSink())
+    board = GameBoard(TestGameSink())
     board.initialize_agents(agents)
     if initial_scores:
         for name, score in initial_scores.items():
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    simulation = TestSimulation(agents)
     simulation.gameplay_config.guess_number_range = 4
     game = UnifiedController(board, simulation)
+    attach_test_runtime(board, simulation, game)
     return game, board, agents, clients
 
 
@@ -135,7 +164,7 @@ def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
     clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
     agents = [make_debater(name, clients[name]) for name in agent_specs]
 
-    board = GameBoard(NoopGameMaster(), TestGameSink())
+    board = GameBoard(TestGameSink())
     board.execution_style = execution_style
     board.initialize_agents(agents)
     if initial_scores:
@@ -143,6 +172,7 @@ def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
             if name in board.agent_scores:
                 board.agent_scores[name] = score
 
-    simulation = SimpleNamespace(agents=agents, gameplay_config=GameConfig())
+    simulation = TestSimulation(agents)
     manager = UnifiedController(board, simulation)
+    attach_test_runtime(board, simulation, manager)
     return manager, board, agents, clients

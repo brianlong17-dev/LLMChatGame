@@ -9,7 +9,7 @@ class ImmunityMechanicsMixin(BaseRound):
     
     
     @classmethod
-    def _validate_immunity(self, immunity_type, immunity_names, game_master, agents):
+    def _validate_immunity_names(cls, immunity_type, immunity_names, game_master, agents):
         #goes without saying this has no business here - should go to the immunity super class
         if not isinstance(immunity_names, list):
                 raise TypeError(
