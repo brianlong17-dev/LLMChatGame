@@ -154,7 +154,7 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         index_rounds = []
         if phase_number == 1:
             cfg.set_guess_range(2)
-            return cls.make_phase(1, GameGuess, 0, None, 0, None)  
+            return cls.make_phase(0, None, 0, VoteEachPlayer, 0, None)  
         if phase_number == 2:
             cfg.set_guess_range(3)
             return cls.make_phase(1, GameGuess, 1, VoteEachPlayer, 0, [HighestPointsImmunity, WildcardImmunity]) 

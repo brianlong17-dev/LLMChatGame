@@ -117,15 +117,19 @@ class GameBoard:
         
     def remove_agent_state(self, agent_name: str):
         self.agent_scores.pop(agent_name, None)
+        self.game_sink.on_points_update(self.agent_scores)
+        self.game_sink.on_evictions_update(self.phase_runner.removed_agent_names())
+        
 
     def initialize_agents(self, agent_list):
         for agent in agent_list:
             self.add_agent_state(agent.name)
+            self.game_sink.on_points_update(self.agent_scores)
+        
             
     def add_agent_state(self, agent_name: str):
         self.agent_scores[agent_name] = 0
         
-    
     
     def append_agent_points(self, agent_name, points):
         new_score = max(0, self.agent_scores[agent_name] + points)
@@ -136,8 +140,4 @@ class GameBoard:
         sorted_scores = sorted(self.agent_scores.items(), key=lambda item: item[1], reverse=True)
         return ", ".join(f"{name}: {score}" for name, score in sorted_scores)
              
-    def resetScores(self):
-        for entry in self.agent_scores:
-            self.agent_scores[entry] = 0
-        self.game_sink.on_points_update(dict(self.agent_scores))
                 

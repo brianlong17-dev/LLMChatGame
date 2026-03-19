@@ -165,6 +165,7 @@ class NoopGameSink(GameEventSink):
     def system_private(self, speaker, message): pass
     def delay(self, delay): pass
     def on_points_update(self, points): pass
+    def on_evicted_update(self, evicted_names): pass
 
 class CapturingGameSink(GameEventSink):
     """
@@ -191,6 +192,8 @@ class CapturingGameSink(GameEventSink):
         self.system_messages: list[dict] = []
         self.inner_workings: list[dict] = []
         self.points_updates: list[dict[str, int]] = []
+        self.evictions_updates: list[str] = []
+        
 
     def get_user_input_simple(self, field_name, description):
         raise RuntimeError("CapturingGameSink cannot collect user input")
@@ -242,3 +245,7 @@ class CapturingGameSink(GameEventSink):
 
     def on_points_update(self, points: dict[str, int]) -> None:
         self.points_updates.append(dict(points))
+        
+    def on_evictions_update(self, eviction_names: list[str]) -> None:
+        self.evictions_updates.append(list(eviction_names))
+        
