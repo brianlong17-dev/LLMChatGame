@@ -40,10 +40,14 @@ class PhaseRecipe(BaseModel):
     def detailed_rules_string(self, game_manager, current_index):
         rules_string = '\n-----------------\n'
         rules_string += '------- UPCOMING GAME RULES ----------\n'
+        count = 0
         for i, round in enumerate(self.rounds):
             if i > current_index:
                 if round.is_game() or round.is_vote():
+                    count += 1
                     rules_string += f"{round.display_name(game_manager)} - {round.rules_description(game_manager)}\n"
+        if count == 0:
+            return ""
         rules_string += '-----------------\n'
         return rules_string
         
