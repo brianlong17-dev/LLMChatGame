@@ -68,11 +68,19 @@ class CharacterGenerator:
        
     def generate_random_debaters(self, count) -> 'Debater':
         """Selects a random character from the list and builds a Debater."""
-        cast = []
-        for _ in range(count):
+
+        cast = self.character_lister.for_sure
+    
+        # Keep going until the cast reaches the desired count
+        while len(cast) < count:
             character_name = random.choice(self.characters)
-            self.characters.remove(character_name) 
-            cast.append(character_name)
+            
+            # QUICK CHECK: Only add them if they aren't a duplicate
+            if character_name not in cast:
+                cast.append(character_name)
+                self.characters.remove(character_name) 
+                
+        for character_name in cast:
             self.game_board.system_broadcast(f"Selected: {character_name}...", private=True)
         
         if not cast:
