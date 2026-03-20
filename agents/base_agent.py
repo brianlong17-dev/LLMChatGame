@@ -151,3 +151,4 @@ class BaseAgent:
             self._write_log_entry(response_model, api_model, messages, response)
 
         return response
+    

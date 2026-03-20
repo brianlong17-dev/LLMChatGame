@@ -6,7 +6,7 @@ class PromptLibrary:
         "Only include broad general traits that last beyond the current round. "
         "Include any character traits, style or backstory that defines you. "
     )
-    desc_agent_updated_strategy_to_win = ("Only populate if you want ot update your strategy to win. "
+    desc_agent_updated_strategy_to_win = ("Only populate if you want to update your strategy to win. "
                                           "Based on how the game works, what is the smartest strategy to win?")
     desc_action_agent = ("A visible physical action. Players may not speak in the future tense about their plans. You must describe the action you are taking right now in the present tense.")
     desc_message = "Your spoken words. What will you say? Stay in character. What you say is revealed to the group"
