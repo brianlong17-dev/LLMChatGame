@@ -1,14 +1,23 @@
 class PromptLibrary:
     #Agent
     line_break = (f"\n{"="*50}")
-    desc_persona_update = "Your evolving personality. Change and grow."
-    desc_agent_updated_strategy_to_win = "UPDATE if you want to UPDATE your strategy to win. Based on how the game works, what is the smartest strategy to win?"
+    desc_persona_update = ("Only populate this field with a genuine evolution in your persona - "
+        "You should include details from your existing persona that stil apply. "
+        "Only include broad general traits that last beyond the current round. "
+        "Include any character traits, style or backstory that defines you. "
+    )
+    desc_agent_updated_strategy_to_win = ("Only populate if you want to update your strategy to win. "
+                                          "Based on how the game works, what is the smartest strategy to win?")
     desc_action_agent = ("A visible physical action. Players may not speak in the future tense about their plans. You must describe the action you are taking right now in the present tense.")
     desc_message = "Your spoken words. What will you say? Stay in character. What you say is revealed to the group"
     desc_agent_lifeLessons = ("A new lesson to you mind that you will take forward. This will shape your future descisions. Take key lessons only, so you don't cloud your decision making.")
     desc_agent_mathematical_assessment = ("What's your assessment of the scoreboard and your place in it?")
-    desc_agent_speaking_style = ("UPDATE ONLY WITH EVOLUTION. How the character speaks — vocabulary, tone, cadence. Populate if the character's speaking style is evolving in response to what happened in the game")
-    
+    desc_agent_speaking_style = (
+        "Only populate this field if your speaking style has genuinely evolved or shifted during this round — "
+        "for example, update in response to a change in mood or strategy. "
+        "If nothing has changed, leave this blank. Do NOT explain or comment on why no change is needed."
+        "If possible, the speaking style should be approximately as long and detailed as the previous speaking style."
+    )
     desc_basic_thought = "Your internal thoughts. Strategy, feelings, and private observations."
     desc_basic_public_response = "What you actually say out loud to the group. Stay in character!"
    
@@ -33,14 +42,13 @@ class PromptLibrary:
     @staticmethod
     def player_user_prompt(summaries, history_context, score_string):
         return (
-            f"------Your summaries of the game so far -------------"
+            f"------Your summaries of the game so far -------------\n"
             f"\n{summaries}\n\n"
-            f"---------------------------------------------------------------------"
+            f"---------------------------------------------------------------------\n"
             f"Most recent rounds in full:\n{history_context}\n\n"
-            f"---------------------------------------------------------------------"
-            f"---------------------------------------------------------------------"
-            f"Current scores: {score_string}"
-            f"\n\nYour Turn:")
+            f"---------------------------------------------------------------------\n"
+            f"Current scores: {score_string}\n"
+            f"\nYour Turn:")
     
     
     

@@ -118,10 +118,10 @@ class ContextBuilder:
         return "\n".join(dash)
     
     def current_phase_progress(self):
-        string = ("===============================")
+        string = ("===============================\n")
         string += ("CURRENT PHASE PROGRESS:")
         string +=  (self.game_board.phase_runner.get_phase_progress_string())
-        string += ("===============================")
+        string += ("\n===============================\n")
         return string
         
    

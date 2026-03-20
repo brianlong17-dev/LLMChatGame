@@ -36,6 +36,19 @@ class SimulationEngine:
     def eliminate_player(self, agent):
         self.agents.remove(agent)
         self.dead_agents.append(agent)
+        
+    def _select_debug_targets(self):
+        debug_targets = ['Morty Smith', 'Lady Macbeth']
+        target_found = False
+
+        for agent in self.agents:
+            if agent.name in debug_targets:
+                agent.debug_log = True
+                target_found = True
+                
+        if not target_found and self.agents:
+            self.agents[0].debug_log = True
+                    
   
     def set_up_players(self, number_of_players, generic_players):
         #TODO this printing is temp
@@ -45,6 +58,7 @@ class SimulationEngine:
             self.agents = self.generator.genericPlayers(number_of_players)
         else:
             self.agents = self.generator.generate_random_debaters(number_of_players)
+        self._select_debug_targets()
         print(PromptLibrary.line_break)
          
     def run(self, number_of_players = 2, generic_players=False, human_player = False):

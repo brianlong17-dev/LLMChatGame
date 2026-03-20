@@ -30,15 +30,14 @@ class Debater(BaseAgent):
         self.phase_summaries_detailed = {}
         self.phase_summaries_brief = {}
         self.detailed_summary_count = 2
-        
+        self.game_over = False
+        self.logging = False
         #todo : implement temperature
     
     # --- 1. CONFIGURATION (The Map) ---
     @property
     def field_mappings(self) -> Dict[str, str]:
-        """
-        Maps Pydantic Field Name -> Agent Attribute Name.
-        """
+        #TODO just allgin these
         return {
             "updated_persona_summary": "persona",
             "updated_strategy_to_win": "strategy_to_win",
@@ -54,8 +53,8 @@ class Debater(BaseAgent):
     
     def internal_thinking_fields(self):
         return {
-            "updated_persona_summary": (str, Field(description=PromptLibrary.desc_persona_update)),
-            "updated_strategy_to_win": (str, Field(description=PromptLibrary.desc_agent_updated_strategy_to_win)),
+            "updated_persona_summary": (str | None, Field(default = None, description=PromptLibrary.desc_persona_update)),
+            "updated_strategy_to_win": (str| None, Field(default = None, description=PromptLibrary.desc_agent_updated_strategy_to_win)),
             "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons)),
             "speaking_style":  (Optional[str], Field(default=None,description=PromptLibrary.desc_agent_speaking_style))
             #ideas - pass the current speaking style in- makes more intentional? keep old versions in a history, for dev to see evolution 
@@ -69,11 +68,7 @@ class Debater(BaseAgent):
         
         return self.player_system_prompt(gameBoard)
     
-    def _check_if_empty(self, text: str):
-        if not text:
-            return True
-        clean_text = text.strip().rstrip('.').lower()
-        return clean_text in self.lazy_responses() 
+    
         
     def process_turn_cognitive_fields(self, turn):
         
