@@ -24,3 +24,4 @@ __pycache__/
 
 #sometimes i generate the diff
 *.diff
+CLAUDE.md

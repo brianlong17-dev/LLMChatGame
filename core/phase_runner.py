@@ -43,10 +43,27 @@ class PhaseRunner:
     def get_phase_progress_string(self):
         return self.current_recipe.phase_progress_string(self.game_manager,
                                                          self.current_round_index)
+    
+    def _introduce_phase(self):
+        host_intro = self.current_recipe.phase_intro_string(self.game_board.phase_number, 
+                                    len(self.agent_names()), self.game_manager)
+        system_phase_summary = self.current_recipe.phase_summary_string(self.game_manager)
+        
+        self.game_board.host_broadcast(host_intro)
+        self.game_board.system_broadcast(system_phase_summary, private = True)
+        
+    def _introduce_game(self):
+        host_intro = self.simulation_engine.phase_factory.game_intro()
+        self.game_board.game_sink.on_game_intro(host_intro)
         
     def run_round(self, round, immunity_types):
         self.current_round_index += 1
         self.game_board.newRound()
+        if self.game_board.phase_number == 1 and self.current_round_index == 1:
+            self._introduce_game()
+        if self.current_round_index == 1:
+            self._introduce_phase()
+            
         if round.is_vote():
             self.run_vote_round_with_immunity_types(round, immunity_types)
         else:
@@ -65,16 +82,10 @@ class PhaseRunner:
             
         self.current_round_index = 0
         self.set_up() #this is in case the game manager or board wasn't instanciated on the simulation engine yet...
+        #TODO this must be wrong
         
         self.current_recipe = recipe 
         self.game_board.new_phase() 
-        
-        host_intro = self.current_recipe.phase_intro_string(self.game_board.phase_number, 
-                                    len(self.agent_names()), self.game_manager)
-        system_phase_summary = self.current_recipe.phase_summary_string(self.game_manager)
-        
-        self.game_board.host_broadcast(host_intro)
-        self.game_board.system_broadcast(system_phase_summary, private = True)
         
         
         

@@ -17,13 +17,14 @@ from gameplay_management.immunities.wildcard_immunity import WildcardImmunity
 from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
 from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMixin
 from gameplay_management.games.game_mechanicsMixin import GameMechanicsMixin
+from gameplay_management.wake_up_round import WakeUpRound
 
 
 class UnifiedController(GamePrisonersDilemma, GameGuess, GamePerformSobStory, 
                         GameTargetedChoiceGive, GameTargetedChoiceSteal, GameTargetedChoiceSacrifice, GameTargetedChoice,
                         VoteBottomTwo, VoteEachPlayer, VoteLowestPoints, VoteWinnerChooses, VoteMechanicsMixin, 
                         WildcardImmunity, HighestPointsImmunity, ImmunityMechanicsMixin, 
-                        DiscussionRound,
+                        DiscussionRound, WakeUpRound,
                         BaseRound):
     def __init__(self, gameBoard, simulationEngine):
         # Initialize the BaseManager to set up self.gameBoard/self.simulationEngine

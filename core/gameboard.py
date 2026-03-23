@@ -1,35 +1,82 @@
 from collections import deque
+from dataclasses import dataclass
 from typing import Union
 from agents.base_agent import BaseAgent
 from core.context_builder import ContextBuilder
 
+@dataclass
+class MessageEntry:
+    messages: list[dict]  # [{"speaker": name, "message": text}]
+    id: int #sequential number, allow you to append / access specific convos
+    visibility_restriction: set[str] | None = None  # None = public
+    
+@dataclass
+class RoundEntry:
+    phase_number: int
+    round_number: int
+    messages: list[MessageEntry]
+    
 class GameBoard:
     def __init__(self,  game_sink):
         self.game_sink = game_sink
         
-        self.full_rounds_text_amount = 3 #we get current round and past round
-        self.round_number = 0
-        self.turn_number = 0
         self.phase_number = 0
-        self.current_phase_round_number = 0
+        self.round_number = 0
+        self.turn_number = 0 #just for printing...
         
+        self.message_id = 0
         
-        self.history = []
-        self.currentRound = []
-        self.current_phase_rounds = []
+        self.completed_round_entries: list[RoundEntry] = []
+        self.current_round: RoundEntry = None #made by new round #RoundEntry(phase_number=0, round_number=0, messages=[])
+
         
-        self.round_entries = []
         self.agent_scores: dict[str, int] = {}
         self.context_builder = ContextBuilder(game_board = self)
-        self.testing_prompts = False
         
         self.phase_runner = None
+    
+    def current_phase_rounds(self):
+        return self.phase_rounds(self.phase_number)
+    
+    def phase_rounds(self, phase_number):
+        return [r for r in self.completed_round_entries if r.phase_number == phase_number] 
+        
+    def log_new_restricted_conversation(self, restricted_users, player_name, message):
+        return self._update_history(player_name, message, restricted_users)
+    
+    def log_message_to_conversation(self, conversation_id, player_name: str, message: str):
+        entry = self._get_conversation_entry(conversation_id)
+        if entry:
+            entry.messages.append({"speaker": player_name, "message": message})
+    
+    def _get_conversation_entry(self, conversation_id):
+        entry = next((e for e in self.current_round.messages if e.id == conversation_id), None)
+        if not entry:
+            print(f"Conversation {conversation_id} not found.")
+        return entry
+        
+    def _update_history(self, player_name, message, visibility_restriction = None):
+        #entry = MessageEntry()
+        self.message_id += 1
+        entry = MessageEntry(
+            messages=[{"speaker": player_name, "message": message}],
+            id= self.message_id,
+            visibility_restriction=visibility_restriction
+        )
+        self.current_round.messages.append(entry)
+        return self.message_id
+    
+    def output_private_conversation(self, conversation_id):
+        entry = self._get_conversation_entry(conversation_id)
+        if entry:
+            self.game_sink.on_private_conversation(entry)
     
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
             raise RuntimeError(f"Missing score for active player '{agent_name}'")
         return self.agent_scores[agent_name]
 
+    ####  ...... Phase, turn management .... #########
 
     def new_turn_print(self):
         #TODO - what is the point here- ? only on discussion turns? why?
@@ -39,37 +86,25 @@ class GameBoard:
         
     def endRound(self, round_summary):
         self.game_sink.on_round_summary(round_summary.round_summary)
-        self.round_entries.append(list(self.currentRound))
-        self.current_phase_rounds.append(list(self.currentRound))
-        self.currentRound.clear()
-        
+        self.completed_round_entries.append(self.current_round)
         
     def newRound(self):
-        #self.system_broadcast(self.score_string(), private = False)
-        
+        #self.system_broadcast(self.score_string(), private = False) Probably a good idea for agents to read
         self.round_number += 1
-        self.current_phase_round_number += 1
         self.turn_number = 0
-        self.game_sink.on_round_start(self.round_number, self.score_string()) #TODO with string
+        self.current_round = RoundEntry(phase_number=self.phase_number, round_number=self.round_number, messages=[])
+        self.game_sink.on_round_start(self.round_number, self.score_string()) 
         
     def endPhase(self):
-        self.current_phase_round_number = 0
-        
-    def agent_names(self):
-        return self.phase_runner.agent_names()
+        pass
         
     def new_phase(self):
-        
         self.phase_number += 1
-        self.current_phase_rounds = []
         self.game_sink.on_phase_header(self.phase_number) 
         
     #--------- public output --------- #
     
-    def _update_history(self, player_name, message):
-        entry = {"speaker": player_name, "message": message}
-        self.currentRound.append(entry)
-        
+
         
     def _as_display_name(self, speaker: Union[str, BaseAgent]):
         if isinstance(speaker, str):
@@ -98,7 +133,7 @@ class GameBoard:
         
         
         
-    def broadcast_public_action(self, speaker: Union[str, BaseAgent], message: str, color: str = ""):
+    def broadcast_public_action(self, speaker: Union[str, BaseAgent], message: str, color: str = ""): #broadcast to record
         
         display_name = self._as_display_name(speaker)
         self._update_history(display_name, message)
@@ -113,8 +148,12 @@ class GameBoard:
     def host_broadcast(self, message):
         self.broadcast_public_action("HOST", message)
     
-    # -----------------------------------#
-        
+    # ---------------Agent state / Scores --------------------#
+    
+    def agent_names(self):
+        return self.phase_runner.agent_names()
+    
+    
     def remove_agent_state(self, agent_name: str):
         self.agent_scores.pop(agent_name, None)
 
@@ -125,7 +164,6 @@ class GameBoard:
     def add_agent_state(self, agent_name: str):
         self.agent_scores[agent_name] = 0
         
-    
     
     def append_agent_points(self, agent_name, points):
         new_score = max(0, self.agent_scores[agent_name] + points)

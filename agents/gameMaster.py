@@ -12,13 +12,16 @@ class GameMaster(BaseAgent):
         super().__init__(name, client, model_name, higher_model_name=higher_model_name)
         self.color = "YELLOW"
         self.round_summaries = deque(maxlen=50)
-        
+        self.name = "Host"
+    
+    
     def _system_prompt(self, gameBoard):
         #TODO spruce up with the other one
+        #Used in the wildcard selection
         return ( f"You oversee this game. You help to make the information managable for the LLMs playing."
                 f"PAST SUMARRIES: {"\n".join(self.round_summaries)} "
                  f"#########################"
-                 f"Current round: {gameBoard.currentRound}")
+                 f"Current round: {gameBoard.context_builder.current_round_formatted(self)}")
     
     
     def choose_agent_based_on_parameter(self, gameBoard, allowed_names, parameter: str):
@@ -45,7 +48,7 @@ class GameMaster(BaseAgent):
                 {"role": "user", "content": f"PAST SUMARRIES: {"\n".join(self.round_summaries)} "
                  f"#########################"
                  f"#########################"
-                 f"Summarise the following round: {gameBoard.currentRound} Scores:  {gameBoard.agent_scores}"} 
+                 f"Summarise the following round: {gameBoard.context_builder.current_round_formatted(self)} Scores:  {gameBoard.agent_scores}"} 
             ]
         )
         self.round_summaries.append(turn.round_summary)

@@ -101,7 +101,7 @@ class Debater(BaseAgent):
         else:
             # Default to the standard "Play to Win" prompt
             instructions = PromptLibrary.player_user_prompt(self.phase_summaries_string(),
-                gameBoard.context_builder.get_full_context(), gameBoard.score_string())
+                gameBoard.context_builder.get_full_context(self), gameBoard.score_string())
 
         # 2. Combine
         full_user_content = f"{instructions}\n\n{user_content}"
@@ -161,7 +161,7 @@ class Debater(BaseAgent):
         return string 
     
     def _summarise_phase_context_string(self, game_board):
-        phase_rounds_formatted = game_board.context_builder.phase_rounds_string()
+        phase_rounds_formatted = game_board.context_builder.phase_rounds_string(self)
         context_string = "------------YOUR PREVIOUS PHASE SUMMARIES-----------------\n"
         context_string += self.phase_summaries_string() #this should say none yet if empty.
         context_string += "\n\n------------ The current phase to summarise into memory: ---------\n"

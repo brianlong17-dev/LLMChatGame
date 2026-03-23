@@ -4,6 +4,7 @@ from typing import Iterable
 import questionary
 
 from core.console_renderer import ConsoleRenderer
+from core.gameboard import MessageEntry
 from core.sinks.game_sink import GameEventSink, Speaker
 
 
@@ -39,7 +40,7 @@ class ConsoleGameEventSink(GameEventSink):
     def on_phase_header(self, phase_number: int) -> None:
         from prompts.prompts import PromptLibrary
         ConsoleRenderer.print_system_private(PromptLibrary.line_break)
-        ConsoleRenderer.print_system_private(f"PHASE: {phase_number}")
+        ConsoleRenderer.print_system_private(f"\nPHASE: {phase_number}")
         ConsoleRenderer.print_system_private(PromptLibrary.line_break)
 
     def on_phase_intro(self, host_text: str, summary_text: str) -> None:
@@ -62,6 +63,11 @@ class ConsoleGameEventSink(GameEventSink):
 
     def on_private_thought(self, speaker: Speaker, message: str) -> None:
         ConsoleRenderer.print_private(speaker, message, print_name=False)
+        
+    def on_private_conversation(self, entry: MessageEntry):
+        color = "RED"
+        for message in entry.messages:
+             ConsoleRenderer.print_public_action(message['speaker'], message['message'], color)
         
     def system_private(self, speaker: Speaker, message: str) -> None: #things that LLM players wont see
         ConsoleRenderer.print_private(speaker, message, print_name=False, color_name= "SYS")
