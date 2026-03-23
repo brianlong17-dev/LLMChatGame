@@ -1,68 +1,75 @@
 from typing import TYPE_CHECKING
-
-
 if TYPE_CHECKING:
     from core.gameboard import GameBoard
+    from agents.base_agent import BaseAgent
+    from core.gameboard import RoundEntry
 
 
 class ContextBuilder:
     
     def __init__(self, game_board: 'GameBoard'):
         self.game_board = game_board
+        self.min_rounds_for_context = 3
         #some settings can probably move here
     
-    def current_round_formatted(self):
-        return  self._format_dialogue_list(self.game_board.currentRound)
+    def current_round_formatted(self, agent: 'BaseAgent'):
+        return  self._formatted_round(self.game_board.current_round, agent)
     
-    def get_full_context(self):
-        current_text = self.current_round_formatted()
-        rounds_count = max(len(self.game_board.current_phase_rounds), self.game_board.full_rounds_text_amount)
+    
+    def get_full_context(self, agent: 'BaseAgent'):
+        current_text = self.current_round_formatted(agent)
+        rounds = self.game_board.current_phase_rounds()
+        if len(rounds) < self.min_rounds_for_context:
+            rounds = self.game_board.completed_round_entries[-self.min_rounds_for_context:]
+        if len(rounds) == 0:
+            rounds_string =  "This is the first round. There is no prior history. \n"
+        else:
+            rounds_string = f"### PAST {len(rounds)} ROUNDS  ###\n"
+            rounds_string += "\n\n".join( self._formatted_round(r, agent) for r in rounds)
         context_string = (
-            f"### PAST {rounds_count} ROUNDS  ###\n"
-            f"{self.formatted_recent_rounds(rounds_count)}\n\n"
-            f"### CURRENT ROUND DIALOGUE ###\n"
+            f"{rounds_string}"
+            f"\n\n### CURRENT ROUND DIALOGUE ###\n"
             f"{current_text}"
         )
         return context_string 
             
+    def phase_rounds_string(self, agent: 'BaseAgent'): #Used to make a phase to summarise
+        return self._formatted_phase(self.game_board.phase_number, agent)
     
-    def _format_dialogue_list(self, dialogue_list):
-        """Helper to turn a list of dicts into a readable string."""
-        if not dialogue_list:
-            return "No dialogue yet."
-        return "\n".join([f"{entry['speaker']}: {entry['message']}" for entry in dialogue_list])
-    
-    def formatted_recent_rounds(self, count):
-        
-        if len(self.game_board.round_entries) == 0:
+    def _formatted_phase(self, phase_number, agent):
+        rounds = self.game_board.phase_rounds(phase_number)
+        if len(rounds) == 0:
             return "This is the first round. There is no prior history."
         
-        recent_rounds = list(self.game_board.round_entries)[-count:]
         history_blocks = []
-        for i, round_data in enumerate(recent_rounds):
-            past_round_num = self.game_board.round_number - len(recent_rounds) + i
+        for i, round in enumerate(rounds):
             block = (
-                f"--- ROUND {past_round_num} ARCHIVE ---\n"
-                f"{self._format_dialogue_list(round_data)}"
-            )
-            history_blocks.append(block)
-            
-        return "\n\n".join(history_blocks)
-    
-    def phase_rounds_string(self):
-        if len(self.game_board.current_phase_rounds) == 0:
-            return "This is the first round. There is no prior history."
-        history_blocks = []
-        rounds = self.game_board.current_phase_rounds
-        for i, round_data in enumerate(rounds):
-            # Calculate the actual round number for the header
-            
-            block = (
-                f"--- PHASE {self.game_board.phase_number} - ROUND {i + 1}---\n"
-                f"{self._format_dialogue_list(round_data)}"
+                f"--- PHASE {phase_number} - ROUND {i + 1}---\n"
+                f"{self._formatted_round(round, agent)}"
             )
             history_blocks.append(block)
         return "\n\n".join(history_blocks)
+    
+    def _round_header(self, round):
+        return f"------- Phase: {round.phase_number}, Round: {round.round_number} --------"
+    
+    def _formatted_round(self, round: 'RoundEntry', agent: 'BaseAgent'):
+        output = f"\n{self._round_header(round)}\n"
+        if len(round.messages) == 0:
+            return output + "No messages yet for round."
+        
+        for entry in round.messages:
+            if entry.visibility_restriction == None:
+                for message in entry.messages:
+                    output += (f"\n{message['speaker']}: {message['message']}")
+            else:
+                if agent.name in entry.visibility_restriction:
+                    names =  ", ".join(entry.visibility_restriction)
+                    output += f"\n--------------- Private Conversation between {names} ----------------\n"
+                    for message in entry.messages:
+                        output += (f"\n{message['speaker']}: {message['message']}")
+                    output += f"\n--------------- END OF Private Conversation between {names} ----------------\n"
+        return output
     
     def get_dashboard_string(self, agent_name: str) -> str:
         agent_scores = dict(self.game_board.agent_scores)

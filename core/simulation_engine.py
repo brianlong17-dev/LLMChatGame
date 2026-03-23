@@ -1,7 +1,7 @@
 from agents.character_generation.characterGeneration import CharacterGenerator
 from core.game_config import GameConfig
 from core.phase_runner import PhaseRunner
-from core.phase_recipe import  PhaseRecipeFactory
+from core.phase_recipe_factory import  PhaseRecipeFactory
 from agents.base_agent import *
 from agents.gameMaster import GameMaster
 from gameplay_management.unified_controller import UnifiedController
@@ -42,7 +42,7 @@ class SimulationEngine:
         target_found = False
 
         for agent in self.agents:
-            if agent.name in debug_targets:
+            if True: #agent.name in debug_targets:
                 agent.debug_log = True
                 target_found = True
                 
@@ -71,8 +71,7 @@ class SimulationEngine:
             
         self.initialiseGameBoard()
         
-        #-----------Intro------------#
-        self.gameBoard.game_sink.on_game_intro(self.phase_factory.game_intro())
+        
         
         while len(self.agents) > 1:
             phase = self.phase_factory.get_phase_recipe(self.gameBoard.phase_number + 1, len(self.agents), self.gameplay_config)

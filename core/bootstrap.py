@@ -7,7 +7,7 @@ from agents.character_generation.characterGeneration import CharacterGenerator
 from agents.gameMaster import GameMaster
 from core.gameboard import GameBoard
 from core.sinks.console_sink import ConsoleGameEventSink
-from core.phase_recipe import PhaseRecipeFactoryDefault
+from core.phase_recipe_factory import PhaseRecipeFactoryDefault
 from core.simulation_engine import SimulationEngine
 
 

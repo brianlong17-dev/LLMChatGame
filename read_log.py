@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
 Usage:
-    python read_log.py                                                   # most recent, public_response only
-    python read_log.py logs/AgentAlpha_20260319_140000.jsonl            # specific file
+    python read_log.py                                                   # most recent log of any agent
+    python read_log.py --agent GLaDOS                                    # most recent log for GLaDOS
+    python read_log.py --agent GLaDOS --run 2                            # second most recent for GLaDOS
+    python read_log.py logs/GLaDOS_20260319_140000.jsonl                 # specific file
     python read_log.py --all                                             # all response fields
     python read_log.py --prompts                                         # show field prompts too
     python read_log.py --brief                                           # response only, no system/user context
@@ -79,21 +81,36 @@ def render_entry(entry: dict, show_all: bool, show_prompts: bool, brief: bool) -
         field("", str(response), WHITE)
 
 
-def most_recent_log(log_dir: str = "logs") -> str | None:
+def find_log(log_dir: str = "logs", agent_name: str = None, run: int = 1) -> str | None:
+    """Return the nth most recent log file (run=1 is most recent, run=2 is second most recent, etc.)"""
     if not os.path.isdir(log_dir):
         return None
-    candidates = [
-        os.path.join(log_dir, f)
-        for f in os.listdir(log_dir)
-        if f.endswith(".jsonl")
-    ]
-    return max(candidates, key=os.path.getmtime) if candidates else None
+    prefix = f"{agent_name}_" if agent_name else ""
+    candidates = sorted(
+        [
+            os.path.join(log_dir, f)
+            for f in os.listdir(log_dir)
+            if f.startswith(prefix) and f.endswith(".jsonl")
+        ],
+        key=os.path.getmtime,
+        reverse=True,  # most recent first
+    )
+    if not candidates:
+        return None
+    index = run - 1
+    if index >= len(candidates):
+        return None, len(candidates)
+    return candidates[index], len(candidates)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Pretty-print a JSONL agent log file.")
     parser.add_argument("logfile", nargs="?", default=None,
-                        help="Path to the .jsonl log file (defaults to most recent in logs/)")
+                        help="Path to the .jsonl log file (optional)")
+    parser.add_argument("--agent", default=None, metavar="NAME",
+                        help="Agent name — finds logs for that agent in logs/")
+    parser.add_argument("--run", type=int, default=1, metavar="N",
+                        help="Which run to show — 1 is most recent (default), 2 is second most recent, etc.")
     parser.add_argument("--all", action="store_true", dest="show_all",
                         help="Show all response fields, not just public_response")
     parser.add_argument("--prompts", action="store_true", dest="show_prompts",
@@ -104,11 +121,22 @@ def main() -> None:
 
     logfile = args.logfile
     if logfile is None:
-        logfile = most_recent_log()
+        result = find_log(agent_name=args.agent, run=args.run)
+        logfile, total = result if isinstance(result, tuple) else (result, 0)
+
         if logfile is None:
-            print("No .jsonl files found in logs/")
+            if args.agent:
+                if total:
+                    print(f"Only {total} log file(s) for '{args.agent}' — can't get run {args.run}.")
+                else:
+                    print(f"No log files found for agent '{args.agent}' in logs/")
+            else:
+                print("No .jsonl files found in logs/")
             sys.exit(1)
-        print(f"{DIM}No file specified — using most recent: {logfile}{RESET}")
+
+        agent_label = f"for '{args.agent}'" if args.agent else "overall"
+        run_label = f"run {args.run}" if args.run > 1 else "most recent"
+        print(f"{DIM}Using {run_label} {agent_label}: {logfile}{RESET}")
 
     try:
         with open(logfile, encoding="utf-8") as f:
@@ -136,4 +164,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    

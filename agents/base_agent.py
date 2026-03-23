@@ -83,7 +83,7 @@ class BaseAgent:
         )
 
         # Delete oldest until we're under the cap
-        cap = 10
+        cap = 7
         while len(existing) >= cap:
             os.remove(os.path.join(log_dir, existing.pop(0)))
 
