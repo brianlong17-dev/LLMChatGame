@@ -90,3 +90,6 @@ class ConsoleGameEventSink(GameEventSink):
         
     def on_points_update(self, points: dict[str, int]) -> None:
         pass
+    
+    def on_evictions_update(self, evicted_names: list[str]):
+        pass

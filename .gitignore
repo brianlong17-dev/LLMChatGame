@@ -25,3 +25,8 @@ __pycache__/
 #sometimes i generate the diff
 *.diff
 CLAUDE.md
+
+#frontend stuff
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
