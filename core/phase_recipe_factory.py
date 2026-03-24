@@ -1,8 +1,18 @@
 from core.game_config import GameConfig
 from core.phase_recipe import PhaseRecipe
 from gameplay_management.discussion_round import DiscussionRound
-from gameplay_management.unified_controller import *
 from gameplay_management.wake_up_round import WakeUpRound
+from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
+from gameplay_management.games.game_guess import GameGuess
+from gameplay_management.games.game_perform import GamePerformSobStory
+from gameplay_management.game_targeted.game_targeted_give import GameTargetedChoiceGive
+from gameplay_management.game_targeted.game_targeted_steal import GameTargetedChoiceSteal
+from gameplay_management.game_targeted.game_targeted_sacrifice import GameTargetedChoiceSacrifice
+from gameplay_management.eliminations.voting_bottom_two import VoteBottomTwo
+from gameplay_management.eliminations.voting_each_player import VoteEachPlayer
+from gameplay_management.eliminations.voting_lowest_points import VoteLowestPoints
+from gameplay_management.immunities.highest_points_immunity import HighestPointsImmunity
+from gameplay_management.immunities.wildcard_immunity import WildcardImmunity
 
 class PhaseRecipeFactory:
     
@@ -67,14 +77,15 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         cfg.vote_bottom_two_multiple = True
         if agent_number == 2:
             return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [])
-        #TODO refactor all of this 
+        
+        if agent_number == 3:
+            cfg.set_pd_pairing_all()
+            return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [])
+        #TODO refactor all of this
         index_rounds = []
         if phase_number == 1:
-            cfg.set_guess_range(2)
-            return cls.make_phase(0, WakeUpRound, 0, VoteEachPlayer, 0, None)  
-        if phase_number == 1:
-            cfg.set_guess_range(2)
-            return cls.make_phase(1, GameGuess, 0, None, 0, None)  
+            return cls.make_phase(0, WakeUpRound, 0, VoteEachPlayer, 0, None)
+
         if phase_number == 2:
             cfg.set_guess_range(3)
             return cls.make_phase(1, GameGuess, 1, VoteEachPlayer, 0, [HighestPointsImmunity, WildcardImmunity]) 

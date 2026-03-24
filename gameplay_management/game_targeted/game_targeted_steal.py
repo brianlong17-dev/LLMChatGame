@@ -4,10 +4,12 @@ from gameplay_management.game_targeted.game_targeted_choice import *
 
 class GameTargetedChoiceSteal(GameTargetedChoice):
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Stealer"
-    
-    def rules_description(self):
+
+    @classmethod
+    def rules_description(cls, cfg):
         return "Choose a player to steal points from!"
     
     def run_game(self):

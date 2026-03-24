@@ -15,7 +15,7 @@ class VoteMechanicsMixin(BaseRound):
     ###############
     
     @classmethod
-    def is_vote(self):
+    def is_vote(cls):
         return True
     
     def _validate_immunity(self, immunity_players: Optional[Sequence[str]]) -> list[str]:
@@ -34,12 +34,11 @@ class VoteMechanicsMixin(BaseRound):
         if victim:
             host_message = VotePromptLibrary.elimination_host_msg.format(victim_name=victim.name)
             self.gameBoard.host_broadcast(host_message)
-            instruction_override = PromptLibrary.final_words_prompt(self.gameBoard, victim)     
-            
-            
+            instruction_override = PromptLibrary.final_words_prompt(self.gameBoard, victim)
+
             self.gameBoard.remove_agent_state(victim.name)
             self.simulationEngine.eliminate_player(victim)
-            finalWordsResult = self.respond_to(victim, "",  #we dont need the host message here, its already in the game log
+            finalWordsResult = self.respond_to(victim, "",
                                                instruction_override = instruction_override)
             print(finalWordsResult)
             self.publicPrivateResponse(victim, finalWordsResult)

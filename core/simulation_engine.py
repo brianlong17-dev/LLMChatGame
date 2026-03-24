@@ -1,10 +1,9 @@
 from agents.character_generation.characterGeneration import CharacterGenerator
 from core.game_config import GameConfig
 from core.phase_runner import PhaseRunner
-from core.phase_recipe_factory import  PhaseRecipeFactory
+from core.phase_recipe_factory import PhaseRecipeFactory
 from agents.base_agent import *
 from agents.gameMaster import GameMaster
-from gameplay_management.unified_controller import UnifiedController
 from models.player_models import *
 from .gameboard import GameBoard
 from agents.human_player import Human
@@ -20,9 +19,7 @@ class SimulationEngine:
         
         self.gameBoard = game_board
         self.generator = generator
-        self.game_manager = UnifiedController(self.gameBoard, self)
         self.gameplay_config = GameConfig()
-        #has to be after game_board and game_manager
         self.phase_runner = PhaseRunner(self)
         
         
@@ -70,8 +67,6 @@ class SimulationEngine:
             self.agents.append(human_player)
             
         self.initialiseGameBoard()
-        
-        
         
         while len(self.agents) > 1:
             phase = self.phase_factory.get_phase_recipe(self.gameBoard.phase_number + 1, len(self.agents), self.gameplay_config)

@@ -120,15 +120,14 @@ class ContextBuilder:
         # but strictly separating 'Dead' is useful)
         removed_agent_names = self.game_board.phase_runner.removed_agent_names()
         dead_str = ", ".join(removed_agent_names) if removed_agent_names else "None"
-        dash.append(f"EVICTED PLAYERS: {dead_str} (Already gone. Do not plot against them)")
+        dash.append(f"EVICTED PLAYERS: {dead_str}")
         dash.append(self.current_phase_progress())
+        dash.append("===============================")
         return "\n".join(dash)
     
     def current_phase_progress(self):
-        string = ("===============================\n")
-        string += ("CURRENT PHASE PROGRESS:")
-        string +=  (self.game_board.phase_runner.get_phase_progress_string())
-        string += ("\n===============================\n")
+        string = "\nCURRENT PHASE PROGRESS:\n"
+        string += self.game_board.phase_runner.get_phase_progress_string()
         return string
         
    

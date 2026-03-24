@@ -5,15 +5,17 @@ from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMecha
 
 class HighestPointsImmunity(ImmunityMechanicsMixin):
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Highest Points Player Immunity"
 
-    def rules_description(self):
+    @classmethod
+    def rules_description(cls, cfg):
         rules_string = "The player with the highest points receives immunity from the next vote. "
-        if self.cfg().immunity_highest_points_only_one:
+        if cfg.immunity_highest_points_only_one:
             rules_string += "In the case of a tie, one player is randomly selected to receive immunity."
         else:
-            rules_string +="In the case of a tie, all tied players receive immunity."
+            rules_string += "In the case of a tie, all tied players receive immunity."
         return rules_string
         
 

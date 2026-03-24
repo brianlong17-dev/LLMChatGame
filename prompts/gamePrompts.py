@@ -1,12 +1,8 @@
 from textwrap import dedent
 
 class GamePromptLibrary:
-    pd_split = 3
-    pd_steal = 5
-    pd_both_steal = 1
-    
     points_per_survived_vote = 2
-    
+
     model_field_error = "error_string"
     
     model_field_choose_name = "target_name"
@@ -50,21 +46,10 @@ class GamePromptLibrary:
     give_game_player_intro = ("{player_name}! You're up- what player are you choosing, and why?")
 
     @classmethod
-    def prisonersDilemmaIntro(cls, choose_partner: bool, loser_picks_first: bool, points_rules_string: str):
-        pairing_string = ("Players will be paired up at random.")
-        winner_picks_string = ("")
-        if choose_partner:
-            pairing_string = "Players will get to choose who to couple up with for the game"
-            if loser_picks_first:
-                winner_picks_string = "The player with the lowest points will pick their partner first, and so on up the line."
-            #else random order
-        
-        # 1. Broadcast the rules
-        intro_message = (
+    def prisonersDilemmaIntro(cls, pairing_string: str, points_rules_string: str):
+        return (
             f"It's time to play: Prisoner's Dilemma.\n"
             f"{pairing_string}\n"
-            f"{winner_picks_string}\n"
             f"In each pairing you get a choice: SPLIT or STEAL.\n"
-            f"{points_rules_string}\n\n")
-        
-        return intro_message
+            f"{points_rules_string}\n\n"
+        )

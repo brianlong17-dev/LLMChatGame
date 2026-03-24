@@ -6,11 +6,13 @@ from prompts.votePrompts import VotePromptLibrary
 
 
 class VoteWinnerChooses(VoteMechanicsMixin):
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "The Leader Executes"
 
-    def rules_description(self):
-        return "The player leading the scores will choose who leaves the game IMMEDIATELY.."
+    @classmethod
+    def rules_description(cls, cfg):
+        return "The player leading the scores will choose who leaves the game IMMEDIATELY."
 
     def run_vote(self, immunity_players: Optional[Sequence[str]]):
         self.run_voting_winner_chooses(immunity_players)

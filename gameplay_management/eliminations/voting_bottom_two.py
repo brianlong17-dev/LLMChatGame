@@ -5,19 +5,21 @@ from prompts.gamePrompts import GamePromptLibrary
 
 class VoteBottomTwo(VoteMechanicsMixin):
      
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Bottom Two"
 
-    def rules_description(self):
+    @classmethod
+    def rules_description(cls, cfg):
         return "The bottom two players will face the vote to be removed."
-        
-        
+
     def rules_description_detailed(self):
-        rules_string = VoteBottomTwo.rules_description(self)
-        if self.cfg().vote_bottom_two_multiple:
+        cfg = self.cfg()
+        rules_string = self.rules_description(cfg)
+        if cfg.vote_bottom_two_multiple:
             rules_string += "In the event of a tie for the bottom spots, all tied players will also face the vote. "
-        if self.cfg().vote_dont_miss:
-            rules_string += GamePromptLibrary.dont_miss_string.format(points = self.cfg().vote_missed_points)
+        if cfg.vote_dont_miss:
+            rules_string += GamePromptLibrary.dont_miss_string.format(points=cfg.vote_missed_points)
             
         return rules_string
         

@@ -22,7 +22,9 @@ class PhaseRunner:
         
     def set_up(self):
         self.game_board = self.simulation_engine.gameBoard
-        self.game_manager = self.simulation_engine.game_manager
+
+    def _cfg(self):
+        return self.simulation_engine.gameplay_config
 
     def agent_names(self):
         return [agent.name for agent in self.simulation_engine.agents]
@@ -30,24 +32,24 @@ class PhaseRunner:
     def removed_agent_names(self):
         return [agent.name for agent in self.simulation_engine.dead_agents]
 
-    def run_vote_round_with_immunity_types(self, round, immunity_types):
+    def run_vote_round_with_immunity_types(self, round_class, immunity_types):
         immune_players = []
         if immunity_types:
             for immunity_type in immunity_types:
-                result = immunity_type.run_immunity(self.game_manager) #TODO run_immunity should validate
+                result = immunity_type(self.game_board, self.simulation_engine).run_immunity()
                 immune_players.extend(result)
         immune_players = list(dict.fromkeys(immune_players)) #remove any dupes
-        round.run_vote(self.game_manager, immunity_players=immune_players)
+        round_class(self.game_board, self.simulation_engine).run_vote(immunity_players=immune_players)
 
     
     def get_phase_progress_string(self):
-        return self.current_recipe.phase_progress_string(self.game_manager,
-                                                         self.current_round_index)
-    
+        return self.current_recipe.phase_progress_string(self._cfg(), self.current_round_index)
+
     def _introduce_phase(self):
-        host_intro = self.current_recipe.phase_intro_string(self.game_board.phase_number, 
-                                    len(self.agent_names()), self.game_manager)
-        system_phase_summary = self.current_recipe.phase_summary_string(self.game_manager)
+        cfg = self._cfg()
+        host_intro = self.current_recipe.phase_intro_string(self.game_board.phase_number,
+                                    len(self.agent_names()), cfg)
+        system_phase_summary = self.current_recipe.phase_summary_string(cfg)
         
         self.game_board.host_broadcast(host_intro)
         self.game_board.system_broadcast(system_phase_summary, private = True)
@@ -67,7 +69,7 @@ class PhaseRunner:
         if round.is_vote():
             self.run_vote_round_with_immunity_types(round, immunity_types)
         else:
-            round.run_game(self.game_manager)
+            round(self.game_board, self.simulation_engine).run_game()
         
         #self.game_board.system_broadcast(self.game_board.agent_scores)
         round_summary = self.simulation_engine.game_master.summariseRound(self.game_board)
@@ -84,11 +86,10 @@ class PhaseRunner:
         self.set_up() #this is in case the game manager or board wasn't instanciated on the simulation engine yet...
         #TODO this must be wrong
         
-        self.current_recipe = recipe 
-        self.game_board.new_phase() 
-        
-        
-        
+        self.current_recipe = recipe
+        self.game_board.new_phase()
+
+
         for round in recipe.rounds:
             self.run_round(round, recipe.immunity_types)
         

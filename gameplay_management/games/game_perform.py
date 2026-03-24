@@ -9,10 +9,12 @@ from prompts.gamePrompts import GamePromptLibrary
 
 class GamePerformSobStory(GameMechanicsMixin):
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Perform your sob story"
-    
-    def rules_description(self):
+
+    @classmethod
+    def rules_description(cls, cfg):
         return "Each player performs, and is scored by their fellow contestants!"
     
     def run_game(self):

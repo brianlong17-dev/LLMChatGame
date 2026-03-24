@@ -3,10 +3,12 @@ from gameplay_management.game_targeted.game_targeted_choice import *
 
 class GameTargetedChoiceSacrifice(GameTargetedChoice):
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Sacrificer"
-    
-    def rules_description(self):
+
+    @classmethod
+    def rules_description(cls, cfg):
         return "Use your own points to hurt another player"
     
     def run_game(self):

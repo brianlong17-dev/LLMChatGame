@@ -4,14 +4,13 @@ from models.player_models import DynamicModelFactory
 
 class WakeUpRound(BaseRound):
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Wake up Round"
-    
-    def rules_description(self):
-        topic = self.cfg().discussion_round_topic
-        return (
-            f"This is a wakeup round" #this should be private
-        )
+
+    @classmethod
+    def rules_description(cls, cfg):
+        return "This is a wakeup round"
         
         
     def _output_discussion_round_text(self, player, result):

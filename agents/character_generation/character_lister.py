@@ -29,7 +29,7 @@ class CharacterLister:
     logicos = ['HAL 9000', 'GLaDOS', 'Spock', 'Detective Columbo', 'Benoit Blanc']
     foils = ['Morty Smith', 'Michael Scott']
     pools= [regulars, schemers, agros, logicos, foils]
-    for_sure = ['Lady Macbeth', 'Morty Smith']
+    for_sure = ['Lady Macbeth', 'Morty Smith', 'Drunk Frat Girl', 'Drunk Frat Boy', 'Hermione Granger']
 
     full_characters = [
     'Donald Trump', 'Margaret Thatcher', 'Ronald Regan',

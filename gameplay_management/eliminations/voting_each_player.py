@@ -5,11 +5,13 @@ from prompts.gamePrompts import GamePromptLibrary
 
 
 class VoteEachPlayer(VoteMechanicsMixin):
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Direct Democracy"
 
-    def rules_description(self):
-        return "Each player votes to eliminate, the player with the most votes in removed."
+    @classmethod
+    def rules_description(cls, cfg):
+        return "Each player votes to eliminate, the player with the most votes is removed."
         
     
     def rules_description_detailed(self):

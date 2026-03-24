@@ -38,6 +38,7 @@ class GameConfig:
         self.pd_pairing_choice_none = 'none'
         self.pd_pairing_choice_random = 'random'
         self.pd_pairing_choice_lowest = 'lowest'
+        self.pd_pairing_choice_all = 'all'
         self.pd_pairing_method = self.pd_pairing_choice_none
 
         # --------------------------------------------------------------
@@ -93,4 +94,7 @@ class GameConfig:
     
     def set_pd_pairing_lowest(self):
         self.pd_pairing_method = self.pd_pairing_choice_lowest
+
+    def set_pd_pairing_all(self):
+        self.pd_pairing_method = self.pd_pairing_choice_all
     

@@ -4,7 +4,8 @@ from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 
 class GameTargetedChoice(GameMechanicsMixin):
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Targeted Choice"
 
     def get_error_model(self, message: str):

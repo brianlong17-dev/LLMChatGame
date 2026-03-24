@@ -4,14 +4,13 @@ from models.player_models import DynamicModelFactory
 
 class DiscussionRound(BaseRound):
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Discussion Round"
-    
-    def rules_description(self):
-        topic = self.cfg().discussion_round_topic
-        return (
-            f"{topic}"
-        )
+
+    @classmethod
+    def rules_description(cls, cfg):
+        return cfg.discussion_round_topic
         
         
     def _output_discussion_round_text(self, player, result):

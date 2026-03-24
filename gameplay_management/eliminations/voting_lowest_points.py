@@ -4,10 +4,12 @@ from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMi
 
 
 class VoteLowestPoints(VoteMechanicsMixin):
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Fairwell, to thee of points so lowest"
 
-    def rules_description(self):
+    @classmethod
+    def rules_description(cls, cfg):
         return "Player with the lowest points is removed from the game"
     
     def rules_description_detailed(self):

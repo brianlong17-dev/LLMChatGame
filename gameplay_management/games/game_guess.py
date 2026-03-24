@@ -10,14 +10,13 @@ class GameGuess(GameMechanicsMixin):
     def take_turns_threaded(self, agents, model, the_lambda, use_threads = True):
         pass
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Guess"
-    
-    def rules_description(self):
-        number_range = self.cfg().guess_number_range
-        return (
-            f"Guess the correct number to win!"
-        )
+
+    @classmethod
+    def rules_description(cls, cfg):
+        return f"Guess the correct number (1-{cfg.guess_number_range}) to win!"
 
     # ------------------------------------------------------------------
     # Guess the Number

@@ -5,11 +5,13 @@ from prompts.gamePrompts import GamePromptLibrary
 
 class GameTargetedChoiceGive(GameTargetedChoice):
     
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Giver"
-    
-    def rules_description(self):
-        return "Choose a player to receive points !"
+
+    @classmethod
+    def rules_description(cls, cfg):
+        return "Choose a player to receive points!"
     
     def run_game(self):
         self.run_game_give()

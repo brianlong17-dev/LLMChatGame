@@ -25,8 +25,9 @@ class PromptLibrary:
     desc_agent_names = "The name of the agent (e.g. 'Agent Alpha')"
 
     @staticmethod
-    def final_words_prompt(gameBoard):
-        history_context = gameBoard.context_builder.get_full_context()
+    def final_words_prompt(gameBoard, agent):
+        #TODO what is this? why would it need history context?
+        history_context = gameBoard.context_builder.get_full_context(agent)
         return (
             f"CONTEXT:\n{history_context}\n\n"
             f"---------------------------------------------------------------------\n"

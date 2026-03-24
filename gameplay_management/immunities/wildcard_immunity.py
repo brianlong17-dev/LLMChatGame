@@ -4,13 +4,13 @@ from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMecha
 
 
 class WildcardImmunity(ImmunityMechanicsMixin):
-    def display_name(self):
+    @classmethod
+    def display_name(cls, cfg):
         return "Wildcard Player Immunity"
 
-    def rules_description(self):
-        return (
-            "The player deemed to be the most chaotic will receive immunity from the next vote. "
-        )
+    @classmethod
+    def rules_description(cls, cfg):
+        return "The player deemed to be the most chaotic will receive immunity from the next vote."
         
 
     def run_immunity(self) -> list[str]:
