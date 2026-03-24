@@ -17,38 +17,38 @@ from gameplay_management.immunities.wildcard_immunity import WildcardImmunity
 class PhaseRecipeFactory:
     
     @classmethod
-    def make_phase(self, pre_game_discussion_rounds, game, pre_vote_discussion_rounds, 
-                   vote, post_vote_discussion_rounds, immunity_types):
+    def make_phase(self, pre_game_discussion_rounds, game, pre_vote_discussion_rounds,
+                   vote, post_vote_discussion_rounds, immunity_types, config_mutations=None):
         rounds = []
-        
+
         for _ in range(pre_game_discussion_rounds):
             rounds.append(DiscussionRound)
         if game:
             rounds.append(game)
-        
+
         for _ in range(pre_vote_discussion_rounds):
             rounds.append(DiscussionRound)
         if vote:
             rounds.append(vote)
         for _ in range(post_vote_discussion_rounds):
             rounds.append(DiscussionRound)
-            
-        return PhaseRecipe(rounds=rounds, immunity_types=immunity_types)
+
+        return PhaseRecipe(rounds=rounds, immunity_types=immunity_types, config_mutations=config_mutations or [])
         
     
     
     @classmethod
-    def quick_phase(cls, game, vote, immunity=None):
-        return cls.make_phase(0, game, 0, vote, 0, immunity)
-    
+    def quick_phase(cls, game, vote, immunity=None, config_mutations=None):
+        return cls.make_phase(0, game, 0, vote, 0, immunity, config_mutations)
+
     @classmethod
-    def chatty_phase(cls, game, vote, immunity=None):
-        return cls.make_phase(1, game, 1, vote, 1, immunity)
-    
+    def chatty_phase(cls, game, vote, immunity=None, config_mutations=None):
+        return cls.make_phase(1, game, 1, vote, 1, immunity, config_mutations)
+
     @classmethod
-    def mid_phase(cls, game, vote, immunity=None):
+    def mid_phase(cls, game, vote, immunity=None, config_mutations=None):
         vote_discussion = 1 if vote else 0
-        return cls.make_phase(1, game, vote_discussion, vote, 0, immunity)     
+        return cls.make_phase(1, game, vote_discussion, vote, 0, immunity, config_mutations)     
     
     @classmethod 
     def game_intro(cls):
@@ -72,35 +72,33 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         return cls.get_phase_compelling(phase_number, agent_number, cfg, voting, incl_games, speed)
     
     @classmethod
-    def get_phase_compelling(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
-        
+    def _phases(cls):
+        return [
+            None,  # phase 0 unused
+            PhaseRecipe(rounds=[WakeUpRound]),
+            cls.make_phase(1, GameGuess, 1, VoteEachPlayer, 0, [HighestPointsImmunity, WildcardImmunity],
+                           config_mutations=[("set_guess_range", [3])]),
+            cls.mid_phase(GameTargetedChoiceGive, VoteEachPlayer, [HighestPointsImmunity, WildcardImmunity]),
+            cls.mid_phase(GameTargetedChoiceSteal, VoteBottomTwo, []),
+            cls.mid_phase(GamePerformSobStory, VoteBottomTwo, []),
+            cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [],
+                          config_mutations=[("set_pd_pairing_lowest", [])]),
+        ]
+
+    @classmethod
+    def get_phase_compelling(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games=True, speed=1):
         cfg.vote_bottom_two_multiple = True
+
         if agent_number == 2:
             return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [])
-        
         if agent_number == 3:
-            cfg.set_pd_pairing_all()
-            return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [])
-        #TODO refactor all of this
-        index_rounds = []
-        if phase_number == 1:
-            return cls.make_phase(0, WakeUpRound, 0, VoteEachPlayer, 0, None)
+            return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [],
+                                 config_mutations=[("set_pd_pairing_all", [])])
 
-        if phase_number == 2:
-            cfg.set_guess_range(3)
-            return cls.make_phase(1, GameGuess, 1, VoteEachPlayer, 0, [HighestPointsImmunity, WildcardImmunity]) 
-            return cls.mid_phase(GameGuess, None, [])
-        if phase_number == 3:
-            return cls.mid_phase(GameTargetedChoiceGive, VoteEachPlayer, [HighestPointsImmunity, WildcardImmunity])
-        if phase_number == 4:
-            return cls.mid_phase(GameTargetedChoiceSteal, VoteBottomTwo, [])
-        if phase_number == 5:
-            return cls.mid_phase(GamePerformSobStory, VoteBottomTwo, [])
-        if phase_number == 6:
-            cfg.set_pd_pairing_lowest()
-            return cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [])
-        
-        return cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [])
+        phases = cls._phases()
+        if phase_number < len(phases):
+            return phases[phase_number]
+        return phases[-1]
         
     
  

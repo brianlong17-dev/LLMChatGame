@@ -6,9 +6,10 @@ from gameplay_management.base_manager import BaseRound
 from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMechanicsMixin
 
 class PhaseRecipe(BaseModel):
-    rounds: List[Type[BaseRound]] = None 
-    immunity_types: Optional[List[Type[ImmunityMechanicsMixin]]] = None  # e.g., ["winner_immunity", "public_vote_immunity"]
-    overall_game_rules: Optional[str] = None #if not none will be sent to the phase runner for the context builder
+    rounds: List[Type[BaseRound]] = None
+    immunity_types: Optional[List[Type[ImmunityMechanicsMixin]]] = None
+    overall_game_rules: Optional[str] = None
+    config_mutations: List[tuple] = []
     
     def phase_summary_string(self, cfg):
         round_summary = ''

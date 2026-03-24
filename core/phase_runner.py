@@ -85,7 +85,11 @@ class PhaseRunner:
         self.current_round_index = 0
         self.set_up() #this is in case the game manager or board wasn't instanciated on the simulation engine yet...
         #TODO this must be wrong
-        
+
+        cfg = self._cfg()
+        for method, args in recipe.config_mutations:
+            getattr(cfg, method)(*args)
+
         self.current_recipe = recipe
         self.game_board.new_phase()
 
