@@ -65,11 +65,8 @@ class Debater(BaseAgent):
         return {**self.logic_fields(), **self.internal_thinking_fields()}
     
     def _system_prompt(self, gameBoard):
-        
-        return self.player_system_prompt(gameBoard)
-    
-    
-        
+        return PromptLibrary.player_system_prompt(self, gameBoard)
+      
     def process_turn_cognitive_fields(self, turn):
         
         simple_personality_fields = self.cognitive_fields()
@@ -95,11 +92,9 @@ class Debater(BaseAgent):
     
     def _get_full_user_content(self, gameBoard, user_content, instruction_override=None) :
         
-        # 1. Choose the instruction wrapper -- this should go....
         if instruction_override:
             instructions = instruction_override
         else:
-            # Default to the standard "Play to Win" prompt
             instructions = PromptLibrary.player_user_prompt(self.phase_summaries_string(),
                 gameBoard.context_builder.get_full_context(self), gameBoard.score_string())
 
@@ -113,30 +108,6 @@ class Debater(BaseAgent):
         turn = self.get_response(user_content, model, gameBoard, system_content) #TODO temperature
         self.process_turn_cognitive_fields(turn)
         return turn
-    
-    def player_system_prompt(self, gameBoard):
-        # Format Life Lessons as a bulleted list (Clean Readability)
-        if self.life_lessons:
-            lessons_str = "\n".join([f"- {lesson}" for lesson in self.life_lessons])
-        else:
-            lessons_str = "- None yet. I am a blank slate."
-
-        return (
-            f"You are {self.name}.\n\n"
-            f"{gameBoard.context_builder.get_dashboard_string(self.name)}\n\n" #DASHBOARD IS HERE
-            
-            f"=== YOUR PROFILE ===\n"
-            f"Persona: {self.persona}\n"
-            f"Speaking Style: {self.speaking_style}\n\n"
-            
-            f"=== LIFE LESSONS ===\n"
-            f"Use these past learnings to guide your current behavior:\n"
-            f"{lessons_str}\n\n"
-            
-            f"=== INTERNAL MONOLOGUE ===\n"
-            f"Current Strategy: {self.strategy_to_win}\n"
-            f"Calculated Odds: {self.mathematical_assessment}\n"
-        )
     
     def phase_summaries_string(self):
         all_keys = set(self.phase_summaries_detailed.keys()).union(
@@ -197,11 +168,3 @@ class Debater(BaseAgent):
         self.phase_summaries_detailed[phase_number] = response.public_response
         self.phase_summaries_brief[phase_number] = response.brief_summary
         
-    def build_back_story(self, information, prompt):
-        information = "You have applied to enter this game. The rules of the game are simple. "
-        "We have several phases- they include discussions, where you can meet and get to know your fellow competators."
-        "We have games where you can win points, and eliminations, where you and your fellow contestants vote to remove other players."
-        "Your safety and power in these eliminations will be determined by the points you have gained. "
-        
-        #this is the back story of the game.
-   

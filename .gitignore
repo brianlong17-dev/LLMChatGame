@@ -7,6 +7,7 @@ my-llm-project-output.txt
 output/
 data/
 logs/
+docs/
 
 
 # Editor/System junk
@@ -23,6 +24,7 @@ __pycache__/
 #sometimes i generate the diff
 *.diff
 CLAUDE.md
+
 
 #frontend stuff
 frontend/node_modules/

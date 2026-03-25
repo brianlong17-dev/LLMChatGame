@@ -18,11 +18,12 @@ class PhaseRunner:
         self.current_recipe = None
         self.current_round_index = 0
         self.overall_game_rules = ""
-        self.set_up()
         
-    def set_up(self):
-        self.game_board = self.simulation_engine.gameBoard
 
+    @property
+    def game_board(self):
+        return self.simulation_engine.gameBoard
+    
     def _cfg(self):
         return self.simulation_engine.gameplay_config
 
@@ -86,8 +87,6 @@ class PhaseRunner:
             self.overall_game_rules = recipe.overall_game_rules
             
         self.current_round_index = 0
-        self.set_up() #this is in case the game manager or board wasn't instanciated on the simulation engine yet...
-        #TODO this must be wrong
 
         cfg = self._cfg()
         for method, args in recipe.config_mutations:
@@ -95,8 +94,6 @@ class PhaseRunner:
 
         self.current_recipe = recipe
         self.game_board.new_phase()
-
-
         for round in recipe.rounds:
             self.run_round(round, recipe.immunity_types)
         

@@ -141,7 +141,7 @@ class GameGuess(GameMechanicsMixin):
         if len(correct) == 1:
             agents_for_response.append(correct[0])
         if len(incorrect) == 1:
-            agents_for_response.append(incorrect[0])
+            agents_for_response.append(incorrect[0][0])
         if agents_for_response:
             with ThreadPoolExecutor() as executor:
                 for player in agents_for_response:

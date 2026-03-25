@@ -10,5 +10,6 @@
 from core.bootstrap import *
 
 if __name__ == "__main__":
-    engine = create_engine(number_of_players = 4, generic_players=True)
+    sink = ConsoleGameEventSink() 
+    engine = create_engine(sink, number_of_players = 4, generic_players=True)
     engine.run( human_player_name = "")

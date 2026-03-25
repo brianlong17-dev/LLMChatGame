@@ -114,7 +114,7 @@ class BaseRound: #base class
         return player.take_turn_standard(user_prompt, self.gameBoard, response_model)
         
     def get_response(self, player, model_name, context_msg, action_fields= None, additional_thought_nudge = None):
-        model = model = DynamicModelFactory.create_model_(
+        model = DynamicModelFactory.create_model_(
             player,
             model_name,  
             additional_thought_nudge=additional_thought_nudge, 

@@ -52,10 +52,7 @@ class SimulationEngine:
         if not target_found and self.agents:
             self.agents[0].debug_log = True
                     
-  
-    def set_up_players(self, number_of_players, generic_players):
-        pass
-         
+
     def run(self, human_player_name = ""):
 
         if human_player_name:

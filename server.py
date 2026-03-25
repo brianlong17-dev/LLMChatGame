@@ -189,9 +189,9 @@ async def game_ws(websocket: WebSocket):
             try:
                 from core.bootstrap import create_engine
                 if player_names:
-                    engine = create_engine(names=player_names, game_sink_class=lambda: sink)
+                    engine = create_engine(sink, names=player_names)
                 else:
-                    engine = create_engine(number_of_players=7, generic_players=False, game_sink_class=lambda: sink)
+                    engine = create_engine(sink, number_of_players=7, generic_players=False)
                 engine.run(human_player_name=human_player_name)
             except Exception as e:
                 asyncio.run_coroutine_threadsafe(

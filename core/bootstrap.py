@@ -11,13 +11,12 @@ from core.phase_recipe_factory import PhaseRecipeFactoryDefault
 from core.simulation_engine import SimulationEngine
 
 
-def create_engine(number_of_players: int = 0, generic_players: bool = False, names=None,
+def create_engine(game_sink, number_of_players: int = 0, generic_players: bool = False, names=None,
                   model_name="gemini-2.0-flash-lite", higher_model_name="gemini-2.5-flash",
-                  phase_factory=PhaseRecipeFactoryDefault, game_sink_class=ConsoleGameEventSink):
+                  phase_factory=PhaseRecipeFactoryDefault):
     load_dotenv()
     client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
     game_master = GameMaster(client, model_name, higher_model_name=higher_model_name)
-    game_sink = game_sink_class()
     gameBoard = GameBoard(game_sink)
     generator = CharacterGenerator(game_sink, client, model_name, higher_model_name)
     
