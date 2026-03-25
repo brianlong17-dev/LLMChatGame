@@ -1,9 +1,9 @@
 import asyncio
 import json
+import queue
 import threading
-from typing import Set
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.sinks.game_sink import GameEventSink
@@ -28,6 +28,7 @@ class WebSocketSink(GameEventSink):
     def __init__(self, websocket: WebSocket, loop: asyncio.AbstractEventLoop):
         self.websocket = websocket
         self.loop = loop
+        self._input_queue: queue.Queue = queue.Queue()
 
     def _send(self, payload: dict):
         future = asyncio.run_coroutine_threadsafe(
@@ -51,6 +52,12 @@ class WebSocketSink(GameEventSink):
 
     def on_phase_intro(self, host_text: str, summary_text: str):
         self._send({"type": "phase_intro", "host_text": host_text, "summary_text": summary_text})
+
+    def on_phase_rounds(self, rounds: list[str]):
+        self._send({"type": "phase_rounds", "rounds": rounds})
+
+    def on_phase_round_index(self, index: int):
+        self._send({"type": "phase_round_index", "index": index})
 
     # -- Round lifecycle ------------------------------------------------------
 
@@ -82,7 +89,10 @@ class WebSocketSink(GameEventSink):
                 "data": {k: str(v) for k, v in inner_workings},
             })
 
-    def system_private(self, speaker, message: str):
+    def on_warning(self, message: str):
+        self._send({"type": "warning", "message": message})
+
+    def system_private(self, message: str):
         self._send({"type": "system_private", "message": str(message)})
 
     def on_points_update(self, points: dict):
@@ -91,18 +101,67 @@ class WebSocketSink(GameEventSink):
     def on_evictions_update(self, evicted_names: list[str]):
         self._send({"type": "evicted_update", "evicted_names": evicted_names})
 
-    # -- Human input (not supported in web mode yet) --------------------------
+    def on_private_conversation(self, entry) -> None:
+        messages = [{"speaker": m["speaker"], "message": m["message"]} for m in entry.messages]
+        self._send({"type": "private_conversation", "messages": messages})
+
+    # -- Human input ----------------------------------------------------------
 
     def get_user_input_simple(self, field_name: str, description: str) -> str:
-        raise RuntimeError("Human input not yet supported in web mode")
+        self._send({"type": "input_request", "field": field_name, "description": description})
+        return self._input_queue.get()
 
     def get_user_input_multiple_choice(self, field_name, description, choices):
-        raise RuntimeError("Human input not yet supported in web mode")
+        self._send({"type": "input_request", "field": field_name, "description": description, "choices": choices})
+        return self._input_queue.get()
 
     def delay(self, delay: float = 0.0):
         import time
         time.sleep(delay)
 
+
+# ---------------------------------------------------------------------------
+# Transcribe endpoint
+# ---------------------------------------------------------------------------
+
+@app.post("/api/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    import os
+    from dotenv import load_dotenv
+    from google import genai
+    from google.genai import types
+    load_dotenv()
+    audio_bytes = await audio.read()
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-lite",
+        contents=[
+            types.Part.from_bytes(data=audio_bytes, mime_type=audio.content_type or "audio/webm"),
+            "Transcribe this audio exactly. Return only the spoken words, nothing else.",
+        ],
+    )
+    return {"text": response.text.strip()}
+
+# ---------------------------------------------------------------------------
+# Characters endpoint
+# ---------------------------------------------------------------------------
+
+@app.get("/api/characters")
+async def get_characters():
+    from agents.character_generation.character_lister import CharacterLister
+    lister = CharacterLister()
+    return {
+        "tabs": {
+            "Classics": lister.goats,
+            "Generics": lister.generics,
+            "Schemers": lister.schemers,
+            "Regulars": lister.regulars,
+            "Little Women" : lister.marches,
+            "Hot Heads": lister.agros,
+            "Logicos": lister.logicos,
+            "All": list(dict.fromkeys(lister.full_characters)),  # dedupe
+        }
+    }
 
 # ---------------------------------------------------------------------------
 # WebSocket endpoint
@@ -123,11 +182,17 @@ async def game_ws(websocket: WebSocket):
 
         sink = WebSocketSink(websocket, loop)
 
+        player_names = msg.get("names", [])
+        human_player_name = msg.get("human_name", None)
+
         def run_game():
             try:
                 from core.bootstrap import create_engine
-                engine = create_engine(game_sink_class=lambda: sink)
-                engine.run(number_of_players=3, generic_players=True, human_player=False)
+                if player_names:
+                    engine = create_engine(names=player_names, game_sink_class=lambda: sink)
+                else:
+                    engine = create_engine(number_of_players=7, generic_players=False, game_sink_class=lambda: sink)
+                engine.run(human_player_name=human_player_name)
             except Exception as e:
                 asyncio.run_coroutine_threadsafe(
                     websocket.send_text(json.dumps({"type": "error", "message": str(e)})),
@@ -137,9 +202,15 @@ async def game_ws(websocket: WebSocket):
         thread = threading.Thread(target=run_game, daemon=True)
         thread.start()
 
-        # Keep the connection alive until the game thread finishes or client disconnects
+        # Keep the connection alive, routing input responses to the sink
         while thread.is_alive():
-            await asyncio.sleep(0.5)
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=0.5)
+                msg = json.loads(data)
+                if msg.get("type") == "input_response":
+                    sink._input_queue.put(msg.get("value", ""))
+            except asyncio.TimeoutError:
+                pass
 
     except WebSocketDisconnect:
         pass

@@ -14,18 +14,19 @@ class CharacterLister:
             ('Agent Intelligent', 'Hyper-rational to the point of complete social detachment', 'Highly structured, overly academic, and constantly cites fake statistical models.')
         ]
         
-    
+    generics = ['Drunk Frat Girl', 'Drunk Frat Boy', 'Stuffy Professor', 'Eco-Warrior', 'Seductive Lady', 
+                'Demon Twink']
     swearers = ['Rick Sanches', 'Tony Soprano', 'Logan Roy', 'Tony Montana', 'Katya Zamolodchikova', 'Lois Griffin', 'Gordon Ramsay']
     
-    goats = ['Detective Columbo', 'Hermione Granger', 'Lady Macbeth', 'Morty Smith', 'Catherine Earnshaw', 'Gollum', 'Heathcliffe', 'Mr. Burns', "Donald Trump", 'Dennis Reynolds', 'Michael Scott', 'GLaDOS']
+    goats = ['Lady Macbeth', 'Morty Smith', 'Avatar Aang', 'Buffy Summers', 'Gollum', 'Lady Dianna', 'Michael Jackson', 'Detective Columbo', 'Hermione Granger',  'Catherine Earnshaw', 'Heathcliffe', 'Mr. Burns', "Donald Trump", 'Dennis Reynolds', 'Michael Scott', 'GLaDOS']
     
     politics = [
     'Hilary Clinton', 'Nancy Pelosi', 'Donald Trump', 'Margaret Thatcher', 'Lady Macbeth']
     marches = ['Jo March', 'Amy March', 'Meg March', 'Beth March', "Marmee March", "Theodore 'Laurie' Laurence", "Mr. Laurence", "Aunt March"]
     
-    regulars = ['Lucille Bluth', 'Kendall Roy', 'Shiv Roy', 'Harry Potter', 'Buffy Summers']
-    schemers = ['Anna Delvey', 'Petyr Baelish', 'Albus Dumbledore']#'Lady Macbeth', 'Albus Dumbledore', 'Gollum', 'Amy March', 
-    agros = [ 'Donald Trump', 'Jair Bolsonaro', "Michael O'Leary", 'Elon Musk', 'Kanye West', 'Logan Roy']#'Rick Sanchez', 'Mr. Burns'
+    regulars = ['Lucille Bluth', 'Kendall Roy', 'Shiv Roy', 'Harry Potter']
+    schemers = ['Lady Macbeth', 'Anna Delvey', 'Petyr Baelish']
+    agros = [ 'Donald Trump', 'Jair Bolsonaro', "Michael O'Leary", 'Kanye West', 'Logan Roy']
     logicos = ['HAL 9000', 'GLaDOS', 'Spock', 'Detective Columbo', 'Benoit Blanc']
     foils = ['Morty Smith', 'Michael Scott']
     pools= [regulars, schemers, agros, logicos, foils]

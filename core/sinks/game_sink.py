@@ -51,6 +51,16 @@ class GameEventSink(ABC):
     # -- Round lifecycle ------------------------------------------------------
 
     @abstractmethod
+    def on_phase_rounds(self, rounds: list[str]) -> None:
+        """List of round display names for the current phase, in order."""
+        ...
+
+    @abstractmethod
+    def on_phase_round_index(self, index: int) -> None:
+        """Current round index within the phase (0-based)."""
+        ...
+
+    @abstractmethod
     def on_round_start(self, round_number: int, scores: str) -> None:
         """
         Signals a new round beginning. Scores are bundled here because
@@ -101,8 +111,13 @@ class GameEventSink(ABC):
         ...
 
     @abstractmethod
-    def system_private(self, speaker: Speaker, message: str) -> None:
+    def system_private(self, message: str) -> None:
         """System-only private output that should never enter public history."""
+        ...
+
+    @abstractmethod
+    def on_warning(self, message: str) -> None:
+        """Non-fatal warning, e.g. missing state."""
         ...
 
     @abstractmethod
@@ -115,6 +130,16 @@ class GameEventSink(ABC):
     @abstractmethod
     def on_points_update(self, points: dict[str, int]) -> None:
         """Scoreboard changed outside of round boundaries."""
+        ...
+
+    @abstractmethod
+    def on_evictions_update(self, evicted_names: list[str]) -> None:
+        """List of evicted players updated."""
+        ...
+
+    @abstractmethod
+    def on_private_conversation(self, entry) -> None:
+        """A private conversation between specific players."""
         ...
 
     @abstractmethod
@@ -156,16 +181,20 @@ class NoopGameSink(GameEventSink):
     def on_game_over(self, winner_name): pass
     def on_phase_header(self, phase_number): pass
     def on_phase_intro(self, host_text, summary_text): pass
+    def on_phase_rounds(self, rounds): pass
+    def on_phase_round_index(self, index): pass
     def on_round_start(self, round_number, scores): pass
     def on_round_summary(self, summary): pass
     def on_turn_header(self, turn_number): pass
     def on_public_action(self, speaker, message, color=""): pass
     def on_private_thought(self, speaker, message): pass
     def on_inner_workings(self, speaker, inner_workings, override=False): pass
-    def system_private(self, speaker, message): pass
+    def system_private(self, message): pass
+    def on_warning(self, message): pass
     def delay(self, delay): pass
     def on_points_update(self, points): pass
-    def on_evicted_update(self, evicted_names): pass
+    def on_evictions_update(self, evicted_names): pass
+    def on_private_conversation(self, entry): pass
 
 class CapturingGameSink(GameEventSink):
     """
@@ -213,6 +242,9 @@ class CapturingGameSink(GameEventSink):
     def on_phase_intro(self, host_text, summary_text):
         self.phase_intros.append({"host_text": host_text, "summary_text": summary_text})
 
+    def on_phase_rounds(self, rounds): pass
+    def on_phase_round_index(self, index): pass
+
     def on_round_start(self, round_number, scores):
         self.round_starts.append({"round_number": round_number, "scores": scores})
 
@@ -237,8 +269,11 @@ class CapturingGameSink(GameEventSink):
             }
         )
 
-    def system_private(self, speaker, message):
-        self.system_messages.append({"speaker": speaker, "message": message})
+    def system_private(self, message):
+        self.system_messages.append({"message": message})
+
+    def on_warning(self, message):
+        self.system_messages.append({"message": f"WARNING: {message}"})
         
     def delay(self, delay: float = 0.0) -> None:
         pass
@@ -248,4 +283,7 @@ class CapturingGameSink(GameEventSink):
         
     def on_evictions_update(self, eviction_names: list[str]) -> None:
         self.evictions_updates.append(list(eviction_names))
+
+    def on_private_conversation(self, entry) -> None:
+        pass
         

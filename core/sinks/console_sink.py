@@ -19,15 +19,9 @@ class ConsoleGameEventSink(GameEventSink):
         print(f"  Goal: {description}")
         return input("  >> ")
 
-    
     def get_user_input_multiple_choice(self, field_name, description, choices):
-        
         print(f"\n▶ {field_name.upper()}")
-        
-        choice = questionary.select(
-            description,
-            choices=choices
-        ).ask()
+        choice = questionary.select(description, choices=choices).ask()
         return choice
     
 
@@ -47,6 +41,12 @@ class ConsoleGameEventSink(GameEventSink):
         ConsoleRenderer.print_public_action("HOST", host_text)
         ConsoleRenderer.print_private("", summary_text, "SYS")
 
+    def on_phase_rounds(self, rounds: list[str]) -> None:
+        pass
+
+    def on_phase_round_index(self, index: int) -> None:
+        pass
+
     def on_round_start(self, round_number: int, score_string: str) -> None:
         ConsoleRenderer.print_public_action("SYSTEM", score_string)
         ConsoleRenderer.print_public_action("SYSTEM", f"BEGIN ROUND {round_number}")
@@ -63,14 +63,18 @@ class ConsoleGameEventSink(GameEventSink):
 
     def on_private_thought(self, speaker: Speaker, message: str) -> None:
         ConsoleRenderer.print_private(speaker, message, print_name=False)
-        
+
     def on_private_conversation(self, entry: MessageEntry):
-        color = "RED"
+        names = ' & '.join(entry.visibility_restriction) if entry.visibility_restriction else 'Unknown'
+        ConsoleRenderer.print_system_private(f"[Private: {names}]")
         for message in entry.messages:
-             ConsoleRenderer.print_public_action(message['speaker'], message['message'], color)
-        
-    def system_private(self, speaker: Speaker, message: str) -> None: #things that LLM players wont see
-        ConsoleRenderer.print_private(speaker, message, print_name=False, color_name= "SYS")
+            speaker = message['speaker']
+            color = "SYS" if speaker.lower() == 'system' else "RED"
+            ConsoleRenderer.print_public_action(speaker, message['message'], color)
+       
+
+    def system_private(self, message: str) -> None:
+        ConsoleRenderer.print_system_private(message)
         
     def on_inner_workings(
         self,
@@ -85,11 +89,14 @@ class ConsoleGameEventSink(GameEventSink):
                 self.on_private_thought(speaker, message)
         
 
+    def on_warning(self, message: str) -> None:
+        ConsoleRenderer.print_system_private(f"⚠ {message}")
+
     def delay(self, delay: float = 0.0) -> None:
         time.sleep(delay)
         
     def on_points_update(self, points: dict[str, int]) -> None:
         pass
-    
-    def on_evictions_update(self, evicted_names: list[str]):
+
+    def on_evictions_update(self, evicted_names: list[str]) -> None:
         pass

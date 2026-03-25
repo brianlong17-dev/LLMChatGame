@@ -194,11 +194,6 @@ class Debater(BaseAgent):
         response_model = self._build_summary_model()
         
         response = self.take_turn_standard(prompt, game_board, response_model, instruction_override=context_string)
-        # print(self.name + " summary: ")
-        # print(response.public_response)
-        # print(self.name + " brief: ")
-        # print(response.brief_summary)
-        print(response.public_response)
         self.phase_summaries_detailed[phase_number] = response.public_response
         self.phase_summaries_brief[phase_number] = response.brief_summary
         

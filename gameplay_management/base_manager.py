@@ -20,7 +20,7 @@ class BaseRound: #base class
         self.gameBoard = gameBoard
         self.simulationEngine = simulationEngine
     
-    def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0):
+    def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0, action_string = ""):
         #TODO depreciate
         self.gameBoard.handle_public_private_output(agent, result, delay)
     

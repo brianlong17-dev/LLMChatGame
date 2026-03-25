@@ -8,8 +8,6 @@ output/
 data/
 logs/
 
-frontend/ 
-#temp!
 
 # Editor/System junk
 .vscode/

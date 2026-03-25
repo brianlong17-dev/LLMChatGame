@@ -11,7 +11,7 @@ pip install fastapi "uvicorn[standard]" websockets
 ### 2. Run the backend
 From the **root of your repo**:
 ```
-uvicorn server:app --reload --port 8000
+uv run uvicorn server:app --reload
 ```
 
 ### 3. Run the frontend

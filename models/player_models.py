@@ -72,7 +72,7 @@ class DynamicModelFactory:
         #......... Thoughts
         if not private_thoughts_prompt:
             if agent_logic_fields or game_logic_fields or additional_thought_nudge:
-                base_thought = "Based on the logic and math above, how are you feeling? What are your secret intentions?"
+                base_thought = "What are you secretly thinking? How you really feel, not revealed to anyone."
             else:
                 base_thought = PromptLibrary.desc_basic_thought
         else:

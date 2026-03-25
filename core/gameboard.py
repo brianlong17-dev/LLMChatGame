@@ -41,18 +41,33 @@ class GameBoard:
     def phase_rounds(self, phase_number):
         return [r for r in self.completed_round_entries if r.phase_number == phase_number] 
         
+    def _human_in_restriction(self, restricted_users):
+        if not restricted_users:
+            return False
+        return any(
+            a.is_human() and a.name in restricted_users
+            for a in self.phase_runner.simulation_engine.agents
+        )
+
     def log_new_restricted_conversation(self, restricted_users, player_name, message):
+        
+        if self._human_in_restriction(restricted_users):
+            header = f"[Private: {' & '.join(restricted_users)}]"
+            self.game_sink.system_private(header)
+            self.game_sink.on_public_action(player_name, message, "RED")
         return self._update_history(player_name, message, restricted_users)
-    
+
     def log_message_to_conversation(self, conversation_id, player_name: str, message: str):
         entry = self._get_conversation_entry(conversation_id)
         if entry:
             entry.messages.append({"speaker": player_name, "message": message})
+            if self._human_in_restriction(entry.visibility_restriction):
+                self.game_sink.on_public_action(player_name, message, "RED")
     
     def _get_conversation_entry(self, conversation_id):
         entry = next((e for e in self.current_round.messages if e.id == conversation_id), None)
         if not entry:
-            print(f"Conversation {conversation_id} not found.")
+            self.game_sink.on_warning(f"Conversation {conversation_id} not found.")
         return entry
         
     def _update_history(self, player_name, message, visibility_restriction = None):
@@ -63,13 +78,17 @@ class GameBoard:
             id= self.message_id,
             visibility_restriction=visibility_restriction
         )
+        #if visibility restriction includes human player- the we need to print it
         self.current_round.messages.append(entry)
         return self.message_id
     
-    def output_private_conversation(self, conversation_id):
+    def close_private_conversation(self, conversation_id):
         entry = self._get_conversation_entry(conversation_id)
         if entry:
-            self.game_sink.on_private_conversation(entry)
+            entry.messages.append({"speaker": "SYSTEM", "message": "[End Private]"})
+            if not self._human_in_restriction(entry.visibility_restriction):
+                #if human involve wave already outputted
+                self.game_sink.on_private_conversation(entry)
     
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
@@ -141,7 +160,7 @@ class GameBoard:
     
     def system_broadcast(self, message, private = False):
         if private:
-            self.game_sink.system_private("SYSTEM", message)
+            self.game_sink.system_private(message)
         else:
             self.broadcast_public_action("SYSTEM", message)
         
@@ -160,8 +179,22 @@ class GameBoard:
         self.game_sink.on_evictions_update(self.phase_runner.removed_agent_names())
         
 
+    RESERVED_NAMES = {"HOST", "SYSTEM"}
+
+    def _unique_name(self, name: str, existing: set[str]) -> str:
+        candidate = name
+        if candidate.upper() in self.RESERVED_NAMES or candidate in existing:
+            i = 1
+            while f"{name}_{i}" in existing:
+                i += 1
+            candidate = f"{name}_{i}"
+        return candidate
+
     def initialize_agents(self, agent_list):
+        seen = set()
         for agent in agent_list:
+            agent.name = self._unique_name(agent.name, seen)
+            seen.add(agent.name)
             self.add_agent_state(agent.name)
             self.game_sink.on_points_update(self.agent_scores)
         

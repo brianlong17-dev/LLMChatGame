@@ -10,5 +10,5 @@
 from core.bootstrap import *
 
 if __name__ == "__main__":
-    engine = create_engine()
-    engine.run(number_of_players = 4, generic_players=True, human_player = False)
+    engine = create_engine(number_of_players = 4, generic_players=True)
+    engine.run( human_player_name = "")
