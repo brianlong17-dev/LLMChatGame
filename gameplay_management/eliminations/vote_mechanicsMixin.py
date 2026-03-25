@@ -36,8 +36,9 @@ class VoteMechanicsMixin(BaseRound):
             self.gameBoard.host_broadcast(host_message)
             instruction_override = PromptLibrary.final_words_prompt(self.gameBoard, victim)
 
-            self.gameBoard.remove_agent_state(victim.name)
+            
             self.simulationEngine.eliminate_player(victim)
+            self.gameBoard.remove_agent_state(victim.name)
             finalWordsResult = self.respond_to(victim, "",
                                                instruction_override = instruction_override)
             print(finalWordsResult)

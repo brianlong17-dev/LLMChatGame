@@ -32,13 +32,13 @@ class GameGuess(GameMechanicsMixin):
 
         if correct:
             names = ", ".join(p.name for p in correct)
-            parts.append(f"✅ Correct! {names} guessed the number and each earn {number_range} points!\n\n")
+            parts.append(f"CORRECT! {names} guessed the number and each earn {number_range} points!\n\n")
 
         if incorrect:
             names = ", ".join(
                 f"{p.name} (guessed {g})" for p, g in incorrect
             )
-            parts.append(f"❌ Wrong! {names} missed the mark.\n\n")
+            parts.append(f"WRONG! {names} missed the mark.\n\n")
 
         if invalid:
             names = ", ".join(p.name for p in invalid)
@@ -133,15 +133,22 @@ class GameGuess(GameMechanicsMixin):
         for player in correct:
             self.gameBoard.append_agent_points(player.name, points_for_correct)
 
+        #DELAY
         # --- Reactions (optional but consistent with PD pattern) --------------
         
         reaction_futures = []
-        with ThreadPoolExecutor() as executor:
-            for player in self.simulationEngine.agents:
-                future = executor.submit(self.respond_to, player, result_string)
-                reaction_futures.append((player, future))
+        agents_for_response = []
+        if len(correct) == 1:
+            agents_for_response.append(correct[0])
+        if len(incorrect) == 1:
+            agents_for_response.append(incorrect[0][0])
+        if agents_for_response:
+            with ThreadPoolExecutor() as executor:
+                for player in agents_for_response:
+                    future = executor.submit(self.respond_to, player, result_string)
+                    reaction_futures.append((player, future))
 
-        
-        for player, future in reaction_futures:
-            reaction = future.result()
-            self.publicPrivateResponse(player, reaction, delay = 1)
+            
+            for player, future in reaction_futures:
+                reaction = future.result()
+                self.publicPrivateResponse(player, reaction, delay = 1)

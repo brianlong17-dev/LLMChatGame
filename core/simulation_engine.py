@@ -1,16 +1,21 @@
-from agents.character_generation.characterGeneration import CharacterGenerator
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from core.game_config import GameConfig
 from core.phase_runner import PhaseRunner
-from core.phase_recipe_factory import PhaseRecipeFactory
-from agents.base_agent import *
-from agents.gameMaster import GameMaster
-from models.player_models import *
-from .gameboard import GameBoard
 from agents.human_player import Human
+
+if TYPE_CHECKING:
+    from agents.character_generation.characterGeneration import CharacterGenerator
+    from core.phase_recipe_factory import PhaseRecipeFactory
+    from agents.gameMaster import GameMaster
+    from core.gameboard import GameBoard
+    from agents.player import Debater
+    
  
     
 class SimulationEngine:
-    def __init__(self, game_board: GameBoard, game_master: GameMaster, generator: CharacterGenerator, 
+    def __init__(self, agents: list[Debater], game_board: GameBoard, game_master: GameMaster, generator: CharacterGenerator, 
                  phase_factory: PhaseRecipeFactory,):
         
         
@@ -23,7 +28,8 @@ class SimulationEngine:
         self.phase_runner = PhaseRunner(self)
         
         
-        self.agents = []
+        self.agents = agents
+        self._select_debug_targets()
         self.dead_agents = []
             
     def initialiseGameBoard(self):
@@ -46,24 +52,12 @@ class SimulationEngine:
         if not target_found and self.agents:
             self.agents[0].debug_log = True
                     
-  
-    def set_up_players(self, number_of_players, generic_players):
-        #TODO this printing is temp
-        #TODO this should move to its own thing... I think the simulation engine should be passed agents 
-        print(PromptLibrary.line_break)
-        if generic_players:
-            self.agents = self.generator.genericPlayers(number_of_players)
-        else:
-            self.agents = self.generator.generate_random_debaters(number_of_players)
-        self._select_debug_targets()
-        print(PromptLibrary.line_break)
-         
-    def run(self, number_of_players = 2, generic_players=False, human_player = False):
-        #player set up will move
-        self.set_up_players(number_of_players, generic_players)
-        if human_player:
-            name = 'Brian' # input("Name?\n")
-            human_player = Human(name)
+
+    def run(self, human_player_name = ""):
+
+        if human_player_name:
+            #name = 'Brian' # input("Name?\n")
+            human_player = Human(human_player_name)
             self.agents.append(human_player)
             
         self.initialiseGameBoard()

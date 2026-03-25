@@ -18,11 +18,12 @@ class PhaseRunner:
         self.current_recipe = None
         self.current_round_index = 0
         self.overall_game_rules = ""
-        self.set_up()
         
-    def set_up(self):
-        self.game_board = self.simulation_engine.gameBoard
 
+    @property
+    def game_board(self):
+        return self.simulation_engine.gameBoard
+    
     def _cfg(self):
         return self.simulation_engine.gameplay_config
 
@@ -50,9 +51,11 @@ class PhaseRunner:
         host_intro = self.current_recipe.phase_intro_string(self.game_board.phase_number,
                                     len(self.agent_names()), cfg)
         system_phase_summary = self.current_recipe.phase_summary_string(cfg)
-        
+        round_names = [r.display_name(cfg) for r in self.current_recipe.rounds]
+
         self.game_board.host_broadcast(host_intro)
         self.game_board.system_broadcast(system_phase_summary, private = True)
+        self.game_board.game_sink.on_phase_rounds(round_names)
         
     def _introduce_game(self):
         host_intro = self.simulation_engine.phase_factory.game_intro()
@@ -61,6 +64,7 @@ class PhaseRunner:
     def run_round(self, round, immunity_types):
         self.current_round_index += 1
         self.game_board.newRound()
+        self.game_board.game_sink.on_phase_round_index(self.current_round_index - 1)
         if self.game_board.phase_number == 1 and self.current_round_index == 1:
             self._introduce_game()
         if self.current_round_index == 1:
@@ -83,8 +87,6 @@ class PhaseRunner:
             self.overall_game_rules = recipe.overall_game_rules
             
         self.current_round_index = 0
-        self.set_up() #this is in case the game manager or board wasn't instanciated on the simulation engine yet...
-        #TODO this must be wrong
 
         cfg = self._cfg()
         for method, args in recipe.config_mutations:
@@ -92,8 +94,6 @@ class PhaseRunner:
 
         self.current_recipe = recipe
         self.game_board.new_phase()
-
-
         for round in recipe.rounds:
             self.run_round(round, recipe.immunity_types)
         

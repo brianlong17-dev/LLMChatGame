@@ -40,7 +40,7 @@ class TestGameSink:
     def on_public_action(self, speaker, message, color=""): pass
     def on_private_thought(self, speaker, message): pass
     def on_inner_workings(self, speaker, inner_workings, override=False): pass
-    def system_private(self, speaker, message): pass
+    def system_private(self, message): pass
     def delay(self, delay): pass
     def on_points_update(self, points): pass
 

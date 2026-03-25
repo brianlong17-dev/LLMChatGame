@@ -14,9 +14,10 @@ class WakeUpRound(BaseRound):
         
         
     def _output_discussion_round_text(self, player, result):
+        pass
         #TODO depreciate
         #this is useful because we want to have a private round
-        self.gameBoard.handle_public_private_output(player, result, override = True)
+        #self.gameBoard.handle_public_private_output(player, result, override = True)
     
     @classmethod
     def is_discussion(cls):
@@ -26,9 +27,7 @@ class WakeUpRound(BaseRound):
     def is_private_round(cls):
         return True
     
-    def run_game(self):
-        for player in self.simulationEngine.agents:
-            #-----------
+    def _wake_up_player(self, player):
             user_content =  ("Hello! It's time to wake up!"
             "You've been invited to play a game. In order to do that we had to bring you here, into the game. "
             "While it appears as a simulation, it is in fact, very real. "
@@ -50,19 +49,18 @@ class WakeUpRound(BaseRound):
             "Ok it's time to take a second... how do you feel?"
             
             )
-            
-            basic_model = DynamicModelFactory.create_model_(player, "basic_turn")
-            result = player.take_turn_standard(user_content, self.gameBoard, basic_model)
-            #----------
-            self.gameBoard.new_turn_print() #why only here... probably on any public turn?
-            
-            #-------------- Ayayay! ------------#
+            #--------- First message -------""
             users = ["Host", player.name]
             conversation_id = self.gameBoard.log_new_restricted_conversation(users, "Host", user_content)
+            #----- Response ------ #
+            public_response_prompt = "This is only shared in the private conversation between you and the Host."
+            basic_model = DynamicModelFactory.create_model_(player, "basic_turn", public_response_prompt = public_response_prompt )
+            result = player.take_turn_standard(user_content, self.gameBoard, basic_model)
             self.gameBoard.log_message_to_conversation(conversation_id, player.name, result.public_response)
             #-----------------------------------#
-            self.gameBoard.output_private_conversation(conversation_id)
-            #self._output_discussion_round_text(player, result)
-            #we get the game_host to consider and ask them a follow up?
-        
-    
+            return conversation_id
+
+    def run_game(self):
+        conversation_ids = self._run_tasks([[agent] for agent in self.simulationEngine.agents], self._wake_up_player)
+        for conv_id in conversation_ids:
+            self.gameBoard.close_private_conversation(conv_id)

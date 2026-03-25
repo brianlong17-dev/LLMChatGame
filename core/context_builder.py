@@ -59,7 +59,7 @@ class ContextBuilder:
             return output + "No messages yet for round."
         
         for entry in round.messages:
-            if entry.visibility_restriction == None:
+            if entry.visibility_restriction is None:
                 for message in entry.messages:
                     output += (f"\n{message['speaker']}: {message['message']}")
             else:
