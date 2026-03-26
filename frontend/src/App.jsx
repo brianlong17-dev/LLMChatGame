@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 
-const WS_URL = 'ws://localhost:8000/ws/game'
+const WS_URL = `ws://${window.location.host}/ws/game`
 
 const SPEAKER_COLORS = [
   '#e07b54', '#5b8dd9', '#67b37d', '#c97bc4',
@@ -230,7 +230,7 @@ function InputRequest({ request, onSubmit }) {
       const blob = new Blob(chunks, { type: recorder.mimeType })
       const form = new FormData()
       form.append('audio', blob, 'recording.webm')
-      const res = await fetch('http://localhost:8000/api/transcribe', { method: 'POST', body: form })
+      const res = await fetch('/api/transcribe', { method: 'POST', body: form })
       const data = await res.json()
       if (data.text) setValue(data.text)
     }
@@ -307,7 +307,7 @@ function Lobby({ onStart }) {
   }
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/characters')
+    fetch('/api/characters')
       .then(r => r.json())
       .then(data => {
         setTabs(data.tabs)
