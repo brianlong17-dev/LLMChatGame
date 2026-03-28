@@ -11,11 +11,10 @@ class HighestPointsImmunity(ImmunityMechanicsMixin):
 
     @classmethod
     def rules_description(cls, cfg):
-        rules_string = "The player with the highest points receives immunity from the next vote. "
         if cfg.immunity_highest_points_only_one:
-            rules_string += "In the case of a tie, one player is randomly selected to receive immunity."
+            rules_string = "The player with the highest points receives immunity from the next vote. "
         else:
-            rules_string += "In the case of a tie, all tied players receive immunity."
+            rules_string = "The player or players with the highest points receive immunity from the next vote. "
         return rules_string
         
 
