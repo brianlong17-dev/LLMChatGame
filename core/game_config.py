@@ -42,6 +42,13 @@ class GameConfig:
         self.pd_pairing_method = self.pd_pairing_choice_none
 
         # --------------------------------------------------------------
+        # Rock Paper Scissors
+        # --------------------------------------------------------------
+        self.rps_points_win = 5
+        self.rps_points_tie = 2
+        self.rps_odd_player_auto_points = 3
+
+        # --------------------------------------------------------------
         # Targeted Choice games (Give / Steal / Sacrifice)
         # --------------------------------------------------------------
         self.targeted_points_award = 3     # Give game

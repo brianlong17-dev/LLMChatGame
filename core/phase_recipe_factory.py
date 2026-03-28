@@ -4,6 +4,7 @@ from gameplay_management.discussion_round import DiscussionRound
 from gameplay_management.eliminations.voting_elect_leader import VoteElectLeader
 from gameplay_management.wake_up_round import WakeUpRound
 from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
+from gameplay_management.games.game_rps import GameRockPaperScissors
 from gameplay_management.games.game_guess import GameGuess
 from gameplay_management.games.game_perform import GamePerformSobStory
 from gameplay_management.game_targeted.game_targeted_give import GameTargetedChoiceGive
@@ -76,7 +77,7 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
     def _phases(cls):
         return [
             None,  # phase 0 unused
-            PhaseRecipe(rounds=[WakeUpRound, DiscussionRound, GameGuess, VoteElectLeader, GameGuess, VoteElectLeader],  config_mutations=[("set_guess_range", [3])]),
+            PhaseRecipe(rounds=[GameRockPaperScissors, DiscussionRound, GameRockPaperScissors, VoteElectLeader, GameRockPaperScissors, VoteElectLeader],  config_mutations=[("set_guess_range", [3])]),
             cls.make_phase(1, GameGuess, 1, VoteEachPlayer, 0, [HighestPointsImmunity, WildcardImmunity],
                            config_mutations=[("set_guess_range", [3])]),
             cls.mid_phase(GameTargetedChoiceGive, VoteEachPlayer, [HighestPointsImmunity, WildcardImmunity]),
@@ -84,6 +85,7 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
             cls.mid_phase(GamePerformSobStory, VoteBottomTwo, []),
             cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [],
                           config_mutations=[("set_pd_pairing_lowest", [])]),
+            cls.mid_phase(GameRockPaperScissors, VoteBottomTwo, []),
         ]
 
     @classmethod

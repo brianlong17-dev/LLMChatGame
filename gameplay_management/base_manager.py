@@ -124,3 +124,12 @@ class BaseRound: #base class
     
     def cfg(self):
         return self.simulationEngine.gameplay_config
+    
+    def format_list(self, lst):
+        if not lst:
+            return ""
+        if len(lst) == 1:
+            return str(lst[0])
+        
+        # Joins all but the last with a comma, then adds the final "and"
+        return ", ".join(map(str, lst[:-1])) + " and " + str(lst[-1])

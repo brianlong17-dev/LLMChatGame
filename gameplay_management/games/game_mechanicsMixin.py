@@ -14,6 +14,7 @@ class GameMechanicsMixin(BaseRound):
         pairs = []
         # Work on a copy if you don't want to mutate the original list
         available = agents[:] 
+        random.shuffle(available)
         
         while len(available) >= 2:
             if choose_partner:

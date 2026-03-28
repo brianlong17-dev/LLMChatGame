@@ -31,7 +31,7 @@ class GameGuess(GameMechanicsMixin):
         parts = []
 
         if correct:
-            names = ", ".join(p.name for p in correct)
+            names = self.format_list([p.name for p in correct])
             parts.append(f"CORRECT! {names} guessed the number and each earn {number_range} points!\n\n")
 
         if incorrect:
@@ -41,7 +41,7 @@ class GameGuess(GameMechanicsMixin):
             parts.append(f"WRONG! {names} missed the mark.\n\n")
 
         if invalid:
-            names = ", ".join(p.name for p in invalid)
+            names = self.format_list([p.name for p in invalid])
             parts.append(f"⚠️  Invalid guess from: {names}. No points awarded.")
 
         return "  ".join(parts) if parts else "No valid guesses this round."

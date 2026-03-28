@@ -37,7 +37,7 @@ class HighestPointsImmunity(ImmunityMechanicsMixin):
             host_string = f"As we have a tie for the top score, the player with highest points chosen at random is... {highest_players[0]}! Congrats!"
             
         else:
-            names_string = ", ".join(name for name in highest_players)
+            names_string = self.format_list(list(highest_players))
             host_string = f"The players with the highest points, and therefore immune from the following vote are: {names_string}. Congrats!"
         
         self.gameBoard.host_broadcast(host_string)

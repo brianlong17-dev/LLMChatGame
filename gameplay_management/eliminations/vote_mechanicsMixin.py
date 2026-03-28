@@ -80,7 +80,7 @@ class VoteMechanicsMixin(BaseRound):
     #   Logic     #
     ###############
     def voteOnePlayerOff(self, player, eligible_players_names):
-        names_str = ", ".join(eligible_players_names)
+        names_str = self.format_list(eligible_players_names)
         user_content = VotePromptLibrary.vote_one_player_user_content.format(
             eligible_player_names=names_str
         )
@@ -155,7 +155,7 @@ class VoteMechanicsMixin(BaseRound):
         
         if len(players_with_most_votes) > 1:
             deadlock_string = VotePromptLibrary.voting_round_tie_msg.format(
-                players_with_most_votes=", ".join(players_with_most_votes)
+                players_with_most_votes=self.format_list(players_with_most_votes)
             )
             if len(players_with_most_votes) == len(self.simulationEngine.agents):
                 deadlock_string = VotePromptLibrary.voting_round_complete_deadlock_msg.format(
