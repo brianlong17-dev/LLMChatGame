@@ -142,12 +142,13 @@ class GameBoard:
         ]
         return other_fields
     
-    def handle_public_private_output(self, agent: BaseAgent, response,  delay: float = 0.0, override = False):
+    def handle_public_private_output(self, agent: BaseAgent, response,  delay: float = 0.0, output_inner_workings = False):
         public_message, private_message = response.public_response, response.private_thoughts
         other_fields = []
         self.broadcast_public_action(agent, public_message)
         self.game_sink.on_private_thought(agent, private_message)
-        self.game_sink.on_inner_workings(agent, self._get_inner_thought_fields(response), override=override)
+        if output_inner_workings:
+            self.game_sink.on_inner_workings(agent, self._get_inner_thought_fields(response))
         self.game_sink.delay(delay)
         
         
@@ -164,8 +165,10 @@ class GameBoard:
         else:
             self.broadcast_public_action("SYSTEM", message)
         
-    def host_broadcast(self, message):
+    def host_broadcast(self, message, delay: float = 0.0):
         self.broadcast_public_action("HOST", message)
+        if delay:
+            self.game_sink.delay(delay)
     
     # ---------------Agent state / Scores --------------------#
     

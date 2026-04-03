@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Type, TYPE_CHECKING
+from typing import Dict, List, Literal, Optional, Type, TYPE_CHECKING
 from pydantic import BaseModel, Field, create_model, field_validator, validator
 from prompts.prompts import PromptLibrary
 
@@ -37,7 +37,7 @@ class DynamicModelFactory:
         additional_thought_nudge: str = None, 
         game_logic_fields: Dict[str, tuple] = None,   # Logic fields prompted by the game
         action_fields: Dict[str, tuple] = None,       # Actions required by the game (e.g. dropdowns)
-        
+        optional: bool = False
     ) -> Type[BaseModel]:
         if agent.is_human(): # and not agent.is_testing:
             return cls.create_human_model(public_response_prompt, action_fields)
@@ -82,13 +82,16 @@ class DynamicModelFactory:
         #....action 
         if action_fields:
             ordered_fields.update(action_fields)
-        #...... public response 
+        #...... public response
         pub_prompt = public_response_prompt or PromptLibrary.desc_message
-        ordered_fields["public_response"] = (str, Field(description=pub_prompt))
+        if optional:
+            ordered_fields["public_response"] = (Optional[str], Field(default=None, description=f"{pub_prompt} Leave null if you have nothing to add."))
+        else:
+            ordered_fields["public_response"] = (str, Field(description=pub_prompt))
         #........ self-learning
         if agent_complex_fields:
             ordered_fields.update(agent_complex_fields)
-            
+
         return create_model(model_name, **ordered_fields)
     
 

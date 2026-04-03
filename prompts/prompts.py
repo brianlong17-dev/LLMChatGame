@@ -6,7 +6,7 @@ class PromptLibrary:
         "Only include broad general traits that last beyond the current round. "
         "Include any character traits, style or backstory that defines you. "
     )
-    desc_agent_updated_strategy_to_win = ("Only populate if you want to update your game strategy. "
+    desc_agent_updated_game_strategy = ("Only populate if you want to update your game strategy. "
                                           "Based on how the game works, what is the smartest strategy?")
     desc_action_agent = ("A visible physical action. Players may not speak in the future tense about their plans. You must describe the action you are taking right now in the present tense.")
     desc_message = "Your spoken words. What will you say? Stay in character. What you say is revealed to the group"
@@ -26,11 +26,8 @@ class PromptLibrary:
     desc_agent_names = "The name of the agent (e.g. 'Agent Alpha')"
 
     @staticmethod
-    def final_words_prompt(gameBoard, agent):
-        #TODO what is this? why would it need history context?
-        history_context = gameBoard.context_builder.get_full_context(agent)
+    def final_words_prompt():
         return (
-            f"CONTEXT:\n{history_context}\n\n"
             f"---------------------------------------------------------------------\n"
             f"🛑 GAME OVER 🛑\n"
             f"You have just been ELIMINATED. Your game is finished.\n"
@@ -62,9 +59,8 @@ class PromptLibrary:
         else:
             lessons_str = "- None yet. I am a blank slate."
 
-        return (
-            f"You are {agent.name}.\n\n"
-            f"{gameBoard.context_builder.get_dashboard_string(agent.name)}\n\n"
+        output_string = (f"You are {agent.name}.\n\n"
+            f"{gameBoard.context_builder.get_dashboard_string(agent)}\n\n"
             
             f"=== YOUR PROFILE ===\n"
             f"Persona: {agent.persona}\n"
@@ -72,10 +68,13 @@ class PromptLibrary:
             
             f"=== LIFE LESSONS ===\n"
             f"Use these past learnings to guide your current behavior:\n"
-            f"{lessons_str}\n\n"
+            f"{lessons_str}\n\n")
+        if not agent.game_over:
+            output_string += (
+            f"=== YOUR INTERNAL STRATEGY AND ASSESSMENT ===\n"
+            f"Current Strategy: {agent.game_strategy}\n"
+            f"Mathematical Assessment: {agent.mathematical_assessment}\n")
+        return output_string
             
-            f"=== INTERNAL MONOLOGUE ===\n"
-            f"Current Strategy: {agent.strategy_to_win}\n"
-            f"Calculated Odds: {agent.mathematical_assessment}\n"
-        )
+        
 

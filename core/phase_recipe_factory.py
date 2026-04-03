@@ -15,6 +15,11 @@ from gameplay_management.eliminations.voting_each_player import VoteEachPlayer
 from gameplay_management.eliminations.voting_lowest_points import VoteLowestPoints
 from gameplay_management.immunities.highest_points_immunity import HighestPointsImmunity
 from gameplay_management.immunities.wildcard_immunity import WildcardImmunity
+from gameplay_management.reunion_round import FinaleReunionRound
+from gameplay_management.games.game_circle import GameCircle
+from gameplay_management.games.game_knives import GameKnives
+
+
 
 class PhaseRecipeFactory:
     
@@ -77,15 +82,21 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
     def _phases(cls):
         return [
             None,  # phase 0 unused
-            PhaseRecipe(rounds=[GameRockPaperScissors, DiscussionRound, GameRockPaperScissors, VoteElectLeader, GameRockPaperScissors, VoteElectLeader],  config_mutations=[("set_guess_range", [3])]),
-            cls.make_phase(1, GameGuess, 1, VoteEachPlayer, 0, [HighestPointsImmunity, WildcardImmunity],
-                           config_mutations=[("set_guess_range", [3])]),
+            PhaseRecipe(rounds=[GameKnives]),
+            
+            PhaseRecipe(rounds=[WakeUpRound]),
+            #we need someting here to introduce the game
+            PhaseRecipe(rounds=[GameRockPaperScissors, VoteElectLeader]),
+            #PhaseRecipe(rounds=[GameGuess, VoteElectLeader],  config_mutations=[("set_guess_range", [3])]),
+            PhaseRecipe(rounds=[GameCircle, DiscussionRound, VoteBottomTwo]),
+            PhaseRecipe(rounds=[GameCircle, DiscussionRound, VoteBottomTwo]),
             cls.mid_phase(GameTargetedChoiceGive, VoteEachPlayer, [HighestPointsImmunity, WildcardImmunity]),
             cls.mid_phase(GameTargetedChoiceSteal, VoteBottomTwo, []),
             cls.mid_phase(GamePerformSobStory, VoteBottomTwo, []),
+            cls.mid_phase(GamePerformSobStory, VoteBottomTwo, []),
             cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [],
                           config_mutations=[("set_pd_pairing_lowest", [])]),
-            cls.mid_phase(GameRockPaperScissors, VoteBottomTwo, []),
+           
         ]
 
     @classmethod
@@ -93,9 +104,9 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         cfg.vote_bottom_two_multiple = True
 
         if agent_number == 2:
-            return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [])
+            return  PhaseRecipe(rounds=[FinaleReunionRound])
         if agent_number == 3:
-            return cls.mid_phase(GamePrisonersDilemma, VoteLowestPoints, [],
+            return cls.mid_phase(GamePrisonersDilemma, VoteBottomTwo, [],
                                  config_mutations=[("set_pd_pairing_all", [])])
 
         phases = cls._phases()

@@ -8,6 +8,7 @@ from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
 from prompts.prompts import PromptLibrary
 from prompts.gamePrompts import GamePromptLibrary
+from prompts.votePrompts import VotePromptLibrary
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     # 2. This is only imported during static analysis (linting)
@@ -51,6 +52,25 @@ class BaseRound: #base class
         return [worker(*task) for task in tasks]
 
     
+    def eliminate_player_by_name(self, player_name):
+        victim = next((a for a in self.simulationEngine.agents if a.name == player_name), None)
+        if victim:
+            victim.game_over = True
+            host_message = VotePromptLibrary.elimination_host_msg.format(victim_name=victim.name)
+            self.gameBoard.host_broadcast(host_message)
+            final_words_prompt = PromptLibrary.final_words_prompt()
+
+            
+            self.simulationEngine.eliminate_player(victim)
+            self.gameBoard.remove_agent_state(victim.name)
+            finalWordsResult = self.respond_to(victim, final_words_prompt)
+           
+            self.publicPrivateResponse(victim, finalWordsResult)
+            if self.cfg().execution_style:
+                executionString = self.get_execution_string(victim)
+                self.gameBoard.system_broadcast(executionString)
+        else:
+            print(f"NOT FOUND: " + player_name)
     
     
     
@@ -89,7 +109,8 @@ class BaseRound: #base class
         agents = list(self.simulationEngine.agents)
         return random.sample(agents, k=len(agents))
     
-    def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None, private_thoughts_prompt: str =None, instruction_override= None):
+    def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None, 
+                   private_thoughts_prompt: str =None, instruction_override= None):
         
         model = DynamicModelFactory.create_model_(player, public_response_prompt = public_response_prompt, 
                                                      private_thoughts_prompt = private_thoughts_prompt)
@@ -105,9 +126,11 @@ class BaseRound: #base class
         field_definition = (str, Field(description=field_description))
         return {field_name: field_definition}
     
-    def _choose_name_field(self, allowed_names, reason_for_choosing_prompt):
+    def _choose_name_field(self, allowed_names, reason_for_choosing_prompt, field_name = None):
+        if not field_name:
+            field_name = GamePromptLibrary.model_field_choose_name
         choice_reason_prompt = f"The exact name of the agent. {reason_for_choosing_prompt}"
-        return self.create_choice_field(GamePromptLibrary.model_field_choose_name, allowed_names, choice_reason_prompt)
+        return self.create_choice_field(field_name, allowed_names, choice_reason_prompt)
 
     def _make_player_turn(self, player: Debater, user_prompt: str, response_model, action_fields=None):
         
@@ -125,6 +148,11 @@ class BaseRound: #base class
     def cfg(self):
         return self.simulationEngine.gameplay_config
     
+    def agents(self):
+        return self.simulationEngine.agents
+        
+    def dead_agents(self):
+        return self.simulationEngine.dead_agents
     def format_list(self, lst):
         if not lst:
             return ""

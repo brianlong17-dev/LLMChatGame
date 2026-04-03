@@ -80,14 +80,13 @@ class WebSocketSink(GameEventSink):
         speaker_name = speaker.name if hasattr(speaker, "name") else str(speaker)
         self._send({"type": "private_thought", "speaker": speaker_name, "message": message})
 
-    def on_inner_workings(self, speaker, inner_workings, override: bool = False):
-        if override:
-            speaker_name = speaker.name if hasattr(speaker, "name") else str(speaker)
-            self._send({
-                "type": "inner_workings",
-                "speaker": speaker_name,
-                "data": {k: str(v) for k, v in inner_workings},
-            })
+    def on_inner_workings(self, speaker, inner_workings):
+        speaker_name = speaker.name if hasattr(speaker, "name") else str(speaker)
+        self._send({
+            "type": "inner_workings",
+            "speaker": speaker_name,
+            "data": {k: str(v) for k, v in inner_workings},
+        })
 
     def on_warning(self, message: str):
         self._send({"type": "warning", "message": message})

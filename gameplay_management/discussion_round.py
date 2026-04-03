@@ -15,7 +15,7 @@ class DiscussionRound(BaseRound):
         
     def _output_discussion_round_text(self, player, result):
         #TODO depreciate
-        self.gameBoard.handle_public_private_output(player, result, override = True)
+        self.gameBoard.handle_public_private_output(player, result, output_inner_workings = True)
     
     @classmethod
     def is_discussion(cls):
