@@ -29,25 +29,7 @@ class VoteMechanicsMixin(BaseRound):
             immunity_players = []
         return immunity_players
        
-    def eliminate_player_by_name(self, player_name):
-        victim = next((a for a in self.simulationEngine.agents if a.name == player_name), None)
-        if victim:
-            host_message = VotePromptLibrary.elimination_host_msg.format(victim_name=victim.name)
-            self.gameBoard.host_broadcast(host_message)
-            instruction_override = PromptLibrary.final_words_prompt(self.gameBoard, victim)
-
-            
-            self.simulationEngine.eliminate_player(victim)
-            self.gameBoard.remove_agent_state(victim.name)
-            finalWordsResult = self.respond_to(victim, "",
-                                               instruction_override = instruction_override)
-            print(finalWordsResult)
-            self.publicPrivateResponse(victim, finalWordsResult)
-            if self.cfg().execution_style:
-                executionString = self.get_execution_string(victim)
-                self.gameBoard.system_broadcast(executionString)
-        else:
-            print(f"NOT FOUND: " + player_name)
+   
     
     def immunity_string(self, immunity_players: Sequence[str], players_up_for_elimination: Sequence[str]) -> str:
         immunity_string = ""

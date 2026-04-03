@@ -98,7 +98,8 @@ class PhaseRunner:
             self.run_round(round, recipe.immunity_types)
         
         
-        agents = self.simulation_engine.agents
+        agents = self.simulation_engine.agents + self.simulation_engine.dead_agents
+        
         with ThreadPoolExecutor(max_workers=min(32, len(agents))) as executor:
             for agent in agents:
                 executor.submit(agent.summarise_phase, self.game_board)

@@ -37,6 +37,7 @@ class SimulationEngine:
         self.gameBoard.phase_runner = self.phase_runner
         
     def eliminate_player(self, agent):
+        agent.game_over = True
         self.agents.remove(agent)
         self.dead_agents.append(agent)
         
@@ -67,5 +68,22 @@ class SimulationEngine:
             self.phase_runner.run_phase(phase)
         #------------Fin------------#
         self.gameBoard.game_sink.on_game_over(self.agents[0].name)
+        #here 
+        self._post_game_interview()
+        
+    def _post_game_interview(self):
+        pass
+        #Would you like to select a player to speak to?
+        #human input, select a name-
+        #here you can ask them a question
+        #we put the question to them via private conversation- 
+        #the conversation is added to a dictionary with agent- conv id keys
+        #Between host and player- maybe host should get a different name.
+        #or we could drum up a new human agent.
+        #ask them a question:
+        #the person responds
+        #ask another question - yes - no
+        #if no select another name - outer loop
+        #if yes continue inner loop
   
            
