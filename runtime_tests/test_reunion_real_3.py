@@ -18,7 +18,7 @@ with open(fixtures_path) as f:
 # ── 2. Bootstrap with the real character names ──
 all_names = list(agent_state.keys())
 sink = ConsoleGameEventSink()
-engine = create_engine(sink, names=all_names)
+engine = create_engine(sink, names=all_names, allow_rename=False)
 engine.initialiseGameBoard()
 
 # ── 3. Build name->agent lookup ──
