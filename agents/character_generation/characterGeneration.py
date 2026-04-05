@@ -1,15 +1,15 @@
 import random
 from concurrent.futures import ThreadPoolExecutor
-from typing import List
+from functools import partial
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from agents.character_generation.character_lister import CharacterLister
 from agents.player import Debater
 
 class CharacterProfile(BaseModel):
     persona: str = Field(description="A detailed, first-person personality description, core beliefs, and debate strategy for this historical figure.")
-    speaking_style: str = Field(description="Their speaking style, how they talk, to preserve the charcter from context bleed")
-    name: str = Field(description="If their name is a description instead of a name, you must invent a name for them.")
-
+    speaking_style: str = Field(description="Their speaking style, how they talk, to preserve the character from context bleed.")
+    name: Optional[str] = Field(default=None, description="ONLY USE IF THE CHARACTER HAS NO NAME- ie Drunk Girl. Then you may name them.")
 
 class CharacterGenerator:
     
@@ -40,9 +40,10 @@ class CharacterGenerator:
             
         return debaters
     
-    def generate_agents_from_names(self, names):
+    def generate_agents_from_names(self, names, allow_rename = True):
+        fn = partial(self.generate_debater, allow_rename=allow_rename)
         with ThreadPoolExecutor(max_workers=min(32, len(names))) as executor:
-            return list(executor.map(self.generate_debater, names))
+            return list(executor.map(fn, names))
         
     def generate_balanced_cast(self, count) -> 'Debater':
         cast = self.generate_balanced_cast_names(count)
@@ -94,7 +95,7 @@ class CharacterGenerator:
             return []
         return cast
 
-    def generate_debater(self, character_name: str) -> 'Debater':
+    def generate_debater(self, character_name: str, allow_rename = True) -> 'Debater':
         profile = self.client.create(
             model=self.model_name,
             response_model=CharacterProfile,
@@ -104,9 +105,9 @@ class CharacterGenerator:
             ]
         )
         self.game_sink.system_private(f"Generated: {character_name}. Speaking style: \n {profile.speaking_style}.")
-        
+        final_name = profile.name if (allow_rename and profile.name) else character_name
         return Debater(
-            name=profile.name,
+            name=final_name,
             initial_persona=profile.persona,
             client=self.client,
             model_name=self.model_name,
