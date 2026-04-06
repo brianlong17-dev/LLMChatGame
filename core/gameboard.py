@@ -1,21 +1,9 @@
 from collections import deque
-from dataclasses import dataclass
 from typing import Union
 from agents.base_agent import BaseAgent
 from core.context_builder import ContextBuilder
+from core.models import MessageEntry, RoundEntry
 
-@dataclass
-class MessageEntry:
-    messages: list[dict]  # [{"speaker": name, "message": text}]
-    id: int #sequential number, allow you to append / access specific convos
-    visibility_restriction: set[str] | None = None  # None = public
-    
-@dataclass
-class RoundEntry:
-    phase_number: int
-    round_number: int
-    messages: list[MessageEntry]
-    
 class GameBoard:
     def __init__(self,  game_sink):
         self.game_sink = game_sink
@@ -34,7 +22,28 @@ class GameBoard:
         self.context_builder = ContextBuilder(game_board = self)
         
         self.phase_runner = None
+        
+        self._current_round_summarisation : str = ""
+        self._current_round_summarisation_until : int = None
+        
+        self.optional_responses_in_use = False
     
+    def push_current_round_summarisation(self, summary: str, last_message_id: int):
+        self._current_round_summarisation = summary
+        self._current_round_summarisation_until = last_message_id
+    
+    def most_recent_message_id(self) -> int:
+        return self.message_id
+
+    def _is_sys_admin_message(self, message: 'MessageEntry') -> bool:
+        return message.visibility_restriction and self.SYS_ADMIN in message.visibility_restriction
+
+    def messages_since(self, message_id: int) -> list['MessageEntry']:
+        return [m for m in self.current_round.messages if m.id > message_id and not self._is_sys_admin_message(m)]
+
+    def _current_round_messages_up_to(self, message_id: int) -> list['MessageEntry']:
+        return [m for m in self.current_round.messages if m.id <= message_id and not self._is_sys_admin_message(m)]
+
     def current_phase_rounds(self):
         return self.phase_rounds(self.phase_number)
     
@@ -111,6 +120,8 @@ class GameBoard:
         #self.system_broadcast(self.score_string(), private = False) Probably a good idea for agents to read
         self.round_number += 1
         self.turn_number = 0
+        self._current_round_summarisation = ""
+        self._current_round_summarisation_until = None
         self.current_round = RoundEntry(phase_number=self.phase_number, round_number=self.round_number, messages=[])
         self.game_sink.on_round_start(self.round_number, self.score_string()) 
         
@@ -142,12 +153,13 @@ class GameBoard:
         ]
         return other_fields
     
-    def handle_public_private_output(self, agent: BaseAgent, response,  delay: float = 0.0, override = False):
+    def handle_public_private_output(self, agent: BaseAgent, response,  delay: float = 0.0, output_inner_workings = False):
         public_message, private_message = response.public_response, response.private_thoughts
         other_fields = []
         self.broadcast_public_action(agent, public_message)
         self.game_sink.on_private_thought(agent, private_message)
-        self.game_sink.on_inner_workings(agent, self._get_inner_thought_fields(response), override=override)
+        if output_inner_workings:
+            self.game_sink.on_inner_workings(agent, self._get_inner_thought_fields(response))
         self.game_sink.delay(delay)
         
         
@@ -164,8 +176,18 @@ class GameBoard:
         else:
             self.broadcast_public_action("SYSTEM", message)
         
-    def host_broadcast(self, message):
+    def host_broadcast(self, message, delay: float = 0.0):
         self.broadcast_public_action("HOST", message)
+        if delay:
+            self.game_sink.delay(delay)
+            
+    def environment_broadcast(self, message, delay):
+        #TODO make this right
+        #its kind of BANG BANG-
+        #Maybe the lights go out- is another one
+        self.broadcast_public_action("", message)
+        if delay:
+            self.game_sink.delay(delay)
     
     # ---------------Agent state / Scores --------------------#
     
@@ -179,7 +201,8 @@ class GameBoard:
         self.game_sink.on_evictions_update(self.phase_runner.removed_agent_names())
         
 
-    RESERVED_NAMES = {"HOST", "SYSTEM"}
+    SYS_ADMIN = "SYS_ADMIN"
+    RESERVED_NAMES = {"HOST", "SYSTEM", SYS_ADMIN}
 
     def _unique_name(self, name: str, existing: set[str]) -> str:
         candidate = name

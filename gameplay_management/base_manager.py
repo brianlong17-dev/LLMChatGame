@@ -8,6 +8,7 @@ from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
 from prompts.prompts import PromptLibrary
 from prompts.gamePrompts import GamePromptLibrary
+from prompts.votePrompts import VotePromptLibrary
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     # 2. This is only imported during static analysis (linting)
@@ -19,6 +20,7 @@ class BaseRound: #base class
     def __init__(self, gameBoard, simulationEngine):
         self.gameBoard = gameBoard
         self.simulationEngine = simulationEngine
+        self._buffer_amount = 0.6 #default
     
     def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0, action_string = ""):
         #TODO depreciate
@@ -50,9 +52,28 @@ class BaseRound: #base class
                 return [f.result() for f in futures]
         return [worker(*task) for task in tasks]
 
+   
     
-    
-    
+    def eliminate_player_by_name(self, player_name):
+        #TODO once we split reunion we can move this back.?
+        victim = next((a for a in self.simulationEngine.agents if a.name == player_name), None)
+        if victim:
+            victim.game_over = True
+            host_message = VotePromptLibrary.elimination_host_msg.format(victim_name=victim.name)
+            self.gameBoard.host_broadcast(host_message)
+            final_words_prompt = PromptLibrary.final_words_prompt()
+
+            
+            self.simulationEngine.eliminate_player(victim)
+            self.gameBoard.remove_agent_state(victim.name)
+            finalWordsResult = self.respond_to(victim, final_words_prompt)
+           
+            self.publicPrivateResponse(victim, finalWordsResult)
+            if self.cfg().execution_style:
+                executionString = self.get_execution_string(victim)
+                self.gameBoard.system_broadcast(executionString)
+        else:
+            print(f"NOT FOUND: " + player_name)
     
     def _names(self, agents: Sequence["Debater"]) -> list[str]:
         return [agent.name for agent in agents]
@@ -89,7 +110,8 @@ class BaseRound: #base class
         agents = list(self.simulationEngine.agents)
         return random.sample(agents, k=len(agents))
     
-    def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None, private_thoughts_prompt: str =None, instruction_override= None):
+    def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None, 
+                   private_thoughts_prompt: str =None, instruction_override= None):
         
         model = DynamicModelFactory.create_model_(player, public_response_prompt = public_response_prompt, 
                                                      private_thoughts_prompt = private_thoughts_prompt)
@@ -105,9 +127,11 @@ class BaseRound: #base class
         field_definition = (str, Field(description=field_description))
         return {field_name: field_definition}
     
-    def _choose_name_field(self, allowed_names, reason_for_choosing_prompt):
+    def _choose_name_field(self, allowed_names, reason_for_choosing_prompt, field_name = None):
+        if not field_name:
+            field_name = GamePromptLibrary.model_field_choose_name
         choice_reason_prompt = f"The exact name of the agent. {reason_for_choosing_prompt}"
-        return self.create_choice_field(GamePromptLibrary.model_field_choose_name, allowed_names, choice_reason_prompt)
+        return self.create_choice_field(field_name, allowed_names, choice_reason_prompt)
 
     def _make_player_turn(self, player: Debater, user_prompt: str, response_model, action_fields=None):
         
@@ -125,6 +149,14 @@ class BaseRound: #base class
     def cfg(self):
         return self.simulationEngine.gameplay_config
     
+    def agents(self):
+        return self.simulationEngine.agents
+        
+    def dead_agents(self):
+        return self.simulationEngine.dead_agents
+    def points_string(self, count):
+        return "a point" if count == 1 else f"{count} points"
+
     def format_list(self, lst):
         if not lst:
             return ""
@@ -133,3 +165,46 @@ class BaseRound: #base class
         
         # Joins all but the last with a comma, then adds the final "and"
         return ", ".join(map(str, lst[:-1])) + " and " + str(lst[-1])
+
+    def _low_buffer_message(self, agent):
+        self.private_system_message(agent, "Your turn here was passed as your optional response buffer was too low.")
+        
+    def private_system_message(self, agent, message):
+        admin = self.gameBoard.SYS_ADMIN
+        restricted_users = [admin, agent.name]
+        id = self.gameBoard.log_new_restricted_conversation(restricted_users, admin, message)
+        self.gameBoard.close_private_conversation(id)
+        
+    def _basic_turn_optional(self, model, agent, user_content_prompt,):
+        agent.optional_response_buffer = round(agent.optional_response_buffer + self._buffer_amount, 2)
+        if agent.optional_response_buffer < 1:
+            self._low_buffer_message(agent)
+            return None
+        
+        else:
+            optional_response_prompt = (f"This turn has an optional response. Each optional response round gives you credit of {self._buffer_amount}. "
+                "You may respond and spend from your 'optional response buffer', or you may remain silent and just observe. ")
+            user_content_prompt += f"\n{optional_response_prompt}\n"
+            result = agent.take_turn_standard(user_content_prompt, self.gameBoard, model)
+            if result.public_response:
+                agent.optional_response_buffer = round(agent.optional_response_buffer - 1, 2)
+            else:
+                print(f"{agent.name} passes, buffer: {agent.optional_response_buffer}")
+                print(f"{agent.name} thoughts: {result.private_thoughts}")
+            
+            return result
+    
+    def _basic_turn(self, agent, user_content_prompt, public_response_prompt, private_thoughts_prompt = None, optional = True):
+        
+            
+        response_model = DynamicModelFactory.create_model_(agent, "basic_turn", public_response_prompt = public_response_prompt, 
+                        private_thoughts_prompt = private_thoughts_prompt, optional=optional)
+        
+        if optional:
+            result = self._basic_turn_optional(response_model, agent, user_content_prompt) 
+        else:
+            result = agent.take_turn_standard(user_content_prompt, self.gameBoard, response_model)
+
+        if result and result.public_response:
+            self.gameBoard.handle_public_private_output(agent, result)
+            

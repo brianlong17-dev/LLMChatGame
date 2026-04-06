@@ -1,8 +1,10 @@
 from typing import TYPE_CHECKING
+from core.models import RoundEntry
+
 if TYPE_CHECKING:
     from core.gameboard import GameBoard
     from agents.base_agent import BaseAgent
-    from core.gameboard import RoundEntry
+    
 
 
 class ContextBuilder:
@@ -13,7 +15,23 @@ class ContextBuilder:
         #some settings can probably move here
     
     def current_round_formatted(self, agent: 'BaseAgent'):
-        return  self._formatted_round(self.game_board.current_round, agent)
+        #so here - we need to get 
+        current_round = self.game_board.current_round
+        if self.game_board._current_round_summarisation:
+            round_to_format= self._round_after_id(current_round, 
+                            self.game_board._current_round_summarisation_until)
+            
+            return self.game_board._current_round_summarisation + self._formatted_round(round_to_format, agent)
+        else:
+            return  self._formatted_round(self.game_board.current_round, agent)
+    
+    
+    def _round_after_id(self, round, message_id):
+        round_messages = []
+        for message in round.messages:
+            if message.id > message_id:
+                round_messages.append(message)
+        return RoundEntry(phase_number=round.phase_number, round_number=round.round_number, messages=round_messages)
     
     
     def get_full_context(self, agent: 'BaseAgent'):
@@ -64,20 +82,22 @@ class ContextBuilder:
                     output += (f"\n{message['speaker']}: {message['message']}")
             else:
                 if agent.name in entry.visibility_restriction:
-                    names =  ", ".join(entry.visibility_restriction)
-                    output += f"\n--------------- Private Conversation between {names} ----------------\n"
-                    for message in entry.messages:
-                        output += (f"\n{message['speaker']}: {message['message']}")
-                    output += f"\n--------------- END OF Private Conversation between {names} ----------------\n"
+                    if self.game_board.SYS_ADMIN in entry.visibility_restriction:
+                        #We dont need the tags for a sys_admin message
+                        for message in entry.messages:
+                            output += f"\n{message['message']}"
+                    else:
+                        names =  ", ".join(entry.visibility_restriction)
+                        output += f"\n--------------- Private Conversation between {names} ----------------\n"
+                        for message in entry.messages:
+                            output += (f"\n{message['speaker']}: {message['message']}")
+                        output += f"\n--------------- END OF Private Conversation between {names} ----------------\n"
         return output
     
-    def get_dashboard_string(self, agent_name: str) -> str:
+    def get_dashboard_string(self, agent: 'BaseAgent') -> str:
+        agent_name = agent.name
+        game_over = agent.game_over
         agent_scores = dict(self.game_board.agent_scores)
-        """Generates a score dashboard."""
-        if agent_name not in agent_scores:
-            return "=== STATUS: ELIMINATED ===\nYou are dead. Observe the living."
-
-        my_score = agent_scores[agent_name]
         
         # 1. Calculate Standings
         # Sort by score (descending)
@@ -85,35 +105,43 @@ class ContextBuilder:
         max_score = sorted_scores[0][1] if sorted_scores else 0
         leaders = [name for name, score in agent_scores.items() if score == max_score]
         
-        is_leader = agent_name in leaders
-        points_behind = max_score - my_score
+        dash = []
+        if game_over:
+             dash.append("=== YOUR STATUS: ELIMINATED ===")
+        if not game_over:
+            my_score = agent_scores[agent_name]
+            is_leader = agent_name in leaders
+            points_behind = max_score - my_score
 
         # 2. Build the Visual Dashboard
-        dash = []
+
         dash.append("=== REALITY CHECK DASHBOARD ===")
-        overall_game_rules = self.game_board.phase_runner.overall_game_rules
+        overall_game_rules = self.game_board.phase_runner.overall_game_rules #Do we really want this--- this needs more attention
         if overall_game_rules:
             dash.append("OVERALL GAME:")
             dash.append(overall_game_rules)
         
         # A. The Leaderboard (Clean List)
-        dash.append("CURRENT STANDINGS:")
+        dash.append("CURRENT SCORES:")
         for name, score in sorted_scores:
             marker = " <-- YOU" if name == agent_name else ""
             dash.append(f"- {name}: {score} points{marker}")
         
         dash.append("") # Empty line for spacing
-
-        # B. The Narrative Status
-        if is_leader:
-            if len(leaders) > 1:
-                tied_with = [l for l in leaders if l != agent_name]
-                dash.append(f"STATUS: TIED FOR 1ST with {', '.join(tied_with)}.")
-            else:
-                dash.append("STATUS: YOU ARE WINNING.")
+        if game_over:
+            dash.append(f"STATUS: You have already been eliminated from the game. You are now an observer. ")
+            
         else:
-            dash.append("STATUS: YOU ARE LOSING.")
-            dash.append(f"MATH: You are exactly {points_behind} points behind the leader.")
+            # B. The Narrative Status
+            if is_leader:
+                if len(leaders) > 1:
+                    tied_with = [l for l in leaders if l != agent_name]
+                    dash.append(f"STATUS: TIED FOR 1ST with {', '.join(tied_with)}.")
+                else:
+                    dash.append("STATUS: YOU ARE WINNING.")
+            else:
+                dash.append("STATUS: YOU ARE LOSING.")
+                dash.append(f"MATH: You are exactly {points_behind} points behind the leader.")
 
         # C. The Roster (Who is left?)
         # (Optional: You might not need this if everyone is in the leaderboard above, 
@@ -121,7 +149,8 @@ class ContextBuilder:
         removed_agent_names = self.game_board.phase_runner.removed_agent_names()
         dead_str = ", ".join(removed_agent_names) if removed_agent_names else "None"
         dash.append(f"EVICTED PLAYERS: {dead_str}")
-        dash.append(self.current_phase_progress())
+        if not game_over:
+            dash.append(self.current_phase_progress())
         dash.append("===============================")
         return "\n".join(dash)
     

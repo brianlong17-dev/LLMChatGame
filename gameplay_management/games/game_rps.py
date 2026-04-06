@@ -113,5 +113,7 @@ class GameRockPaperScissors(GameMechanicsMixin):
                 f"{leftover.name} has no opponent this round — they automatically receive {auto_pts} points.\n\n"
             )
             self.gameBoard.append_agent_points(leftover.name, auto_pts)
+            
+        #TODO new mechanism- public conversations that execute in unison, one should stay ext
 
         self._execute_pairs(pairs)

@@ -23,7 +23,7 @@ class Debater(BaseAgent):
         super().__init__(name, client, model_name, higher_model_name=higher_model_name)
         self.rating = 0
         self.persona = initial_persona
-        self.strategy_to_win = "WATCH AND UPDATE WITH A PLAN"
+        self.game_strategy = "Begin to take action and form strategy."
         self.mathematical_assessment = ""
         self.life_lessons = deque(maxlen=8)
         self.speaking_style = speaking_style
@@ -31,7 +31,7 @@ class Debater(BaseAgent):
         self.phase_summaries_brief = {}
         self.detailed_summary_count = 2
         self.game_over = False
-        self.logging = False
+        self.optional_response_buffer = 0
         #todo : implement temperature
     
     # --- 1. CONFIGURATION (The Map) ---
@@ -40,26 +40,29 @@ class Debater(BaseAgent):
         #TODO just allgin these
         return {
             "updated_persona_summary": "persona",
-            "updated_strategy_to_win": "strategy_to_win",
+            "updated_game_strategy": "game_strategy",
             "mathematical_assessment": "mathematical_assessment",
             "lifeLesson": "life_lessons",
             "speaking_style": "speaking_style"
         }
         
     def logic_fields(self):
-        return {
-            "mathematical_assessment": (str, Field(description=PromptLibrary.desc_agent_mathematical_assessment))
-        }
+        if self.game_over:
+            return {}
+        else:
+            return {
+                "mathematical_assessment": (str, Field(description=PromptLibrary.desc_agent_mathematical_assessment))
+            }
     
     def internal_thinking_fields(self):
-        return {
-            "updated_persona_summary": (str | None, Field(default = None, description=PromptLibrary.desc_persona_update)),
-            "updated_strategy_to_win": (str| None, Field(default = None, description=PromptLibrary.desc_agent_updated_strategy_to_win)),
-            "lifeLesson": (str, Field(description=PromptLibrary.desc_agent_lifeLessons)),
-            "speaking_style":  (Optional[str], Field(default=None,description=PromptLibrary.desc_agent_speaking_style))
-            #ideas - pass the current speaking style in- makes more intentional? keep old versions in a history, for dev to see evolution 
-            
-        }
+        fields = {}
+        if not self.game_over:
+            fields["updated_game_strategy"] = (str | None, Field(default=None, description=PromptLibrary.desc_agent_updated_game_strategy)) 
+        
+        fields["updated_persona_summary"] = (str | None, Field(default=None, description=PromptLibrary.desc_persona_update))
+        fields["lifeLesson"] = (str, Field(description=PromptLibrary.desc_agent_lifeLessons))
+        fields["speaking_style"] =  (Optional[str], Field(default=None, description=PromptLibrary.desc_agent_speaking_style))
+        return fields
 
     def cognitive_fields(self):
         return {**self.logic_fields(), **self.internal_thinking_fields()}
@@ -95,19 +98,32 @@ class Debater(BaseAgent):
         if instruction_override:
             instructions = instruction_override
         else:
-            instructions = PromptLibrary.player_user_prompt(self.phase_summaries_string(),
-                gameBoard.context_builder.get_full_context(self), gameBoard.score_string())
+            instructions = PromptLibrary.player_user_prompt(
+                self.phase_summaries_string(),
+                gameBoard.context_builder.get_full_context(self), 
+                gameBoard.score_string())
 
         # 2. Combine
-        full_user_content = f"{instructions}\n\n{user_content}"
+        full_user_content = (f"{instructions}\n\n{user_content}\n\nYour Turn:")
         return full_user_content
                      
     def take_turn_standard(self, user_content, gameBoard, model, system_content = None, instruction_override=None):
-       
+                           #, context_model = StandardContext):
+        #TODO instruction_override is redudundant now
+        #user_content = context_model._get_full_user_content(gameBoard, user_content, instruction_override)
+        
         user_content = self._get_full_user_content(gameBoard, user_content, instruction_override) #TODO this is a big refactoring
         turn = self.get_response(user_content, model, gameBoard, system_content) #TODO temperature
         self.process_turn_cognitive_fields(turn)
         return turn
+    
+    def detailed_summaries_string(self):
+        string = ""
+        keys = self.phase_summaries_detailed.keys()
+        for key in (keys):
+            summary = self.phase_summaries_detailed.get(key)
+            string += f"Phase {key}:\n{summary}\n\n"
+        return string 
     
     def phase_summaries_string(self):
         all_keys = set(self.phase_summaries_detailed.keys()).union(
@@ -141,8 +157,18 @@ class Debater(BaseAgent):
         return context_string
     
     def _build_summary_model(self):
-        brief_summary_field = {"brief_summary" : (str, Field(description="Write an a brief summary of the phase from your perspective- Include the most essential strategic information you want to remember. A brief couple of bullet points. Eventually this will be all you have to access from early phases."))}
-        public_response_prompt = "This is your summary- write in the first person, how you experienced the phase. Write every detail you think is important to commit to memory. This will only be seen by you."
+        
+        brief_summary_field = {"brief_summary" : (str, Field(description="Write an a brief summary of the phase from your perspective- Include the most essential information you want to remember. A brief couple of bullet points. Eventually this will be all you have to access from early phases."))}
+        if self.game_over:
+            game_commentary_description = "As an ex-player, could you give us commentary on the game after the last phase- write something punchy we can use for a clip."
+        else:
+            game_commentary_description = "Given your place in the competition, how do you feel after that last phase? Anything you want to say to those supporting you at home?"
+        game_commentary_field = {"game_commentary" : (str, Field(description=game_commentary_description))}
+        
+        public_response_prompt = "This is your summary- write in the first person, how you experienced the phase. Write every detail you think is important to commit to memory. This will only be seen by you. "
+        if self.game_over:
+            public_response_prompt += "Remember, you have been eliminated and you are now in the audience observing. What do you think of the players, who's doing well, what do you think of their strategies, who do you want to win?"
+       
         response_model = DynamicModelFactory.create_model_(
                 self,
                 model_name="sumariser",
@@ -150,7 +176,7 @@ class Debater(BaseAgent):
                 private_thoughts_prompt=(
                     "What is important to remember?"
                 ),
-                action_fields = brief_summary_field
+                action_fields=brief_summary_field | game_commentary_field
             )
         return response_model
         
@@ -158,13 +184,18 @@ class Debater(BaseAgent):
         phase_number = game_board.phase_number
         prompt = ("From your perspective, write a summary of what happened in this phase. "
                   "Include all information that you think is relevant to retain, as this will be your memory of the game going forward."
-                  "THIS IS PRIVATE- No one will see.")
+                  "THIS IS PRIVATE- No one will see. ")
+        if self.game_over:
+            prompt += ("Don't forget, you have been eliminated, but your opinion matters- you may be asked to vote for a favorite later. "
+            "Who's playing a good game, who are you rooting for, what drama are you most compelled by? ")
         
         context_string = self._summarise_phase_context_string(game_board)
-        self.use_higher_model = True
+        if not self.game_over:
+            self.use_higher_model = True
         response_model = self._build_summary_model()
         
         response = self.take_turn_standard(prompt, game_board, response_model, instruction_override=context_string)
+        print(self.name + ": " + response.game_commentary)
         self.phase_summaries_detailed[phase_number] = response.public_response
         self.phase_summaries_brief[phase_number] = response.brief_summary
         

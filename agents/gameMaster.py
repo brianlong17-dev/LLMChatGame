@@ -18,7 +18,7 @@ class GameMaster(BaseAgent):
     def _system_prompt(self, gameBoard):
         #TODO spruce up with the other one
         #Used in the wildcard selection
-        return ( f"You oversee this game. You help to make the information managable for the LLMs playing."
+        return ( f"You oversee this game. You help to make the information manageable for the LLMs playing."
                 f"PAST SUMARRIES: {"\n".join(self.round_summaries)} "
                  f"#########################"
                  f"Current round: {gameBoard.context_builder.current_round_formatted(self)}")
@@ -44,7 +44,7 @@ class GameMaster(BaseAgent):
             model=self.model_name,
             response_model=SummariseRoundComplex,
             messages=[
-                {"role": "system", "content": f"You oversee this game. You help to make the information managable for the LLMs playing."},
+                {"role": "system", "content": f"You oversee this game. You help to make the information manageable for the LLMs playing."},
                 {"role": "user", "content": f"PAST SUMARRIES: {"\n".join(self.round_summaries)} "
                  f"#########################"
                  f"#########################"
@@ -53,3 +53,22 @@ class GameMaster(BaseAgent):
         )
         self.round_summaries.append(turn.round_summary)
         return turn
+    
+    def summarise_game_text(self, context, game_text):
+        model = DynamicGameModelFactory.cycle_game_compression_model()
+        turn = self.client.create(
+            model=self.model_name,
+            response_model=model,
+            messages=[
+                {"role": "system", "content": f"You oversee this game. You help to make the information manageable for the LLMs playing."},
+                {"role": "user", "content": f"Previous game context:\n{context}"
+                 f"#########################"
+                 f"#########################"
+                 f"Summarise the following segment: {game_text}"} 
+            ]
+        )
+        print("\n\nContext: \n" + context )
+        print("\n\nGame text: \n" + game_text)
+        print("\n\nSummary: \n" + turn.summary )
+        
+        return turn.summary

@@ -15,6 +15,16 @@ class DynamicGameModelFactory:
             thought_proccess=(str, Field(description="What's your thought proccess behind this decision?"))
         )
         
+    @classmethod
+    def cycle_game_compression_model(cls):
+        return create_model("cycle_game_compression",
+            summary=(str, Field(description=(
+                "Summarise the marked game text. "
+                "For each player: what did they say or do, who did they advocate for or against- include the emotional reasoning behind their decision. "
+                "Preserve who had the gun and shield, who protected whom, who was shot, and any alliances or threats made. "
+                "Write in third person, past tense. Do not omit any player who spoke."
+                "Be precise about who is speaking to whom and in what direction"
+            ))))
 
 class SummariseRoundComplex(BaseModel):
     double_check: str = Field(description="Has a player lied of halucinated? Just double check you don't take everyone's word for granted")

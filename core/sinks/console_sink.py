@@ -4,7 +4,7 @@ from typing import Iterable
 import questionary
 
 from core.console_renderer import ConsoleRenderer
-from core.gameboard import MessageEntry
+from core.models import MessageEntry
 from core.sinks.game_sink import GameEventSink, Speaker
 
 
