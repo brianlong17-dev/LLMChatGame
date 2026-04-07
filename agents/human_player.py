@@ -11,8 +11,8 @@ class Human(Debater):
     
     
     def __init__(self, name: str):
-        super().__init__(name = name, initial_persona= '', client = None, model_name = None,
-                         higher_model_name= None, speaking_style = "")
+        super().__init__(name=name, initial_persona='', model_name=None,
+                         higher_model_name=None, speaking_style="")
         self.is_testing = False
     
     def is_human(self):

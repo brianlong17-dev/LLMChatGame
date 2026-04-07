@@ -3,11 +3,13 @@ import os
 from abc import abstractmethod
 from datetime import datetime, timezone
 
+from core.api_client import api_client
+
 
 class BaseAgent:
-    def __init__(self, name: str, client, model_name: str, higher_model_name: str = None, color = "BLUE"):
+    def __init__(self, name: str, model_name: str, higher_model_name: str = None, color = "BLUE", client=None):
         self.name = name
-        self.client = client
+        self.client = client  # optional override (used in tests)
         self.model_name = model_name
         self.higher_model_name = higher_model_name or model_name
         self.color = color
@@ -140,7 +142,8 @@ class BaseAgent:
         else:
             api_model = self.model_name
 
-        response = self.client.create(
+        client = self.client or api_client
+        response = client.create(
             model=api_model,
             response_model=response_model,
             messages=messages,

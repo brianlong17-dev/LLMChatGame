@@ -3,13 +3,14 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, create_model
 from agents.base_agent import BaseAgent
+from core.api_client import api_client
 from models.game_models import DynamicGameModelFactory, SummariseRoundComplex
 from models.player_models import BaseResponse
 from prompts.prompts import PromptLibrary
 
 class GameMaster(BaseAgent):
-    def __init__(self, client, model_name: str, higher_model_name: str = None, name ="Summariser"):
-        super().__init__(name, client, model_name, higher_model_name=higher_model_name)
+    def __init__(self, model_name: str, higher_model_name: str = None, name ="Summariser"):
+        super().__init__(name, model_name, higher_model_name=higher_model_name)
         self.color = "YELLOW"
         self.round_summaries = deque(maxlen=50)
         self.name = "Host"
@@ -39,16 +40,15 @@ class GameMaster(BaseAgent):
         return self.get_response(user_content, response_model, gameBoard, system_content = None)
         #---------------
     
-    def summariseRound(self, gameBoard): 
-        turn = self.client.create(
-            model=self.model_name,
+    def summariseRound(self, gameBoard):
+        turn = api_client.create(
             response_model=SummariseRoundComplex,
             messages=[
                 {"role": "system", "content": f"You oversee this game. You help to make the information manageable for the LLMs playing."},
                 {"role": "user", "content": f"PAST SUMARRIES: {"\n".join(self.round_summaries)} "
                  f"#########################"
                  f"#########################"
-                 f"Summarise the following round: {gameBoard.context_builder.current_round_formatted(self)} Scores:  {gameBoard.agent_scores}"} 
+                 f"Summarise the following round: {gameBoard.context_builder.current_round_formatted(self)} Scores:  {gameBoard.agent_scores}"}
             ]
         )
         self.round_summaries.append(turn.round_summary)
@@ -56,8 +56,7 @@ class GameMaster(BaseAgent):
     
     def summarise_game_text(self, context, game_text):
         model = DynamicGameModelFactory.cycle_game_compression_model()
-        turn = self.client.create(
-            model=self.model_name,
+        turn = api_client.create(
             response_model=model,
             messages=[
                 {"role": "system", "content": f"You oversee this game. You help to make the information manageable for the LLMs playing."},

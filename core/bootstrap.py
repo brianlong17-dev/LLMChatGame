@@ -9,6 +9,7 @@ from core.gameboard import GameBoard
 from core.sinks.console_sink import ConsoleGameEventSink
 from core.phase_recipe_factory import PhaseRecipeFactoryDefault
 from core.simulation_engine import SimulationEngine
+from core.api_client import api_client
 
 
 def create_engine(game_sink, number_of_players: int = 0, generic_players: bool = False, names=None,
@@ -17,9 +18,10 @@ def create_engine(game_sink, number_of_players: int = 0, generic_players: bool =
                   phase_factory=PhaseRecipeFactoryDefault):
     load_dotenv()
     client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
-    game_master = GameMaster(client, model_name, higher_model_name=higher_model_name)
+    api_client.init(client, model_name)
+    game_master = GameMaster(model_name, higher_model_name=higher_model_name)
     gameBoard = GameBoard(game_sink)
-    generator = CharacterGenerator(game_sink, client, model_name, higher_model_name)
+    generator = CharacterGenerator(game_sink, model_name, higher_model_name)
     
     if names:
         agents = generator.generate_agents_from_names(names, allow_rename = allow_rename) 

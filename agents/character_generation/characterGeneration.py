@@ -5,6 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from agents.character_generation.character_lister import CharacterLister
 from agents.player import Debater
+from core.api_client import api_client
 
 class CharacterProfile(BaseModel):
     persona: str = Field(description="A detailed, first-person personality description, core beliefs, and debate strategy for this historical figure.")
@@ -12,9 +13,8 @@ class CharacterProfile(BaseModel):
     name: Optional[str] = Field(default=None, description="ONLY USE IF THE CHARACTER HAS NO NAME- ie Drunk Girl. Then you may name them.")
 
 class CharacterGenerator:
-    
-    def __init__(self, game_sink, client,  model_name: str, higher_model_name: str = None):
-        self.client = client
+
+    def __init__(self, game_sink, model_name: str, higher_model_name: str = None):
         self.model_name = model_name
         self.higher_model_name = higher_model_name or model_name
         self.game_sink = game_sink
@@ -31,10 +31,9 @@ class CharacterGenerator:
                 Debater(
                     name,
                     personality,
-                    client=self.client,
                     model_name=self.model_name,
                     higher_model_name=self.higher_model_name,
-                    speaking_style = speaking_style
+                    speaking_style=speaking_style,
                 )
             )
             
@@ -96,8 +95,7 @@ class CharacterGenerator:
         return cast
 
     def generate_debater(self, character_name: str, allow_rename = True) -> 'Debater':
-        profile = self.client.create(
-            model=self.model_name,
+        profile = api_client.create(
             response_model=CharacterProfile,
             messages=[
                 {"role": "system", "content": "You are generating a starting profile for an AI debate simulation player."},
@@ -109,8 +107,7 @@ class CharacterGenerator:
         return Debater(
             name=final_name,
             initial_persona=profile.persona,
-            client=self.client,
             model_name=self.model_name,
             higher_model_name=self.higher_model_name,
-            speaking_style=profile.speaking_style
+            speaking_style=profile.speaking_style,
         )

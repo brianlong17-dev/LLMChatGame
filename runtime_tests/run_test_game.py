@@ -8,6 +8,7 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..")) 
 from core.bootstrap import create_engine, ConsoleGameEventSink
+from core.api_client import api_client
 from core.phase_recipe import PhaseRecipe
 from gameplay_management.game_cycle.game_circle import GameCircle
 # from gameplay_management.games.game_knives import GameKnives
@@ -74,4 +75,4 @@ if __name__ == "__main__":
 
     phase = PhaseRecipe(rounds=[GameCircle])
     engine.phase_runner.run_phase(phase)
-    engine.api_logger.print_summary()
+    api_client.print_summary()

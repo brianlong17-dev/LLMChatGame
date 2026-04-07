@@ -15,12 +15,12 @@ class Debater(BaseAgent):
         self,
         name: str,
         initial_persona: str,
-        client,
         model_name: str,
         higher_model_name: str = None,
         speaking_style: str = "",
+        client=None,
     ):
-        super().__init__(name, client, model_name, higher_model_name=higher_model_name)
+        super().__init__(name, model_name, higher_model_name=higher_model_name, client=client)
         self.rating = 0
         self.persona = initial_persona
         self.game_strategy = "Begin to take action and form strategy."
