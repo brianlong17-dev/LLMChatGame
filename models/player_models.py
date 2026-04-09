@@ -80,6 +80,7 @@ class DynamicModelFactory:
             
         if optional and agent.optional_response_buffer < 1:
             base_thought += f" Note: this is a round with an optional response. To choose to respond will cost 1 point from your optional response buffer at: {agent.optional_response_buffer}."
+       
         ordered_fields["private_thoughts"] = (str, Field(description=base_thought))
         
         #....action 
@@ -90,10 +91,11 @@ class DynamicModelFactory:
         
         if optional:
             ordered_fields["public_response"] = (Optional[str], Field(default=None, description=(f"{pub_prompt} Your optional response buffer is at: {agent.optional_response_buffer}. "
-                f"Leave null if you have nothing to add. If you choose silence, leave this blank - do not announce that you are staying silent. ")))
+                f"Leave null if you have nothing to add. If you choose silence, leave EMPTY - do not narrate your silence, leave BLANK. ")))
         else:
             ordered_fields["public_response"] = (str, Field(description=pub_prompt))
         #........ self-learning
+        
         if agent_complex_fields:
             ordered_fields.update(agent_complex_fields)
 

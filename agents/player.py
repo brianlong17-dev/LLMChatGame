@@ -112,7 +112,7 @@ class Debater(BaseAgent):
         #TODO instruction_override is redudundant now
         #user_content = context_model._get_full_user_content(gameBoard, user_content, instruction_override)
         
-        user_content = self._get_full_user_content(gameBoard, user_content, instruction_override) #TODO this is a big refactoring
+        user_content = self._get_full_user_content(gameBoard, user_content, instruction_override) 
         turn = self.get_response(user_content, model, gameBoard, system_content) #TODO temperature
         self.process_turn_cognitive_fields(turn)
         return turn

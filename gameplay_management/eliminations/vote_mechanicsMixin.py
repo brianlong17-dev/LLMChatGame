@@ -1,5 +1,4 @@
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional, Sequence
 from gameplay_management.base_manager import *
 from prompts.gamePrompts import GamePromptLibrary
@@ -18,6 +17,26 @@ class VoteMechanicsMixin(BaseRound):
     def is_vote(cls):
         return True
     
+        
+    def eliminate_player_by_name(self, player_name):
+        victim = next((a for a in self.simulationEngine.agents if a.name == player_name), None)
+        if victim:
+            victim.game_over = True
+            host_message = VotePromptLibrary.elimination_host_msg.format(victim_name=victim.name)
+            self.gameBoard.host_broadcast(host_message)
+            final_words_prompt = PromptLibrary.final_words_prompt()
+
+            
+            self.simulationEngine.eliminate_player(victim)
+            self.gameBoard.remove_agent_state(victim.name)
+            final_words_result = self.respond_to(victim, final_words_prompt)
+
+            self.publicPrivateResponse(victim, final_words_result)
+        else:
+            print(f"NOT FOUND: {player_name}")
+    
+    
+    
     def _validate_immunity(self, immunity_players: Optional[Sequence[str]]) -> list[str]:
         
         if immunity_players is None:
@@ -29,25 +48,7 @@ class VoteMechanicsMixin(BaseRound):
             immunity_players = []
         return immunity_players
        
-    def eliminate_player_by_name(self, player_name):
-        victim = next((a for a in self.simulationEngine.agents if a.name == player_name), None)
-        if victim:
-            host_message = VotePromptLibrary.elimination_host_msg.format(victim_name=victim.name)
-            self.gameBoard.host_broadcast(host_message)
-            instruction_override = PromptLibrary.final_words_prompt(self.gameBoard, victim)
-
-            
-            self.simulationEngine.eliminate_player(victim)
-            self.gameBoard.remove_agent_state(victim.name)
-            finalWordsResult = self.respond_to(victim, "",
-                                               instruction_override = instruction_override)
-            print(finalWordsResult)
-            self.publicPrivateResponse(victim, finalWordsResult)
-            if self.cfg().execution_style:
-                executionString = self.get_execution_string(victim)
-                self.gameBoard.system_broadcast(executionString)
-        else:
-            print(f"NOT FOUND: " + player_name)
+   
     
     def immunity_string(self, immunity_players: Sequence[str], players_up_for_elimination: Sequence[str]) -> str:
         immunity_string = ""
@@ -62,15 +63,6 @@ class VoteMechanicsMixin(BaseRound):
         )
         return f"{immunity_string}{players_up_for_elimination_string}\n"
             
-    def get_execution_string(self, victim):
-        name = victim.name
-        string1 = f"{name} is brought onto the podium under the stormy sky. Lightning strikes {name} several times. The pile of ashes is promptly blown away"
-        string2 = f"{name} is brought to the edge of a cliff. After some light shoving they loose their footing, falling the 751ft drop the the ocean below."
-        string3 = f"{name} is brought to the large pool, where they are pushed in a promptly devoured by piranhas"
-        string4 = f"{name} is brought to observe the sausage making machine, where they loose their footing and fall in. The winner will get a chance to have sausages."
-        string5 = f"{name} is brought to guillotine and loses their head. As a reportedly lifelong francophile, perhaps it's what they would have wanted."
-        strings = [string1, string2, string3, string4, string5]
-        return random.choice(strings)
 
     def _players_up_for_elimination(self, immunity_players: Optional[Sequence[str]]) -> List['Debater']:
         immunity_players = immunity_players or []
@@ -79,7 +71,7 @@ class VoteMechanicsMixin(BaseRound):
     ###############
     #   Logic     #
     ###############
-    def voteOnePlayerOff(self, player, eligible_players_names):
+    def vote_one_player_off(self, player, eligible_players_names):
         names_str = self.format_list(eligible_players_names)
         user_content = VotePromptLibrary.vote_one_player_user_content.format(
             eligible_player_names=names_str
@@ -94,18 +86,16 @@ class VoteMechanicsMixin(BaseRound):
            
     def _collect_votes(self, players_up_for_elimination: Sequence[str], pass_allowed: bool = False):
         votes = []
-        votingResults = []
+        voting_results = []
         voting_futures = []
         with ThreadPoolExecutor() as executor:
             for agent in self.simulationEngine.agents:
-                # Start the task and store the future object
-                future = executor.submit(self.voteOnePlayerOff, agent, players_up_for_elimination)
+                future = executor.submit(self.vote_one_player_off, agent, players_up_for_elimination)
                 voting_futures.append(future)
-            
-            # 3. Collect results (this waits for everyone to finish)
-            votingResults = [vote_future.result() for vote_future in voting_futures]
-                
-        for agent, vote_response in zip(self.simulationEngine.agents, votingResults):
+
+            voting_results = [vote_future.result() for vote_future in voting_futures]
+
+        for agent, vote_response in zip(self.simulationEngine.agents, voting_results):
             actual_vote = getattr(vote_response, GamePromptLibrary.model_field_choose_name, None)
             actual_vote = actual_vote.strip() if actual_vote else ""
             
@@ -128,7 +118,7 @@ class VoteMechanicsMixin(BaseRound):
             if actual_vote:
                 votes.append(actual_vote)
             self.publicPrivateResponse(agent, vote_response)
-        return votes, votingResults
+        return votes, voting_results
    
     def process_vote_rounds(self, players_up_for_elimination: Sequence[str], revote_count: int = 0, initial_votes = None):
         
@@ -168,7 +158,6 @@ class VoteMechanicsMixin(BaseRound):
      
        
     def _dispense_victim_points(self, victim_name, voting_results, points_per_survived_vote=None):
-        #Was going to give out vitim points, but maybe 1 per vote
         if not points_per_survived_vote:
             points_per_survived_vote = GamePromptLibrary.points_per_survived_vote
         survivors_rewarded = {}

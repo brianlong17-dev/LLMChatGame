@@ -15,7 +15,7 @@ from gameplay_management.eliminations.voting_each_player import VoteEachPlayer
 from gameplay_management.eliminations.voting_lowest_points import VoteLowestPoints
 from gameplay_management.immunities.highest_points_immunity import HighestPointsImmunity
 from gameplay_management.immunities.wildcard_immunity import WildcardImmunity
-from gameplay_management.reunion_round import FinaleReunionRound
+from gameplay_management.eliminations.reunion_round import FinaleReunionRound
 from gameplay_management.game_cycle.game_circle import GameCircle
 from gameplay_management.game_cycle.game_knives import GameKnives
 from gameplay_management.game_cycle.game_mob import GameMob

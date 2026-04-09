@@ -28,7 +28,7 @@ class VotePromptLibrary:
 
     vote_one_player_user_content = (
         "You must vote for one player you want to leave the competition. "
-        "They player with the most votes will leave the game."
+        "They player with the most votes will leave the game. "
         "Who do you vote to leave? Who do you eliminate from {eligible_player_names} and why?"
     )
     vote_one_player_name_field_prompt = "The exact name of the agent to you want to leave the competition.."

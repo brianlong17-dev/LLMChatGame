@@ -71,3 +71,33 @@ class GameMaster(BaseAgent):
         print("\n\nSummary: \n" + turn.summary )
         
         return turn.summary
+    
+    def select_players(self, question, context, allowed_names, max_choices = 3):
+        model = DynamicGameModelFactory.choose_multiple_agents(allowed_names, question, max_choices)
+        turn = api_client.create(
+            response_model=model,
+            messages=[
+                {"role": "system", "content": f"You oversee this game. We need you to select players based on the question: {question}"},
+                {"role": "user", "content": f"Game context:\n{context}"} 
+            ]
+        )
+        return turn.namesToChoose
+    
+    def create_host_script(self, directive, context, context_explaination, game_context):
+        #It's referenced as directive in the model 
+        model = DynamicGameModelFactory.host_script_model()
+        turn = api_client.create(
+            response_model=model,
+            messages=[
+                #in time we will put personality into the user content- favorites, opinions
+                {"role": "system", "content": f"You are the producer of this game. We need you to write a script for the host, based on the directive: {directive}. "
+                 "The host is speaking with the players, but also with an audience in mind. "
+                 "ONLY DIALOG - only the script- no direction or scene description. "},
+                #Ie the context is the players own recap of their journey- use this 
+                {"role": "user", "content": f"Context explaination: {context_explaination}\n\n"
+                 f"Actual context to use:\n{context}"
+                 f"Game context : What happened before this point in the round:\n{game_context}",} 
+            ]
+        )
+        #print(turn.thought_process)
+        return turn.script

@@ -91,13 +91,14 @@ class GameBoard:
         self.current_round.messages.append(entry)
         return self.message_id
     
-    def close_private_conversation(self, conversation_id):
+    def close_private_conversation(self, conversation_id, silent = False):
         entry = self._get_conversation_entry(conversation_id)
         if entry:
             entry.messages.append({"speaker": "SYSTEM", "message": "[End Private]"})
             if not self._human_in_restriction(entry.visibility_restriction):
                 #if human involve wave already outputted
-                self.game_sink.on_private_conversation(entry)
+                if not silent:
+                    self.game_sink.on_private_conversation(entry)
     
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
