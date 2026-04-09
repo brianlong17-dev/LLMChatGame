@@ -12,7 +12,6 @@ class GameConfig:
         
         self.inject_host_question = True
         
-        self.execution_style = False
         # --------------------------------------------------------------
         # Gang up games
         # --------------------------------------------------------------
@@ -83,6 +82,14 @@ class GameConfig:
         # --------------------------------------------------------------
         self.immunity_highest_points_only_one = False
         
+        # --------------------------------------------------------------
+        # Cycle round settings (compression & optional responses)
+        # --------------------------------------------------------------
+        self.cycle_use_context_compression = False
+        self.cycle_use_optional_response = False
+        self.cycle_full_context_cycles = 4
+        self.cycle_buffer_amount = 0.6
+
         # --------------------------------------------------------------
         # Quick per-game identity helpers (optional)
         # --------------------------------------------------------------

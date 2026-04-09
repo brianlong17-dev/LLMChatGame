@@ -279,4 +279,4 @@ class FinaleReunionRound(VoteMechanicsMixin):
                     chosen_agent = self._agent_by_name(chosen_name.strip())
                     if chosen_agent:
                         self._reunion_turn(chosen_agent, "", f"Respond to {player_name}'s question. Directly say anything else you want to say.")
-                        self._reunion_turn(player, "", "Anything else to add?")
+                        self._reunion_turn(player, "", "Anything else to add?", optional=True)

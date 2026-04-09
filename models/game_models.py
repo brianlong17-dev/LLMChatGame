@@ -12,7 +12,7 @@ class DynamicGameModelFactory:
             nameToChoose=(Literal[tuple(allowed_names)], Field(
                 description=f"The exact name of the agent to choose. Only the players in the allowed names are valid. "
                 f"Allowed names: {allowed_names}. The parameter for choosing: {parameter}")),
-            thought_proccess=(str, Field(description="What's your thought proccess behind this decision?"))
+            thought_process=(str, Field(description="What's your thought process behind this decision?"))
         )
         
     @classmethod
@@ -44,14 +44,14 @@ class DynamicGameModelFactory:
                     f"Allowed names: {allowed_names}. The parameter for choosing: {parameter}"
                 )
             ),
-            thought_proccess=(str, Field(description="What's your thought proccess behind this decision?"))
+            thought_process=(str, Field(description="What's your thought proccess behind this decision?"))
         )
         
     @classmethod
     def host_script_model(cls):
         return create_model("host_script",
             script=(str, Field(description=("Based on the directive, write a script that the host will read out. "))),
-            thought_proccess=(str, Field(description="What's your creative proccess and intent behind your writing?"))
+            thought_process=(str, Field(description="What's your creative proccess and intent behind your writing?"))
         )
 
 class SummariseRoundComplex(BaseModel):
