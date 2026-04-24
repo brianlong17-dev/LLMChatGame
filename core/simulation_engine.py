@@ -9,7 +9,7 @@ from agents.human_player import Human
 if TYPE_CHECKING:
     from agents.character_generation.characterGeneration import CharacterGenerator
     from core.phase_recipe_factory import PhaseRecipeFactory
-    from agents.gameMaster import GameMaster
+    from agents.game_host import GameMaster
     from core.gameboard import GameBoard
     from agents.player import Debater
     

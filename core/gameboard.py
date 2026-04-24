@@ -94,7 +94,7 @@ class GameBoard:
     def close_private_conversation(self, conversation_id, silent = False):
         entry = self._get_conversation_entry(conversation_id)
         if entry:
-            entry.messages.append({"speaker": "SYSTEM", "message": "[End Private]"})
+            #entry.messages.append({"speaker": "SYSTEM", "message": "[End Private]"})
             if not self._human_in_restriction(entry.visibility_restriction):
                 #if human involve wave already outputted
                 if not silent:

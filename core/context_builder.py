@@ -25,14 +25,12 @@ class ContextBuilder:
         else:
             return  self._formatted_round(self.game_board.current_round, agent)
     
-    
     def _round_after_id(self, round, message_id):
         round_messages = []
         for message in round.messages:
             if message.id > message_id:
                 round_messages.append(message)
         return RoundEntry(phase_number=round.phase_number, round_number=round.round_number, messages=round_messages)
-    
     
     def get_full_context(self, agent: 'BaseAgent'):
         current_text = self.current_round_formatted(agent)
@@ -85,7 +83,7 @@ class ContextBuilder:
                     if self.game_board.SYS_ADMIN in entry.visibility_restriction:
                         #We dont need the tags for a sys_admin message
                         for message in entry.messages:
-                            output += f"\n{message['message']}"
+                            output += f"\n [Private System Message] {message['message']} [End Private Message]"
                     else:
                         names =  ", ".join(entry.visibility_restriction)
                         output += f"\n--------------- Private Conversation between {names} ----------------\n"

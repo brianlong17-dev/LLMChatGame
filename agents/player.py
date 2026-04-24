@@ -153,7 +153,7 @@ class Debater(BaseAgent):
         context_string += self.phase_summaries_string() #this should say none yet if empty.
         context_string += "\n\n------------ The current phase to summarise into memory: ---------\n"
         context_string += phase_rounds_formatted
-        context_string += "-----------------------------------------------------------\n"
+        context_string += "\n-----------------------------------------------------------\n"
         return context_string
     
     def _build_summary_model(self):

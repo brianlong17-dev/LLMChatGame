@@ -33,7 +33,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
             #----- Response -----
             public_response_prompt = "This is only shared in the private conversation between you and the Host."
             instruction_override = player.detailed_summaries_string()
-            self._private_host_conversation_get_response(player, conversation_id, public_response_prompt, instruction_override)
+            self._private_host_conversation_get_response(player, conversation_id, public_response_prompt)
 
             #--------- Second message ---------
             host_message = ("So, to remember the drama, can you detail any personal relationship you have with the two finalists? "

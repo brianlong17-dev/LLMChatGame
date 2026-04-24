@@ -71,6 +71,7 @@ class ConsoleGameEventSink(GameEventSink):
             speaker = message['speaker']
             color = "SYS" if speaker.lower() == 'system' else "RED"
             ConsoleRenderer.print_public_action(speaker, message['message'], color)
+        ConsoleRenderer.print_system_private(f"[End Private]")
        
 
     def system_private(self, message: str) -> None:

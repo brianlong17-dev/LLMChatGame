@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import instructor
 
 from agents.character_generation.characterGeneration import CharacterGenerator
-from agents.gameMaster import GameMaster
+from agents.game_host import GameMaster
 from core.gameboard import GameBoard
 from core.sinks.console_sink import ConsoleGameEventSink
 from core.phase_recipe_factory import PhaseRecipeFactoryDefault
@@ -14,6 +14,10 @@ from core.api_client import api_client
 
 def create_engine(game_sink, number_of_players: int = 0, generic_players: bool = False, names=None,
                   allow_rename = True,
+                  #gemini-2.0-flash-lite
+                  #"gemini-3.1-flash-lite-preview",
+                  #gemini-2.5-flash-lite
+                  
                   model_name="gemini-2.0-flash-lite", higher_model_name="gemini-2.5-flash",
                   phase_factory=PhaseRecipeFactoryDefault):
     load_dotenv()

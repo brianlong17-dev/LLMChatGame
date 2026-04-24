@@ -50,11 +50,11 @@ class PhaseRecipe(BaseModel):
         #TODO this is temp
 
         if num_players == 2:
-            phase_description = f"🚨 Only two players remain. Unfortunately only one player can win. Only one player will remain at the end of this phase. The player with the most points. Act accordingly. Accept your fate, or fight 🚨\n"
+            phase_description += f"Two players remain. Only one player will remain at the end of this phase. "
 
         #--------------------
 
-        phase_description += f"In this round we will have: "
+        phase_description += f"In this phase we will have: "
 
         discussion_rounds = [round for round in self.rounds if round.is_discussion()]
         if len(discussion_rounds) == 1:
