@@ -101,6 +101,7 @@ class WebSocketSink(GameEventSink):
         self._send({"type": "evicted_update", "evicted_names": evicted_names})
 
     def on_private_conversation(self, entry) -> None:
+        #you maybe need to bookend these, or format them
         messages = [{"speaker": m["speaker"], "message": m["message"]} for m in entry.messages]
         self._send({"type": "private_conversation", "messages": messages})
 

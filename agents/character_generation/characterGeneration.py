@@ -102,8 +102,9 @@ class CharacterGenerator:
                 {"role": "user", "content": f"Create a rich, first-person persona and a physical form description for the historical figure: {character_name}. Make them highly opinionated."}
             ]
         )
-        self.game_sink.system_private(f"Generated: {character_name}. Speaking style: \n {profile.speaking_style}.")
+        #self.game_sink.system_private(f"Generated: {character_name}. Speaking style: \n {profile.speaking_style}.")
         final_name = profile.name if (allow_rename and profile.name) else character_name
+        #print(f"{final_name}: \n {profile.persona} \n {profile.speaking_style}")
         return Debater(
             name=final_name,
             initial_persona=profile.persona,

@@ -60,7 +60,7 @@ class Debater(BaseAgent):
             fields["updated_game_strategy"] = (str | None, Field(default=None, description=PromptLibrary.desc_agent_updated_game_strategy)) 
         
         fields["updated_persona_summary"] = (str | None, Field(default=None, description=PromptLibrary.desc_persona_update))
-        fields["lifeLesson"] = (str, Field(description=PromptLibrary.desc_agent_lifeLessons))
+        fields["lifeLesson"] =  (Optional[str], Field(default=None, description=PromptLibrary.desc_agent_lifeLessons))
         fields["speaking_style"] =  (Optional[str], Field(default=None, description=PromptLibrary.desc_agent_speaking_style))
         return fields
 
@@ -181,6 +181,8 @@ class Debater(BaseAgent):
         return response_model
         
     def summarise_phase(self, game_board):
+        #TODO this works really well with DEFAULT_HIGHER_MODEL_NAME = "gemini-2.5-flash"
+        #But other models will be brief - this needs to prompted to be detailed
         phase_number = game_board.phase_number
         prompt = ("From your perspective, write a summary of what happened in this phase. "
                   "Include all information that you think is relevant to retain, as this will be your memory of the game going forward."

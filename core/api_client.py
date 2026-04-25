@@ -43,12 +43,24 @@ class APIClient:
         caller = _caller()
         start = time.monotonic()
 
-        response, raw = self._client.create_with_completion(
-            model=api_model,
-            response_model=response_model,
-            messages=messages,
-            **kwargs,
-        )
+        max_429_retries = 5
+        backoff = 2
+        for attempt in range(max_429_retries):
+            try:
+                response, raw = self._client.create_with_completion(
+                    model=api_model,
+                    response_model=response_model,
+                    messages=messages,
+                    **kwargs,
+                )
+                break
+            except Exception as e:
+                if attempt < max_429_retries - 1 and _is_rate_limit(e):
+                    wait = backoff * (2 ** attempt)
+                    print(f"[api_client] 429 rate limit — waiting {wait}s before retry {attempt + 1}/{max_429_retries - 1}")
+                    time.sleep(wait)
+                else:
+                    raise
 
         prompt, completion, total = _extract_usage(raw)
         with self._lock:
@@ -106,6 +118,11 @@ api_client = APIClient()
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 _SKIP = {"core.api_client", "agents.base_agent"}
+
+
+def _is_rate_limit(exc: Exception) -> bool:
+    msg = str(exc)
+    return "429" in msg or "RESOURCE_EXHAUSTED" in msg
 
 
 def _caller() -> str:
