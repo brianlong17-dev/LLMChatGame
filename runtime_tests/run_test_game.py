@@ -10,7 +10,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from core.bootstrap import create_engine, ConsoleGameEventSink
 from core.api_client import api_client
 from core.phase_recipe import PhaseRecipe
+from agents.human_player import Human
+from runtime_tests.hardcoded_cast import build_hardcoded_debaters
 from gameplay_management.game_cycle.game_circle import GameCircle
+from gameplay_management.games.game_guess import GameGuess
+from gameplay_management.game_cycle.game_mob import GameMob
+from gameplay_management.game_cycle.game_knives import GameKnives
+from gameplay_management.eliminations.voting_bottom_two import VoteBottomTwo
+
 # from gameplay_management.games.game_knives import GameKnives
 
 if __name__ == "__main__":
@@ -22,29 +29,34 @@ if __name__ == "__main__":
     # ── 2. Bootstrap ──
     all_names = list(agent_state.keys())
     sink = ConsoleGameEventSink()
-    engine = create_engine(sink, names=all_names, allow_rename = False)
+    hardcoded_agents = build_hardcoded_debaters(all_names)
+    engine = create_engine(sink, agents=hardcoded_agents, allow_rename=False)
+    add_human = False
+    if add_human:
+        human = Human('Brian')
+        engine.agents.append(human)
     engine.initialiseGameBoard()
 
     # ── 3. Name -> agent lookup ──
     agents = {a.name: a for a in engine.agents}
-    for name in agents:
-        print(name)
     # ── 4. Scores from phase 1 ──
     scores = {
-        "Avatar Aang":      12,
+        "Aang":      12,
         "Michael Jackson":  10,
-        "HAL 9000":         12,
-        "Jo March":         16,
-        "Lady Macbeth":     3,
-        "Lady Dianna":      8,
+        "HAL 9000":         9,
+        "Jo March":         12,
+        "Lady Macbeth":     11,
+        "Lady Diana":      13,
         "Morty Smith":      2,
-        "Amy March":        10,
-        "Benoit Blanc":     13,
-        "Gollum":           0,
-        "Buffy Summers":    0,
+        "Amy March":        12,
+        "Benoit Blanc":     11,
+        "Gollum":           9,
+        "Buffy Summers":    10,
     }
     for name, score in scores.items():
         engine.gameBoard.agent_scores[name] = score
+        if add_human:
+             engine.gameBoard.agent_scores[human.name] = 9
 
     # ── 5. Apply saved state ──
     for name, state in agent_state.items():
@@ -70,9 +82,15 @@ if __name__ == "__main__":
             agent.phase_summaries_brief[int(phase_str)] = text
 
     # ── 6. Run the game ──
+    circle = True
+    if circle:
+        engine.gameplay_config.use_double_shots = False
+        engine.gameplay_config.cycle_use_optional_response = True
+        
+        
     engine.gameBoard.new_phase()
     engine.gameBoard.newRound()
-
-    phase = PhaseRecipe(rounds=[GameCircle])
-    engine.phase_runner.run_phase(phase)
+    while len(engine.agents) > 2:
+        phase = PhaseRecipe(rounds=[GameGuess, VoteBottomTwo])
+        engine.phase_runner.run_phase(phase)
     api_client.print_summary()

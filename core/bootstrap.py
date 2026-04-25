@@ -12,13 +12,17 @@ from core.simulation_engine import SimulationEngine
 from core.api_client import api_client
 
 
+#gemini-2.0-flash-lite
+#"gemini-3.1-flash-lite-preview",
+#gemini-2.5-flash-lite
+DEFAULT_MODEL_NAME = "gemini-3.1-flash-lite-preview"
+DEFAULT_HIGHER_MODEL_NAME = "gemini-2.5-flash"
+
+
 def create_engine(game_sink, number_of_players: int = 0, generic_players: bool = False, names=None,
+                  agents = None,
                   allow_rename = True,
-                  #gemini-2.0-flash-lite
-                  #"gemini-3.1-flash-lite-preview",
-                  #gemini-2.5-flash-lite
-                  
-                  model_name="gemini-2.0-flash-lite", higher_model_name="gemini-2.5-flash",
+                  model_name=DEFAULT_MODEL_NAME, higher_model_name=DEFAULT_HIGHER_MODEL_NAME,
                   phase_factory=PhaseRecipeFactoryDefault):
     load_dotenv()
     client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
@@ -27,7 +31,9 @@ def create_engine(game_sink, number_of_players: int = 0, generic_players: bool =
     gameBoard = GameBoard(game_sink)
     generator = CharacterGenerator(game_sink, model_name, higher_model_name)
     
-    if names:
+    if agents:
+        agents = agents
+    elif names:
         agents = generator.generate_agents_from_names(names, allow_rename = allow_rename) 
     elif generic_players:
         agents = generator.genericPlayers(number_of_players)

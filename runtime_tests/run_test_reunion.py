@@ -6,7 +6,7 @@ writes fake phase summaries, then runs the reunion directly.
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from core.bootstrap import create_engine, ConsoleGameEventSink
-from gameplay_management.reunion_round import FinaleReunionRound
+from gameplay_management.eliminations.reunion_round import FinaleReunionRound
 from core.phase_recipe import PhaseRecipe
 
 if __name__ == "__main__":

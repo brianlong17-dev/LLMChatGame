@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from core.bootstrap import create_engine, ConsoleGameEventSink
 from core.phase_recipe import PhaseRecipe
-from gameplay_management.reunion_round import FinaleReunionRound
+from gameplay_management.eliminations.reunion_round import FinaleReunionRound
 
 if __name__ == "__main__":
     # ── 1. Load agent state from logs ──
