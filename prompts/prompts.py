@@ -44,21 +44,25 @@ class PromptLibrary:
             f"------Your summaries of the game so far -------------\n"
             f"\n{summaries}\n\n"
             f"---------------------------------------------------------------------\n"
-            f"Most recent rounds in full:\n{history_context}\n\n"
-            f"---------------------------------------------------------------------\n"
-            f"Current scores: {score_string}\n")
+            f"Most recent rounds in full:\n{history_context}\n"
+            # f"---------------------------------------------------------------------\n"
+            # f"Current scores: {score_string}\n"
+            )
     
     
     @classmethod
     def _response_buffer_string(self, agent):
         output = (f"=== OPTIONAL RESPONSE BUFFER ===\n"
-                  f"(Needs to be at least 1 to respond in optional rounds.)\n"
+                  f"(Needs to be at least 1 to respond in optional turns.)\n"
                   f"Optional Response Buffer: {agent.optional_response_buffer}\n\n")
         return output
     
     @classmethod
     def player_system_prompt(self, agent, gameBoard):
-        optional_response_buffer_string = self._response_buffer_string(agent) if gameBoard.optional_responses_in_use else ""
+        #TODO maybe this should be optional- hard to say
+        #I think we will make a new class - dashboard- that will have more flexibility
+        optional_response_buffer_string = self._response_buffer_string(agent) #if gameBoard.optional_responses_in_use else ""
+        
         # Format Life Lessons as a bulleted list (Clean Readability)
         if agent.life_lessons:
             lessons_str = "\n".join([f"- {lesson}" for lesson in agent.life_lessons])

@@ -12,8 +12,6 @@ class GameCircle(CycleRound):
 
     SURVIVORS_BONUS = 5
     SHOT_PENALTY = 2
-    USE_CONTEXT_COMPRESSION = True
-    USE_OPTIONAL_RESPONSE = True
 
     @classmethod
     def rules_description(cls, cfg):
@@ -45,19 +43,19 @@ class GameCircle(CycleRound):
             self.gameBoard.host_broadcast(f"Oh no! {protected_name} was an invalid choice! {shield_holder.name} will be alone behind the shield!")
             return unprotected_pool
         
-    def _take_shot(self, gun_holder, unprotected_pool, double_shot):
+    def _take_shot(self, gun_holder, unprotected_pool):
         targetable_names = [a.name for a in unprotected_pool] + [gun_holder.name]  # includes gun_holder themselves
         action_fields = self._choose_name_field(targetable_names, "Choose who to shoot.", field_name = 'target_choice')
-        if double_shot:
+        if self.double_shot:
             action_fields = action_fields | self._choose_name_field(targetable_names, "Choose who to shoot with second bullet.", field_name = 'target_choice_2')
         model = DynamicModelFactory.create_model_(gun_holder, action_fields=action_fields, 
                                                   public_response_prompt = "What you say to the group AFTER the shot goes and the smoke clears. It can be a smooth one liner, or remorseful plea for forgiveness. ",
                                                   additional_thought_nudge = "Who do you want to shoot? Whose points do you want? What will you say? Do you want to intimidate the group or make them feel sorry for you? ")
         other_names = self.format_list([a.name for a in unprotected_pool])
-        bullet_string = "You have two bullets!" if double_shot else "You have one bullet!"
+        bullet_string = "You have two bullets!" if self.double_shot else "You have one bullet!"
         result = gun_holder.take_turn_standard(f"YOU have the gun. {bullet_string} The players behind the shield are safe. {other_names} are all potential targets. ", self.gameBoard, model)
         shot_names = [result.target_choice.strip()]
-        if double_shot:
+        if self.double_shot:
             shot_names += [result.target_choice_2.strip()]
         
         self.gameBoard.handle_public_private_output(gun_holder, result)
@@ -70,20 +68,23 @@ class GameCircle(CycleRound):
         return valid_shots
 
     def _intro_message(self):
+        shot_string = "one unprotected player" if not self.use_double_shots else "one or two unprotected players"
+        
         return(
-            "Welcome to THE CIRCLE. You will stand in a circle. "
-            "Each game cycle, one of you gets a gun, and one of you gets a shield. "
+            "Welcome to THE CIRCLE. "
+            "\nYou will stand in a circle, and each game cycle "
+            "one player will get a GUN- and another a shield. "
             "The shield holder may protect ONE other player. "
-            f"The gun holder will then shoot one unprotected player — they lose {self.points_string(self.SHOT_PENALTY)}, the shooter gains the same, and they leave the circle. "
+            f"The gun holder will then shoot {shot_string} — the victim leaves the circle, and the shooter takes {self.points_string(self.SHOT_PENALTY)} of their points. "
             f"Last 3 standing earn {self.points_string(self.SURVIVORS_BONUS)}."
         )
     
-    def _assign_gun_and_shield(self, circle, double_shot, cycle_num):
+    def _assign_gun_and_shield(self, circle, cycle_num):
         gun_holder = random.choice(circle)
         shield_holder = random.choice([a for a in circle if a != gun_holder])
-        announcement = f"Cycle {cycle_num}. {gun_holder.name} has the GUN. {shield_holder.name} has the SHIELD. "
-        if double_shot:
-            announcement += "This time they have 2 bullets, so 2 are at risk! "
+        announcement = f"Cycle {cycle_num}:\n{gun_holder.name} has the GUN. {shield_holder.name} has the SHIELD. "
+        if self.double_shot:
+            announcement += "\nThis time they have 2 bullets, so 2 are at risk! "
         self.gameBoard.host_broadcast(announcement)
         return gun_holder, shield_holder
 
@@ -91,22 +92,23 @@ class GameCircle(CycleRound):
         for player in unprotected_pool:
             other_names = self.format_list([a.name for a in unprotected_pool if a != player])
             
-            user_content_prompt = (f"{gun_holder_name} has the gun and is about to shoot! {shield_holder_name} has the SHIELD."
-            f"They can only take one other person behind the shield. You, {other_names} are all in danger. "
+            user_content_prompt = (f"{gun_holder_name} has the gun and is about to shoot. "
+            f"{shield_holder_name} has the SHIELD. - they can only take one other person behind the shield. You, {other_names} are all in danger. "
             f"This is your only opportunity to plead to both! ")
             public_response_prompt = "Do you stay silent, and hope to be ignored? Or do you speak up and plead? Your public response to them both, and to be heard by the group. "
             private_thoughts_prompt = "Do you protect yourself? Can you remind them of alliance? What is the best strategy here? Is it better to stay silent? "
-            #optional turn really - should have its own method? 
+            
             self._basic_turn(player, user_content_prompt, public_response_prompt, 
-                             private_thoughts_prompt=private_thoughts_prompt, optional = self.optional_responses_in_use)
-    
-    def _handle_shot_choice(self, circle, shield_holder, gun_holder, shot_names, double_shot):
+                             private_thoughts_prompt=private_thoughts_prompt, optional = True)
+       
+        
+    def _handle_shot_choice(self, circle, shield_holder, gun_holder, shot_names):
         if not shot_names:
             self.gameBoard.host_broadcast(f"{gun_holder.name} fails to hit a target, and so is removed from the circle!")
             circle.remove(gun_holder)
             return
 
-        double_tapped = double_shot and len(shot_names) == 2 and shot_names[0] == shot_names[1]
+        double_tapped = self.double_shot and len(shot_names) == 2 and shot_names[0] == shot_names[1]
         shot_names = list(dict.fromkeys(shot_names))
         for shot_name in shot_names:
             if shot_name == gun_holder.name:
@@ -125,37 +127,40 @@ class GameCircle(CycleRound):
             # ── Points and removal ──
             if player_to_remove != gun_holder:
                 multiplier = 2 if double_tapped else 1
-                self.gameBoard.append_agent_points(player_to_remove.name, -self.SHOT_PENALTY * multiplier)
-                self.gameBoard.append_agent_points(gun_holder.name, self.SHOT_PENALTY * multiplier)
+                points = self.SHOT_PENALTY * multiplier
+                self.gameBoard.append_agent_points(player_to_remove.name, -points)
+                self.gameBoard.append_agent_points(gun_holder.name, points)
+                self._host_broadcast(f"{gun_holder.name} + {points} points, {player_to_remove.name} - {points} points.")
 
             circle.remove(player_to_remove)
             survivors = [a for a in circle if a != gun_holder and a != shield_holder]
-            if False:
+            if self.cfg().circle_get_shot_reactions:
+                self._host_broadcast("Now for some reactions...")
                 random_survivor = random.choice(survivors)
-                react_prompt = f"{player_to_remove.name} has been shot. React to what just happened- or stay silent."
-                self._basic_turn(random_survivor, react_prompt, "Your reaction.", 
-                                 optional = self.optional_responses_in_use)
+                #survivors = [random_survivor]
+                for survivor in survivors:
+                    react_prompt = f"{player_to_remove.name} has been shot. React to what just happened- or stay silent."
+                    self._basic_turn(survivor, react_prompt, "Your reaction.", 
+                                 optional = True)
 
    
     def run_game(self):
         self._cycle_game_setup()
-        
-        
         circle = list(self._shuffled_agents())
         cycle_num = 0
-        
-        use_double_shots = self.cfg().use_double_shots
-        
+        self.use_double_shots = self.cfg().use_double_shots
 
         #Intro message
+        #self.double_shot = use_double_shots
         self.gameBoard.host_broadcast(self._intro_message())
+        self.gameBoard.host_broadcast(f"Remember! Being shot from the cirlce doesn't mean you're eliminated ! You're just out of this round. "
+                                      "Everyone will still be in the game- this isn't an elimination. ")
 
         while len(circle) > 3:
             cycle_num += 1
-            double_shot = (use_double_shots and (len(circle) > 5))
-            
+            self.double_shot = (self.use_double_shots and (len(circle) > 5))
             # ── 1. Assign gun and shield randomly ──
-            gun_holder, shield_holder = self._assign_gun_and_shield(circle, double_shot, cycle_num)
+            gun_holder, shield_holder = self._assign_gun_and_shield(circle, cycle_num)
 
             unprotected_pool = [a for a in circle if a != gun_holder and a != shield_holder]
             # -- 2. Plead your case
@@ -165,17 +170,16 @@ class GameCircle(CycleRound):
             unprotected_pool = self._quick_get_in(shield_holder, unprotected_pool, gun_holder.name)
 
             # -- 4. Shoot
-            shot_names = self._take_shot(gun_holder, unprotected_pool, double_shot)
+            shot_names = self._take_shot(gun_holder, unprotected_pool)
             
-            bang = "BANG! BANG! " if double_shot else "BANG! "
+            bang = "BANG! BANG! " if  self.double_shot else "BANG! "
             self.gameBoard.environment_broadcast(bang, delay = 1)
             
             # -- 5. Handle result
-            self._handle_shot_choice(circle, shield_holder, gun_holder, shot_names, double_shot)
+            self._handle_shot_choice(circle, shield_holder, gun_holder, shot_names)
             
             
-            if self.USE_CONTEXT_COMPRESSION:
-                self._compress_round()
+            self._compress_round()
                 
             
             
@@ -188,8 +192,8 @@ class GameCircle(CycleRound):
         )
         for agent in circle:
             self.gameBoard.append_agent_points(agent.name, self.SURVIVORS_BONUS)
-            
-    
+
+        self._cycle_game_teardown()
 
     #######################
     # 

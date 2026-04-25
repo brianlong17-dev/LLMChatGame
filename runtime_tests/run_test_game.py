@@ -84,13 +84,17 @@ if __name__ == "__main__":
     # ── 6. Run the game ──
     circle = True
     if circle:
-        engine.gameplay_config.use_double_shots = False
+        engine.gameplay_config.use_double_shots = True
         engine.gameplay_config.cycle_use_optional_response = True
+        engine.gameplay_config.cycle_use_context_compression = True
         
         
     engine.gameBoard.new_phase()
     engine.gameBoard.newRound()
-    while len(engine.agents) > 2:
-        phase = PhaseRecipe(rounds=[GameGuess, VoteBottomTwo])
+    rounds = 0
+    #while len(engine.agents) > 2:
+    while rounds < 1:
+        rounds += 1
+        phase = PhaseRecipe(rounds=[GameCircle, VoteBottomTwo])
         engine.phase_runner.run_phase(phase)
     api_client.print_summary()

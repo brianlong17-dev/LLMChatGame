@@ -25,8 +25,6 @@ class GameBoard:
         
         self._current_round_summarisation : str = ""
         self._current_round_summarisation_until : int = None
-        
-        self.optional_responses_in_use = False
     
     def push_current_round_summarisation(self, summary: str, last_message_id: int):
         self._current_round_summarisation = summary

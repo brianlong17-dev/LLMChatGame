@@ -12,10 +12,7 @@ class GameConfig:
         
         self.inject_host_question = True
         
-        # --------------------------------------------------------------
-        # Gang up games
-        # --------------------------------------------------------------
-        self.use_double_shots = False
+        
         
         # --------------------------------------------------------------
         # Global / scoreboard defaults
@@ -87,8 +84,13 @@ class GameConfig:
         # --------------------------------------------------------------
         self.cycle_use_context_compression = False
         self.cycle_use_optional_response = False
-        self.cycle_full_context_cycles = 4
-        self.cycle_buffer_amount = 0.6
+        self.cycle_full_context_cycles = 2
+        self.cycle_buffer_amount = 0.4
+        # --------------------------------------------------------------
+        # Gang up games
+        # --------------------------------------------------------------
+        self.use_double_shots = False
+        self.circle_get_shot_reactions = False
 
         # --------------------------------------------------------------
         # Quick per-game identity helpers (optional)

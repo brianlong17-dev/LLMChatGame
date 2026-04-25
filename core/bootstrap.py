@@ -17,6 +17,7 @@ from core.api_client import api_client
 #gemini-2.5-flash-lite
 DEFAULT_MODEL_NAME = "gemini-3.1-flash-lite-preview"
 DEFAULT_HIGHER_MODEL_NAME = "gemini-2.5-flash"
+#gemini-3-flash-preview
 
 
 def create_engine(game_sink, number_of_players: int = 0, generic_players: bool = False, names=None,

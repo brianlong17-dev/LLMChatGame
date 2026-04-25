@@ -1,43 +1,43 @@
-import random
 from gameplay_management.base_manager import BaseRound
-from models.player_models import DynamicModelFactory
-from prompts.gamePrompts import GamePromptLibrary
 
 
 class CycleRound(BaseRound):
 
-    
-    FULL_CONTEXT_CYCLES = 4
-    USE_CONTEXT_COMPRESSION = False
-    USE_OPTIONAL_RESPONSE = False
-    BUFFER_AMOUNT = 0.6
-    
     @classmethod
     def is_game(cls):
         return True
-    
+
     def _cycle_game_setup(self):
-        self.gameBoard.optional_responses_in_use = self.USE_OPTIONAL_RESPONSE
-        if self.USE_CONTEXT_COMPRESSION:
-            self._buffer_amount = self.BUFFER_AMOUNT
+        cfg = self.cfg()
+        self.turn_manager._buffer_amount = cfg.cycle_buffer_amount
+        self.turn_manager.optional_responses_in_use = cfg.cycle_use_optional_response
+        
+        
+        self._use_compression = cfg.cycle_use_context_compression
+        if self._use_compression:
+            self._full_context_cycles = cfg.cycle_full_context_cycles
             self._message_unsumarised_after = self.gameBoard.most_recent_message_id()
             self.summaries: list[tuple[str, int]] = []
         
     def _compress_round(self):
+        if not self._use_compression:
+            return
         message_to_summarise = self.gameBoard.messages_since(self._message_unsumarised_after)
         context = self.gameBoard._current_round_messages_up_to(self._message_unsumarised_after)
-        summary = self._generate_summary(context, message_to_summarise) 
+        summary = self._generate_summary(context, message_to_summarise)
         self._message_unsumarised_after = self.gameBoard.most_recent_message_id()
         self.summaries.append((summary, self._message_unsumarised_after))
         self._push_game_summaries()
             
         
     def _cycle_game_teardown(self):
-        self.gameBoard.optional_responses_in_use = False
+        pass
+        #TODO
+        #"here we should push the summary - to the game round..."
     
     @property
     def optional_responses_in_use(self):
-        return self.gameBoard.optional_responses_in_use
+        return self.turn_manager.optional_responses_in_use
     
                 
     def _format_messages(self, messages):
@@ -53,7 +53,7 @@ class CycleRound(BaseRound):
         return self.simulationEngine.game_master.summarise_game_text(context_str, game_text_str)
               
     def _push_game_summaries(self):
-        full_context_cycles = self.FULL_CONTEXT_CYCLES
+        full_context_cycles = self._full_context_cycles
         summaries_to_push_num = len(self.summaries) - full_context_cycles
         if summaries_to_push_num < 1:
             return

@@ -120,7 +120,7 @@ class ContextBuilder:
             dash.append(overall_game_rules)
         
         # A. The Leaderboard (Clean List)
-        dash.append("CURRENT SCORES:")
+        dash.append("LIVE SCORES (updated each turn — already reflects every event shown below):")
         for name, score in sorted_scores:
             marker = " <-- YOU" if name == agent_name else ""
             dash.append(f"- {name}: {score} points{marker}")

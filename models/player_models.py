@@ -36,17 +36,18 @@ class DynamicModelFactory:
         private_thoughts_prompt: str = None, 
         additional_thought_nudge: str = None, 
         game_logic_fields: Dict[str, tuple] = None,   # Logic fields prompted by the game
-        action_fields: Dict[str, tuple] = None,       # Actions required by the game (e.g. dropdowns)
-        optional: bool = False
+        action_fields: Dict[str, tuple] = None      # Actions required by the game (e.g. dropdowns)
     ) -> Type[BaseModel]:
         if agent.is_human(): # and not agent.is_testing:
             return cls.create_human_model(public_response_prompt, action_fields)
             
         agent_logic_fields = agent.logic_fields()
         agent_complex_fields = agent.internal_thinking_fields()
+        
         ordered_fields = {}
         #........ Scratch pad
         
+        #TODO move to agent
         ordered_fields["who_are_you"] = (
                 str, Field(description=f"Remind yourself of who you are, so you don't get confused")
             )
@@ -56,9 +57,7 @@ class DynamicModelFactory:
         ordered_fields["bandwagon"] = (
                 str, Field(description=f"Is everyone jumping on a repeated thought? Do you agree? If not, say so")
             )
-        if game_logic_fields:
-            ordered_fields.update(game_logic_fields)
-            
+     
         if agent_logic_fields:
             ordered_fields.update(agent_logic_fields)
         # I guess this should merge with game logic fields .... i just like the thouht being different base on this
@@ -68,19 +67,15 @@ class DynamicModelFactory:
                 str, Field(description=f"Work through the logic step-by-step: {additional_thought_nudge}")
             )
         
+        if game_logic_fields:
+            ordered_fields.update(game_logic_fields)
             
         #......... Thoughts
         if not private_thoughts_prompt:
-            if agent_logic_fields or game_logic_fields or additional_thought_nudge:
-                base_thought = "What are you secretly thinking? How you really feel, not revealed to anyone."
-            else:
-                base_thought = PromptLibrary.desc_basic_thought
+            base_thought = PromptLibrary.desc_basic_thought
         else:
             base_thought = private_thoughts_prompt
-            
-        if optional and agent.optional_response_buffer < 1:
-            base_thought += f" Note: this is a round with an optional response. To choose to respond will cost 1 point from your optional response buffer at: {agent.optional_response_buffer}."
-       
+     
         ordered_fields["private_thoughts"] = (str, Field(description=base_thought))
         
         #....action 
@@ -89,11 +84,7 @@ class DynamicModelFactory:
         #...... public response
         pub_prompt = public_response_prompt or PromptLibrary.desc_message
         
-        if optional:
-            ordered_fields["public_response"] = (Optional[str], Field(default=None, description=(f"{pub_prompt} Your optional response buffer is at: {agent.optional_response_buffer}. "
-                f"Leave null if you have nothing to add. If you choose silence, leave EMPTY - do not narrate your silence, leave BLANK. ")))
-        else:
-            ordered_fields["public_response"] = (str, Field(description=pub_prompt))
+        ordered_fields["public_response"] = (str, Field(description=pub_prompt))
         #........ self-learning
         
         if agent_complex_fields:

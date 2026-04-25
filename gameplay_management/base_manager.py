@@ -1,12 +1,11 @@
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 import random
-from typing import Callable, Literal, Sequence
-from pydantic import Field
+from typing import Callable, Sequence
 from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
-from prompts.prompts import PromptLibrary
-from prompts.gamePrompts import GamePromptLibrary
+from gameplay_management.turn_manager import TurnManager
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from agents.player import Debater
@@ -21,8 +20,8 @@ class BaseRound:
     def __init__(self, gameBoard, simulationEngine):
         self.gameBoard = gameBoard
         self.simulationEngine = simulationEngine
-        self._buffer_amount = 0.6 #default
         self._debug = True
+        self.turn_manager = TurnManager(self)
 
     def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0, action_string = ""):
         #TODO deprecate
@@ -113,20 +112,13 @@ class BaseRound:
     ###########################
 
     def create_choice_field(self, field_name, choices, field_description = None):
-        if not field_description:
-            field_description = "Your final choice."
-        choice_definition = (Literal[*choices], Field(description=field_description))
-        return {field_name: choice_definition}
+        return self.turn_manager.create_choice_field(field_name, choices, field_description)
 
     def create_basic_field(self, field_name, field_description):
-        field_definition = (str, Field(description=field_description))
-        return {field_name: field_definition}
+        return self.turn_manager.create_basic_field(field_name, field_description)
 
     def _choose_name_field(self, allowed_names, reason_for_choosing_prompt, field_name = None):
-        if not field_name:
-            field_name = GamePromptLibrary.model_field_choose_name
-        choice_reason_prompt = f"The exact name of the agent. {reason_for_choosing_prompt}"
-        return self.create_choice_field(field_name, allowed_names, choice_reason_prompt)
+        return self.turn_manager._choose_name_field(allowed_names, reason_for_choosing_prompt, field_name)
 
     #####################
     #   Player Turns    #
@@ -134,62 +126,17 @@ class BaseRound:
 
     def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None,
                    private_thoughts_prompt: str = None, instruction_override = None):
-        model = DynamicModelFactory.create_model_(player, public_response_prompt=public_response_prompt,
-                                                     private_thoughts_prompt=private_thoughts_prompt)
-        return player.take_turn_standard(text_to_respond_to, self.gameBoard, model, instruction_override=instruction_override)
-
-    def _make_player_turn(self, player: Debater, user_prompt: str, response_model):
-        return player.take_turn_standard(user_prompt, self.gameBoard, response_model)
+        return self.turn_manager.respond_to(player, text_to_respond_to, public_response_prompt, private_thoughts_prompt, instruction_override)
 
     def get_response(self, player, model_name, context_msg, action_fields = None, additional_thought_nudge = None):
-        model = DynamicModelFactory.create_model_(
-            player,
-            model_name,
-            additional_thought_nudge=additional_thought_nudge,
-            action_fields=action_fields
-        )
-        return player.take_turn_standard(context_msg, self.gameBoard, model)
+        return self.turn_manager.get_response(player, model_name, context_msg, action_fields, additional_thought_nudge)
 
     def _ask_directed_question(self, player, possible_target_names, user_content,
                                public_response_prompt, additional_thought_nudge = None):
-        action_fields = self._choose_name_field(possible_target_names, "Who your question/statement is directed to. ")
-        model = DynamicModelFactory.create_model_(player, action_fields=action_fields,
-            public_response_prompt=public_response_prompt, additional_thought_nudge=additional_thought_nudge)
-        result = player.take_turn_standard(user_content, self.gameBoard, model)
-        self.gameBoard.handle_public_private_output(player, result)
-        return result
+        return self.turn_manager._ask_directed_question(player, possible_target_names, user_content, public_response_prompt, additional_thought_nudge)
 
     def _basic_turn(self, agent, user_content_prompt, public_response_prompt, private_thoughts_prompt = None, optional = False):
-        response_model = DynamicModelFactory.create_model_(agent, "basic_turn", public_response_prompt=public_response_prompt,
-                        private_thoughts_prompt=private_thoughts_prompt, optional=optional)
-        if optional:
-            result = self._basic_turn_optional(response_model, agent, user_content_prompt)
-        else:
-            result = agent.take_turn_standard(user_content_prompt, self.gameBoard, response_model)
-
-        if result and result.public_response:
-            self.gameBoard.handle_public_private_output(agent, result)
-
-    def _basic_turn_optional(self, model, agent, user_content_prompt):
-        agent.optional_response_buffer = round(agent.optional_response_buffer + self._buffer_amount, 2)
-        if agent.optional_response_buffer < 1:
-            self._low_buffer_message(agent)
-            return None
-        else:
-            optional_response_prompt = (f"Optional response. In each optional response, your buffer increases by {self._buffer_amount}. "
-                f"Your current buffer: {agent.optional_response_buffer} - responding spends 1 unit from the buffer. ")
-            user_content_prompt += f"\n{optional_response_prompt}\n"
-            result = agent.take_turn_standard(user_content_prompt, self.gameBoard, model)
-            if result.public_response:
-                agent.optional_response_buffer = round(agent.optional_response_buffer - 1, 2)
-                self.debug_print(f"{agent.name} spending buffer ")
-            else:
-                self.debug_print(f"{agent.name} passes, buffer: {agent.optional_response_buffer}")
-                self.debug_print(f"{agent.name} thoughts: {result.private_thoughts}")
-            return result
-
-    def _low_buffer_message(self, agent):
-        self.private_system_message(agent, "Your turn here was passed as your optional response buffer was too low.")
+        return self.turn_manager._basic_turn(agent, user_content_prompt, public_response_prompt, private_thoughts_prompt, optional)
 
     ###########################
     #   Parallel Execution    #
@@ -226,7 +173,7 @@ class BaseRound:
         user_content = "Respond privately to the host. "
         result = player.take_turn_standard(user_content, self.gameBoard, basic_model, instruction_override=instruction_override)
         self.gameBoard.log_message_to_conversation(conversation_id, player.name, result.public_response)
-        return result.public_response
+        return result
 
     #####################
     #   Utilities       #
