@@ -16,6 +16,7 @@ from gameplay_management.game_cycle.game_circle import GameCircle
 from gameplay_management.games.game_guess import GameGuess
 from gameplay_management.game_cycle.game_mob import GameMob
 from gameplay_management.game_cycle.game_knives import GameKnives
+from gameplay_management.game_cycle.game_knives_2 import GameKnives2
 from gameplay_management.eliminations.voting_bottom_two import VoteBottomTwo
 
 # from gameplay_management.games.game_knives import GameKnives
@@ -85,16 +86,16 @@ if __name__ == "__main__":
     circle = True
     if circle:
         engine.gameplay_config.use_double_shots = True
-        engine.gameplay_config.cycle_use_optional_response = True
-        engine.gameplay_config.cycle_use_context_compression = True
+        engine.gameplay_config.cycle_use_optional_response = False
+        engine.gameplay_config.cycle_use_context_compression = False
         
         
     engine.gameBoard.new_phase()
     engine.gameBoard.newRound()
     rounds = 0
-    #while len(engine.agents) > 2:
-    while rounds < 1:
+    while len(engine.agents) > 2:
+    #while rounds < 2:
         rounds += 1
-        phase = PhaseRecipe(rounds=[GameCircle, VoteBottomTwo])
+        phase = PhaseRecipe(rounds=[GameKnives, VoteBottomTwo])
         engine.phase_runner.run_phase(phase)
     api_client.print_summary()

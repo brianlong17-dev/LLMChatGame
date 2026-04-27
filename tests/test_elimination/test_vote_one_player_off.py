@@ -9,7 +9,7 @@ def test_vote_one_player_off_builds_model_and_submits_turn():
     alice = agents[0]
     eligible = ["Bob", "Cara"]
 
-    result = game.voteOnePlayerOff(alice, eligible)
+    result = game.vote_one_player_off(alice, eligible)
 
     expected_user_content = VotePromptLibrary.vote_one_player_user_content.format(
         eligible_player_names="Bob, Cara"

@@ -64,8 +64,11 @@ class TurnManager:
         choice_definition = (Literal[*choices], Field(description=field_description))
         return {field_name: choice_definition}
 
-    def create_basic_field(self, field_name, field_description):
-        field_definition = (str, Field(description=field_description))
+    def create_basic_field(self, field_name, field_description, optional: bool = False):
+        if optional:
+            field_definition = (Optional[str], Field(default=None, description=field_description))
+        else:
+            field_definition = (str, Field(description=field_description))
         return {field_name: field_definition}
 
     def _choose_name_field(self, allowed_names, reason_for_choosing_prompt, field_name = None):

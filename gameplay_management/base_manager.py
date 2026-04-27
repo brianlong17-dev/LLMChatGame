@@ -45,7 +45,10 @@ class BaseRound:
 
     def agents(self):
         return self.simulationEngine.agents
-
+    
+    def _other_agents(self, agent, agents):
+        return [a for a in agents if a != agent]
+    
     def dead_agents(self):
         return self.simulationEngine.dead_agents
 
@@ -114,8 +117,8 @@ class BaseRound:
     def create_choice_field(self, field_name, choices, field_description = None):
         return self.turn_manager.create_choice_field(field_name, choices, field_description)
 
-    def create_basic_field(self, field_name, field_description):
-        return self.turn_manager.create_basic_field(field_name, field_description)
+    def create_basic_field(self, field_name, field_description, optional: bool = False):
+        return self.turn_manager.create_basic_field(field_name, field_description, optional)
 
     def _choose_name_field(self, allowed_names, reason_for_choosing_prompt, field_name = None):
         return self.turn_manager._choose_name_field(allowed_names, reason_for_choosing_prompt, field_name)

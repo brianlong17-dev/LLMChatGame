@@ -8,7 +8,6 @@ def test_eliminate_player_by_name_removes_player_and_collects_final_words():
             "Alice": [],
             "Bob": [turn_payload(public_response="goodbye", private_thoughts="last thought")],
         },
-        execution_style=False,
     )
 
     game.eliminate_player_by_name("Bob")
@@ -25,9 +24,7 @@ def test_eliminate_player_by_name_broadcasts_execution_when_enabled():
             "Alice": [],
             "Bob": [turn_payload(public_response="bye", private_thoughts="...")],
         },
-        execution_style=True,
     )
-    game.get_execution_string = lambda _victim: "EXECUTION_SCENE"
 
     game.eliminate_player_by_name("Bob")
 

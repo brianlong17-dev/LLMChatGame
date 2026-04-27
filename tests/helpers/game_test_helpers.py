@@ -4,7 +4,8 @@ from agents.player import Debater
 from core.game_config import GameConfig
 from core.gameboard import GameBoard
 from core.phase_runner import PhaseRunner
-from gameplay_management.unified_controller import UnifiedController
+from core.phase_recipe import PhaseRecipe
+from gameplay_management.game_cycle.game_knives import GameKnives
 
 
 def turn_payload(target_name=None, public_response="pub", private_thoughts="priv", **extra_fields):
@@ -43,6 +44,8 @@ class TestGameSink:
     def system_private(self, message): pass
     def delay(self, delay): pass
     def on_points_update(self, points): pass
+    def on_private_conversation(self, entry): pass
+    def environment_broadcast(self, message): pass
 
 
 class QueuedClient:
@@ -54,7 +57,8 @@ class QueuedClient:
         self.calls.append(kwargs)
         if not self._responses:
             raise AssertionError("API client called more times than expected")
-        return _QueuedResponse(**self._responses.pop(0))
+        response = self._responses.pop(0)
+        return _QueuedResponse(**response)
 
     def assert_exhausted(self):
         assert not self._responses, f"Unused queued responses: {len(self._responses)}"
@@ -63,6 +67,9 @@ class QueuedClient:
 class NoopGameMaster:
     def summariseRound(self, *_args, **_kwargs):
         return SimpleNamespace(round_summary="")
+
+    def summarise_game_text(self, context, game_text):
+        return "[test summary]"
 
 
 class TestSimulation:
@@ -118,6 +125,7 @@ def build_targeted_choice_game(agent_specs, initial_scores=None):
                 board.agent_scores[name] = score
 
     simulation = TestSimulation(agents)
+    from gameplay_management.unified_controller import UnifiedController
     game = UnifiedController(board, simulation)
     attach_test_runtime(board, simulation, game)
     game._shuffled_agents = lambda: list(simulation.agents)
@@ -136,6 +144,7 @@ def build_pd_game(agent_specs, initial_scores=None):
                 board.agent_scores[name] = score
 
     simulation = TestSimulation(agents)
+    from gameplay_management.unified_controller import UnifiedController
     game = UnifiedController(board, simulation)
     attach_test_runtime(board, simulation, game)
     return game, board, agents, clients
@@ -154,12 +163,13 @@ def build_guess_game(agent_specs, initial_scores=None):
 
     simulation = TestSimulation(agents)
     simulation.gameplay_config.guess_number_range = 4
+    from gameplay_management.unified_controller import UnifiedController
     game = UnifiedController(board, simulation)
     attach_test_runtime(board, simulation, game)
     return game, board, agents, clients
 
 
-def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
+def build_vote_game(agent_specs, initial_scores=None):
     clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
     agents = [make_debater(name, clients[name]) for name in agent_specs]
 
@@ -171,7 +181,32 @@ def build_vote_game(agent_specs, initial_scores=None, execution_style=False):
                 board.agent_scores[name] = score
 
     simulation = TestSimulation(agents)
-    simulation.gameplay_config.execution_style = execution_style
+    from gameplay_management.unified_controller import UnifiedController
     manager = UnifiedController(board, simulation)
     attach_test_runtime(board, simulation, manager)
     return manager, board, agents, clients
+
+
+def build_knives_game(agent_specs, initial_scores=None, config_overrides=None):
+    clients = {name: QueuedClient(responses) for name, responses in agent_specs.items()}
+    agents = [make_debater(name, clients[name]) for name in agent_specs]
+
+    board = GameBoard(TestGameSink())
+    board.initialize_agents(agents)
+    if initial_scores:
+        for name, score in initial_scores.items():
+            if name in board.agent_scores:
+                board.agent_scores[name] = score
+
+    simulation = TestSimulation(agents)
+    if config_overrides:
+        for key, value in config_overrides.items():
+            setattr(simulation.gameplay_config, key, value)
+
+    game = GameKnives(board, simulation)
+    attach_test_runtime(board, simulation, game)
+    game._shuffled_agents = lambda: list(simulation.agents)
+    board.newRound()
+    board.phase_runner.current_recipe = PhaseRecipe(rounds=[GameKnives])
+    board.phase_runner.current_round_index = 0
+    return game, board, agents, clients
