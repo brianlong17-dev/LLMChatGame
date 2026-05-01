@@ -1,124 +1,31 @@
 import asyncio
 import json
-import queue
+import os
 import threading
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from core.sinks.game_sink import GameEventSink
+from core.sinks.websocket_sink import WebSocketSink
+from runtime_tests.demo_runner import DEMO_REGISTRY
+
+load_dotenv()
 
 app = FastAPI()
 
+_allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+_active_games = 0
+_active_games_lock = threading.Lock()
+MAX_CONCURRENT_GAMES = 5
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ---------------------------------------------------------------------------
-# WebSocket Sink
-# ---------------------------------------------------------------------------
-
-class WebSocketSink(GameEventSink):
-    """Serialises game events to JSON and broadcasts over a websocket."""
-
-    def __init__(self, websocket: WebSocket, loop: asyncio.AbstractEventLoop):
-        self.websocket = websocket
-        self.loop = loop
-        self._input_queue: queue.Queue = queue.Queue()
-
-    def _send(self, payload: dict):
-        future = asyncio.run_coroutine_threadsafe(
-            self.websocket.send_text(json.dumps(payload)),
-            self.loop,
-        )
-        future.result(timeout=5)
-
-    # -- Game lifecycle -------------------------------------------------------
-
-    def on_game_intro(self, message: str):
-        self._send({"type": "game_intro", "message": message})
-
-    def on_game_over(self, winner_name: str):
-        self._send({"type": "game_over", "winner": winner_name})
-
-    # -- Phase lifecycle ------------------------------------------------------
-
-    def on_phase_header(self, phase_number: int):
-        self._send({"type": "phase_header", "phase_number": phase_number})
-
-    def on_phase_intro(self, host_text: str, summary_text: str):
-        self._send({"type": "phase_intro", "host_text": host_text, "summary_text": summary_text})
-
-    def on_phase_rounds(self, rounds: list[str]):
-        self._send({"type": "phase_rounds", "rounds": rounds})
-
-    def on_phase_round_index(self, index: int):
-        self._send({"type": "phase_round_index", "index": index})
-
-    # -- Round lifecycle ------------------------------------------------------
-
-    def on_round_start(self, round_number: int, scores: str):
-        self._send({"type": "round_start", "round_number": round_number, "scores": scores})
-
-    def on_round_summary(self, summary: str):
-        self._send({"type": "round_summary", "summary": summary})
-
-    def on_turn_header(self, turn_number: int):
-        self._send({"type": "turn_header", "turn_number": turn_number})
-
-    # -- Actions --------------------------------------------------------------
-
-    def on_public_action(self, speaker, message: str, color: str = ""):
-        speaker_name = speaker.name if hasattr(speaker, "name") else str(speaker)
-        self._send({"type": "public_action", "speaker": speaker_name, "message": message})
-
-    def on_private_thought(self, speaker, message: str):
-        speaker_name = speaker.name if hasattr(speaker, "name") else str(speaker)
-        self._send({"type": "private_thought", "speaker": speaker_name, "message": message})
-
-    def on_inner_workings(self, speaker, inner_workings):
-        speaker_name = speaker.name if hasattr(speaker, "name") else str(speaker)
-        self._send({
-            "type": "inner_workings",
-            "speaker": speaker_name,
-            "data": {k: str(v) for k, v in inner_workings},
-        })
-
-    def on_warning(self, message: str):
-        self._send({"type": "warning", "message": message})
-
-    def system_private(self, message: str):
-        self._send({"type": "system_private", "message": str(message)})
-
-    def on_points_update(self, points: dict):
-        self._send({"type": "points_update", "scores": points})
-        
-    def on_evictions_update(self, evicted_names: list[str]):
-        self._send({"type": "evicted_update", "evicted_names": evicted_names})
-
-    def on_private_conversation(self, entry) -> None:
-        #you maybe need to bookend these, or format them
-        messages = [{"speaker": m["speaker"], "message": m["message"]} for m in entry.messages]
-        self._send({"type": "private_conversation", "messages": messages})
-
-    # -- Human input ----------------------------------------------------------
-
-    def get_user_input_simple(self, field_name: str, description: str) -> str:
-        self._send({"type": "input_request", "field": field_name, "description": description})
-        return self._input_queue.get()
-
-    def get_user_input_multiple_choice(self, field_name, description, choices):
-        self._send({"type": "input_request", "field": field_name, "description": description, "choices": choices})
-        return self._input_queue.get()
-
-    def delay(self, delay: float = 0.0):
-        import time
-        time.sleep(delay)
-
 
 # ---------------------------------------------------------------------------
 # Transcribe endpoint
@@ -131,7 +38,11 @@ async def transcribe(audio: UploadFile = File(...)):
     from google import genai
     from google.genai import types
     load_dotenv()
-    audio_bytes = await audio.read()
+    MAX_AUDIO_BYTES = 10 * 1024 * 1024  # 10 MB
+    audio_bytes = await audio.read(MAX_AUDIO_BYTES + 1)
+    if len(audio_bytes) > MAX_AUDIO_BYTES:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=413, detail="Audio file too large (max 10 MB)")
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     response = client.models.generate_content(
         model="gemini-2.0-flash-lite",
@@ -169,9 +80,18 @@ async def get_characters():
 
 @app.websocket("/ws/game")
 async def game_ws(websocket: WebSocket):
+    global _active_games
     await websocket.accept()
     loop = asyncio.get_event_loop()
 
+    with _active_games_lock:
+        if _active_games >= MAX_CONCURRENT_GAMES:
+            await websocket.send_text(json.dumps({"type": "error", "message": f"Server is at capacity ({MAX_CONCURRENT_GAMES} active games). Try again soon."}))
+            await websocket.close()
+            return
+        _active_games += 1
+
+    sink = None
     try:
         # Wait for the "start" message from the client
         data = await websocket.receive_text()
@@ -182,8 +102,8 @@ async def game_ws(websocket: WebSocket):
 
         sink = WebSocketSink(websocket, loop)
 
-        player_names = msg.get("names", [])
-        human_player_name = msg.get("human_name", None)
+        player_names = [str(n)[:30] for n in msg.get("names", [])[:12]]
+        human_player_name = str(msg["human_name"])[:30] if msg.get("human_name") else None
 
         def run_game():
             try:
@@ -208,9 +128,73 @@ async def game_ws(websocket: WebSocket):
                 data = await asyncio.wait_for(websocket.receive_text(), timeout=0.5)
                 msg = json.loads(data)
                 if msg.get("type") == "input_response":
-                    sink._input_queue.put(msg.get("value", ""))
+                    sink._input_queue.put(str(msg.get("value", ""))[:5000])
+                elif msg.get("type") == "next_turn":
+                    sink._step_queue.put(True)
             except asyncio.TimeoutError:
                 pass
 
     except WebSocketDisconnect:
-        pass
+        if sink: sink.on_disconnect()
+    finally:
+        with _active_games_lock:
+            _active_games -= 1
+
+
+
+# ---------------------------------------------------------------------------
+# Demos endpoint
+# ---------------------------------------------------------------------------
+@app.websocket("/ws/demo")
+async def demo_ws(websocket: WebSocket):
+    global _active_games
+    await websocket.accept()
+    loop = asyncio.get_event_loop()
+
+    with _active_games_lock:
+        if _active_games >= MAX_CONCURRENT_GAMES:
+            await websocket.send_text(json.dumps({"type": "error", "message": f"Server is at capacity ({MAX_CONCURRENT_GAMES} active games). Try again soon."}))
+            await websocket.close()
+            return
+        _active_games += 1
+
+    sink = None
+    try:
+        data = await websocket.receive_text()
+        msg = json.loads(data)
+        demo_id = msg.get("demo_id")
+        human_name = str(msg["human_name"])[:30] if msg.get("human_name") else None
+
+        runner = DEMO_REGISTRY.get(demo_id)
+        if not runner:
+            await websocket.send_text(json.dumps({"type": "error", "message": f"Unknown demo: {demo_id}"}))
+            return
+
+        sink = WebSocketSink(websocket, loop)
+        def run_demo():
+            try:
+                runner(sink, human_name=human_name)
+            except Exception as e:
+                asyncio.run_coroutine_threadsafe(
+                    websocket.send_text(json.dumps({"type": "error", "message": str(e)})),
+                    loop,
+                ).result(timeout=5)
+
+        thread = threading.Thread(target=run_demo, daemon=True)
+        thread.start()
+        while thread.is_alive():
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=0.5)
+                msg = json.loads(data)
+                if msg.get("type") == "input_response":
+                    sink._input_queue.put(str(msg.get("value", ""))[:5000])
+                elif msg.get("type") == "next_turn":
+                    sink._step_queue.put(True)
+            except asyncio.TimeoutError:
+                pass
+
+    except WebSocketDisconnect:
+        if sink: sink.on_disconnect()
+    finally:
+        with _active_games_lock:
+            _active_games -= 1

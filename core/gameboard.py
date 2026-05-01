@@ -42,6 +42,17 @@ class GameBoard:
     def _current_round_messages_up_to(self, message_id: int) -> list['MessageEntry']:
         return [m for m in self.current_round.messages if m.id <= message_id and not self._is_sys_admin_message(m)]
 
+    def _current_round_most_recent_message_entry(self):
+        message_entries = self.current_round.messages
+        return message_entries[-1] if message_entries else None
+    
+    def _is_host_message(self, message_entry):
+        if not message_entry.messages or len(message_entry.messages) != 1:
+            return False
+        
+        return message_entry.messages[0]['speaker'] == "HOST"
+    
+    
     def current_phase_rounds(self):
         return self.phase_rounds(self.phase_number)
     
@@ -133,6 +144,12 @@ class GameBoard:
         
     #--------- public output --------- #
     
+    def _loading_string(self, string):
+        self.game_sink.loading_string(string)
+    
+    def _end_loading(self):
+        self.game_sink.end_loading()
+    
 
         
     def _as_display_name(self, speaker: Union[str, BaseAgent]):
@@ -153,6 +170,7 @@ class GameBoard:
         return other_fields
     
     def handle_public_private_output(self, agent: BaseAgent, response,  delay: float = 0.0, output_inner_workings = False):
+        self.game_sink.await_continue()
         public_message, private_message = response.public_response, response.private_thoughts
         other_fields = []
         self.broadcast_public_action(agent, public_message)
@@ -160,14 +178,20 @@ class GameBoard:
         if output_inner_workings:
             self.game_sink.on_inner_workings(agent, self._get_inner_thought_fields(response))
         self.game_sink.delay(delay)
+        #pause until the user presses next turn
         
         
+    def _should_animate(self, speaker):
+        is_system_speaker = speaker in ( "SYSTEM", "")
+        is_human_speaker = hasattr(speaker, 'is_human') and speaker.is_human()
+        return not (is_system_speaker or is_human_speaker)
         
-    def broadcast_public_action(self, speaker: Union[str, BaseAgent], message: str, color: str = ""): #broadcast to record
-        
+    def broadcast_public_action(self, speaker: Union[str, BaseAgent], message: str, color: str = ""):
         display_name = self._as_display_name(speaker)
         self._update_history(display_name, message)
-        self.game_sink.on_public_action(speaker, message)
+        animate = self._should_animate(speaker)
+        self.game_sink.on_public_action(speaker, message, color=color, animate=animate)
+        
     
     def system_broadcast(self, message, private = False):
         if private:
@@ -176,6 +200,11 @@ class GameBoard:
             self.broadcast_public_action("SYSTEM", message)
         
     def host_broadcast(self, message, delay: float = 0.0):
+        most_recent_message = self._current_round_most_recent_message_entry()
+        if most_recent_message and not self._is_host_message(most_recent_message):
+            self.game_sink.await_continue()
+    
+        
         self.broadcast_public_action("HOST", message)
         if delay:
             self.game_sink.delay(delay)
@@ -201,7 +230,7 @@ class GameBoard:
         
 
     SYS_ADMIN = "SYS_ADMIN"
-    RESERVED_NAMES = {"HOST", "SYSTEM", SYS_ADMIN}
+    RESERVED_NAMES = {"SYSTEM", SYS_ADMIN}
 
     def _unique_name(self, name: str, existing: set[str]) -> str:
         candidate = name
@@ -226,6 +255,9 @@ class GameBoard:
         
     
     def append_agent_points(self, agent_name, points):
+        #NOTE - this should always come AFTER a player broadcast 
+        #Because state updates like score are held until after the player output
+        #finishes animating on web.
         new_score = max(0, self.agent_scores[agent_name] + points)
         self.agent_scores[agent_name] = new_score
         self.game_sink.on_points_update(dict(self.agent_scores))

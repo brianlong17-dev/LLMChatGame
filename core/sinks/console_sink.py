@@ -58,7 +58,7 @@ class ConsoleGameEventSink(GameEventSink):
     def on_turn_header(self, turn_number: int) -> None:
         ConsoleRenderer.print_turn_header(turn_number)
 
-    def on_public_action(self, speaker: Speaker, message: str, color: str = "") -> None:
+    def on_public_action(self, speaker: Speaker, message: str, color: str = "", animate = False) -> None:
         ConsoleRenderer.print_public_action(speaker, message, color)
 
     def on_private_thought(self, speaker: Speaker, message: str) -> None:

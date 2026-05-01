@@ -82,10 +82,11 @@ class GameEventSink(ABC):
     # -- Speech and thought ---------------------------------------------------
 
     @abstractmethod
-    def on_public_action(self, speaker: Speaker, message: str, color: str = "") -> None:
+    def on_public_action(self, speaker: Speaker, message: str, color: str = "", animate: bool = True) -> None:
         """
         A speaker acted publicly — goes into game history, visible to all agents.
-        color is a hint for terminal renderers; other sinks can ignore it.
+        color is a hint for terminal renderers; animate signals whether the frontend
+        should word-by-word animate this message (False for HOST, SYSTEM, human players).
         """
         ...
 
@@ -142,6 +143,26 @@ class GameEventSink(ABC):
         """A private conversation between specific players."""
         ...
 
+    def on_segment_titles(self, titles: list[str]) -> None:
+        """Send the predetermined list of segment names for the current round. No-op by default."""
+        pass
+
+    def on_feed_marker(self, label: str) -> None:
+        """Drop an invisible anchor in the feed at the start of a named segment. No-op by default."""
+        pass
+
+    def await_continue(self) -> None:
+        """Pause and wait for the viewer to advance to the next turn. No-op by default."""
+        pass
+
+    def loading_string(self, message: str) -> None:
+        """Display an animated loading message in the feed. No-op by default."""
+        pass
+
+    def end_loading(self) -> None:
+        """Remove the loading message from the feed. No-op by default."""
+        pass
+
     @abstractmethod
     def get_user_input_simple(self, field_name: str, description: str) -> str:
         """Collect freeform input for a human-controlled player."""
@@ -186,7 +207,7 @@ class NoopGameSink(GameEventSink):
     def on_round_start(self, round_number, scores): pass
     def on_round_summary(self, summary): pass
     def on_turn_header(self, turn_number): pass
-    def on_public_action(self, speaker, message, color=""): pass
+    def on_public_action(self, speaker, message, color="", animate=True): pass
     def on_private_thought(self, speaker, message): pass
     def on_inner_workings(self, speaker, inner_workings, override=False): pass
     def system_private(self, message): pass
@@ -254,7 +275,7 @@ class CapturingGameSink(GameEventSink):
     def on_turn_header(self, turn_number):
         self.turn_headers.append(turn_number)
 
-    def on_public_action(self, speaker, message, color=""):
+    def on_public_action(self, speaker, message, color="", animate=True):
         self.public_actions.append({"speaker": speaker, "message": message, "color": color})
 
     def on_private_thought(self, speaker, message):
