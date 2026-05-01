@@ -95,6 +95,8 @@ class CharacterGenerator:
         return cast
 
     def generate_debater(self, character_name: str, allow_rename = True) -> 'Debater':
+        if api_client._mock_output:
+            allow_rename = False
         profile = api_client.create(
             response_model=CharacterProfile,
             messages=[
