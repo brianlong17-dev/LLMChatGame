@@ -1,64 +1,30 @@
-from collections import deque
 from typing import Union
 from agents.base_agent import BaseAgent
 from core.context_builder import ContextBuilder
-from core.models import MessageEntry, RoundEntry
+from core.game_log import GameLog
+from core.models import RoundEntry
+
 
 class GameBoard:
-    def __init__(self,  game_sink):
+    SYS_ADMIN = "SYS_ADMIN"
+    HOST_NAME = "HOST"
+    SYSTEM = "SYSTEM"
+    RESERVED_NAMES = {SYSTEM, SYS_ADMIN, HOST_NAME}
+
+    def __init__(self, game_sink):
         self.game_sink = game_sink
-        
+        self.game_log = GameLog()
+
         self.phase_number = 0
         self.round_number = 0
-        self.turn_number = 0 #just for printing...
-        
-        self.message_id = 0
-        
-        self.completed_round_entries: list[RoundEntry] = []
-        self.current_round: RoundEntry = None #made by new round #RoundEntry(phase_number=0, round_number=0, messages=[])
+        self.turn_number = 0
 
-        
         self.agent_scores: dict[str, int] = {}
-        self.context_builder = ContextBuilder(game_board = self)
-        
+        self.context_builder = ContextBuilder(game_board=self, game_log=self.game_log)
+
         self.phase_runner = None
-        
-        self._current_round_summarisation : str = ""
-        self._current_round_summarisation_until : int = None
-    
-    def push_current_round_summarisation(self, summary: str, last_message_id: int):
-        self._current_round_summarisation = summary
-        self._current_round_summarisation_until = last_message_id
-    
-    def most_recent_message_id(self) -> int:
-        return self.message_id
 
-    def _is_sys_admin_message(self, message: 'MessageEntry') -> bool:
-        return message.visibility_restriction and self.SYS_ADMIN in message.visibility_restriction
 
-    def messages_since(self, message_id: int) -> list['MessageEntry']:
-        return [m for m in self.current_round.messages if m.id > message_id and not self._is_sys_admin_message(m)]
-
-    def _current_round_messages_up_to(self, message_id: int) -> list['MessageEntry']:
-        return [m for m in self.current_round.messages if m.id <= message_id and not self._is_sys_admin_message(m)]
-
-    def _current_round_most_recent_message_entry(self):
-        message_entries = self.current_round.messages
-        return message_entries[-1] if message_entries else None
-    
-    def _is_host_message(self, message_entry):
-        if not message_entry.messages or len(message_entry.messages) != 1:
-            return False
-        
-        return message_entry.messages[0]['speaker'] == "HOST"
-    
-    
-    def current_phase_rounds(self):
-        return self.phase_rounds(self.phase_number)
-    
-    def phase_rounds(self, phase_number):
-        return [r for r in self.completed_round_entries if r.phase_number == phase_number] 
-        
     def _human_in_restriction(self, restricted_users):
         if not restricted_users:
             return False
@@ -68,12 +34,11 @@ class GameBoard:
         )
 
     def log_new_restricted_conversation(self, restricted_users, player_name, message):
-        
         if self._human_in_restriction(restricted_users):
             header = f"[Private: {' & '.join(restricted_users)}]"
             self.game_sink.system_private(header)
             self.game_sink.on_public_action(player_name, message, "RED")
-        return self._update_history(player_name, message, restricted_users)
+        return self.game_log._update_history(player_name, message, restricted_users)
 
     def log_message_to_conversation(self, conversation_id, player_name: str, message: str):
         entry = self._get_conversation_entry(conversation_id)
@@ -81,34 +46,20 @@ class GameBoard:
             entry.messages.append({"speaker": player_name, "message": message})
             if self._human_in_restriction(entry.visibility_restriction):
                 self.game_sink.on_public_action(player_name, message, "RED")
-    
+
     def _get_conversation_entry(self, conversation_id):
-        entry = next((e for e in self.current_round.messages if e.id == conversation_id), None)
+        entry = self.game_log._get_conversation_entry(conversation_id)
         if not entry:
             self.game_sink.on_warning(f"Conversation {conversation_id} not found.")
         return entry
-        
-    def _update_history(self, player_name, message, visibility_restriction = None):
-        #entry = MessageEntry()
-        self.message_id += 1
-        entry = MessageEntry(
-            messages=[{"speaker": player_name, "message": message}],
-            id= self.message_id,
-            visibility_restriction=visibility_restriction
-        )
-        #if visibility restriction includes human player- the we need to print it
-        self.current_round.messages.append(entry)
-        return self.message_id
-    
-    def close_private_conversation(self, conversation_id, silent = False):
+
+    def close_private_conversation(self, conversation_id, silent=False):
         entry = self._get_conversation_entry(conversation_id)
         if entry:
-            #entry.messages.append({"speaker": "SYSTEM", "message": "[End Private]"})
             if not self._human_in_restriction(entry.visibility_restriction):
-                #if human involve wave already outputted
                 if not silent:
                     self.game_sink.on_private_conversation(entry)
-    
+
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
             raise RuntimeError(f"Missing score for active player '{agent_name}'")
@@ -120,117 +71,97 @@ class GameBoard:
         #TODO - what is the point here- ? only on discussion turns? why?
         self.turn_number += 1
         self.game_sink.on_turn_header(self.turn_number)
-    
-        
+
     def endRound(self, round_summary):
         self.game_sink.on_round_summary(round_summary.round_summary)
-        self.completed_round_entries.append(self.current_round)
-        
+        self.game_log.close_round()
+
     def newRound(self):
         #self.system_broadcast(self.score_string(), private = False) Probably a good idea for agents to read
         self.round_number += 1
         self.turn_number = 0
-        self._current_round_summarisation = ""
-        self._current_round_summarisation_until = None
-        self.current_round = RoundEntry(phase_number=self.phase_number, round_number=self.round_number, messages=[])
-        self.game_sink.on_round_start(self.round_number, self.score_string()) 
-        
+        self.game_log.start_round(self.phase_number, self.round_number)
+        self.game_sink.on_round_start(self.round_number, self.score_string())
+
     def endPhase(self):
         pass
-        
+
     def new_phase(self):
         self.phase_number += 1
-        self.game_sink.on_phase_header(self.phase_number) 
-        
+        self.game_sink.on_phase_header(self.phase_number)
+
     #--------- public output --------- #
-    
+
     def _loading_string(self, string):
         self.game_sink.loading_string(string)
-    
+
     def _end_loading(self):
         self.game_sink.end_loading()
-    
 
-        
     def _as_display_name(self, speaker: Union[str, BaseAgent]):
         if isinstance(speaker, str):
-            display_name = speaker
-        else:
-            display_name = speaker.name
-        return display_name
-    
+            return speaker
+        return speaker.name
+
     def _get_inner_thought_fields(self, response):
-        result_dict = response.model_dump()      
+        result_dict = response.model_dump()
         #TODO these shouldn't be hard coded, but anyway
         excluded_keys = {"public_response", "private_thoughts"}
-        other_fields = [
-            (key, value) for key, value in result_dict.items() 
+        return [
+            (key, value) for key, value in result_dict.items()
             if key not in excluded_keys
         ]
-        return other_fields
-    
-    def handle_public_private_output(self, agent: BaseAgent, response,  delay: float = 0.0, output_inner_workings = False):
-        self.game_sink.await_continue()
+
+    def handle_public_private_output(self, agent: BaseAgent, response, delay: float = 0.0, output_inner_workings=False):
+        if self.game_log._current_round_most_recent_player_entry(self.RESERVED_NAMES):
+            self.game_sink.await_continue()
         public_message, private_message = response.public_response, response.private_thoughts
-        other_fields = []
         self.broadcast_public_action(agent, public_message)
         self.game_sink.on_private_thought(agent, private_message)
         if output_inner_workings:
             self.game_sink.on_inner_workings(agent, self._get_inner_thought_fields(response))
         self.game_sink.delay(delay)
-        #pause until the user presses next turn
-        
-        
+
     def _should_animate(self, speaker):
-        is_system_speaker = speaker in ( "SYSTEM", "")
+        is_system_speaker = speaker in ("SYSTEM", "")
         is_human_speaker = hasattr(speaker, 'is_human') and speaker.is_human()
         return not (is_system_speaker or is_human_speaker)
-        
+
     def broadcast_public_action(self, speaker: Union[str, BaseAgent], message: str, color: str = ""):
         display_name = self._as_display_name(speaker)
-        self._update_history(display_name, message)
+        self.game_log._update_history(display_name, message)
         animate = self._should_animate(speaker)
         self.game_sink.on_public_action(speaker, message, color=color, animate=animate)
-        
-    
-    def system_broadcast(self, message, private = False):
+
+    def system_broadcast(self, message, private=False):
         if private:
             self.game_sink.system_private(message)
         else:
             self.broadcast_public_action("SYSTEM", message)
-        
+
     def host_broadcast(self, message, delay: float = 0.0):
-        most_recent_message = self._current_round_most_recent_message_entry()
-        if most_recent_message and not self._is_host_message(most_recent_message):
+        most_recent_message = self.game_log._current_round_most_recent_message_entry()
+        if most_recent_message and not self.game_log._is_host_message(most_recent_message, self.HOST_NAME):
             self.game_sink.await_continue()
-    
-        
-        self.broadcast_public_action("HOST", message)
+        self.broadcast_public_action(self.HOST_NAME, message)
         if delay:
             self.game_sink.delay(delay)
-            
+
     def environment_broadcast(self, message, delay):
         #TODO make this right
-        #its kind of BANG BANG-
-        #Maybe the lights go out- is another one
         self.broadcast_public_action("", message)
         if delay:
             self.game_sink.delay(delay)
-    
+
     # ---------------Agent state / Scores --------------------#
-    
+
     def agent_names(self):
         return self.phase_runner.agent_names()
-    
-    
+
     def remove_agent_state(self, agent_name: str):
         self.agent_scores.pop(agent_name, None)
         self.game_sink.on_points_update(self.agent_scores)
         self.game_sink.on_evictions_update(self.phase_runner.removed_agent_names())
-        
-
-    SYS_ADMIN = "SYS_ADMIN"
-    RESERVED_NAMES = {"SYSTEM", SYS_ADMIN}
 
     def _unique_name(self, name: str, existing: set[str]) -> str:
         candidate = name
@@ -248,14 +179,12 @@ class GameBoard:
             seen.add(agent.name)
             self.add_agent_state(agent.name)
             self.game_sink.on_points_update(self.agent_scores)
-        
-            
+
     def add_agent_state(self, agent_name: str):
         self.agent_scores[agent_name] = 0
-        
-    
+
     def append_agent_points(self, agent_name, points):
-        #NOTE - this should always come AFTER a player broadcast 
+        #NOTE - this should always come AFTER a player broadcast
         #Because state updates like score are held until after the player output
         #finishes animating on web.
         new_score = max(0, self.agent_scores[agent_name] + points)
@@ -265,5 +194,3 @@ class GameBoard:
     def score_string(self) -> str:
         sorted_scores = sorted(self.agent_scores.items(), key=lambda item: item[1], reverse=True)
         return ", ".join(f"{name}: {score}" for name, score in sorted_scores)
-             
-                

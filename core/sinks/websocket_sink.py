@@ -136,5 +136,6 @@ class WebSocketSink(GameEventSink):
         self._send({"type": "loading_done"})
 
     def delay(self, delay: float = 0.0):
-        time.sleep(delay)
+        pass
+        #time.sleep(delay)
 

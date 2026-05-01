@@ -23,6 +23,10 @@ class BaseRound:
         self._debug = True
         self.turn_manager = TurnManager(self)
 
+    @property
+    def game_log(self):
+        return self.gameBoard.game_log
+
     def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0, action_string = ""):
         #TODO deprecate
         self.gameBoard.handle_public_private_output(agent, result, delay)

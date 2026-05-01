@@ -11,4 +11,4 @@ class MessageEntry:
 class RoundEntry:
     phase_number: int
     round_number: int
-    messages: list[MessageEntry]
+    messageEntries: list[MessageEntry]

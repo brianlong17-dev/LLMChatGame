@@ -106,7 +106,7 @@ def make_debater(name, client, model_name="test-model"):
 
 
 def host_messages(board):
-    return [entry["message"] for entry in board.currentRound if entry["speaker"] == "HOST"]
+    return [entry["message"] for entry in board.currentRound if entry["speaker"] == self.HOST_NAME]
 
 
 def messages_for(board, speaker):

@@ -16,16 +16,16 @@ class CycleRound(BaseRound):
         self._use_compression = cfg.cycle_use_context_compression
         if self._use_compression:
             self._full_context_cycles = cfg.cycle_full_context_cycles
-            self._message_unsumarised_after = self.gameBoard.most_recent_message_id()
+            self._message_unsumarised_after = self.gameBoard.game_log.most_recent_message_id()
             self.summaries: list[tuple[str, int]] = []
-        
+
     def _compress_round(self):
         if not self._use_compression:
             return
-        message_to_summarise = self.gameBoard.messages_since(self._message_unsumarised_after)
-        context = self.gameBoard._current_round_messages_up_to(self._message_unsumarised_after)
+        message_to_summarise = self.gameBoard.game_log.messages_since(self._message_unsumarised_after)
+        context = self.gameBoard.game_log._current_round_messages_up_to(self._message_unsumarised_after)
         summary = self._generate_summary(context, message_to_summarise)
-        self._message_unsumarised_after = self.gameBoard.most_recent_message_id()
+        self._message_unsumarised_after = self.gameBoard.game_log.most_recent_message_id()
         self.summaries.append((summary, self._message_unsumarised_after))
         self._push_game_summaries()
             
@@ -60,7 +60,7 @@ class CycleRound(BaseRound):
         
         summaries_to_push = self.summaries[:summaries_to_push_num]
         summaries_str = self.format_summaries(summaries_to_push)
-        self.gameBoard.push_current_round_summarisation(summaries_str, summaries_to_push[-1][1])
+        self.gameBoard.game_log.push_current_round_summarisation(summaries_str, summaries_to_push[-1][1])
         
     def format_summaries(self, summary_selection):
         string = ""
