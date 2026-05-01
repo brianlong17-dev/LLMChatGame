@@ -16,6 +16,7 @@ from core.api_client import api_client
 #"gemini-3.1-flash-lite-preview",
 #gemini-2.5-flash-lite
 DEFAULT_MODEL_NAME = "gemini-3.1-flash-lite-preview"
+#DEFAULT_MODEL_NAME = "gemini-2.5-flash-lite"
 #DEFAULT_MODEL_NAME = "gemini-2.0-flash-lite"
 DEFAULT_HIGHER_MODEL_NAME = "gemini-2.5-flash"
 #gemini-3-flash-preview

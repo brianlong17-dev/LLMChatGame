@@ -3,10 +3,12 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import random
 import threading
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from typing import Literal, get_args, get_origin
 
 
 @dataclass(frozen=True)
@@ -29,16 +31,36 @@ class APIClient:
         self._lock = threading.Lock()
         self._index = 0
         self._log_path: str | None = None
+        self._mock_output = True
 
     def init(self, client, model: str) -> None:
         self._client = client
         self._default_model = model
         self._log_path = _make_log_path()
+        
+    def _mock_response(self, response_model):
+        long_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, \n \n sunt in culpa qui officia deserunt mollit anim id est laborum."
+        values = {}
+        for name, field_info in response_model.model_fields.items():
+            annotation = field_info.annotation
+            if get_origin(annotation) is Literal:
+                values[name] = random.choice(get_args(annotation))
+            elif get_origin(annotation) is list:
+                inner = get_args(annotation)[0] if get_args(annotation) else str
+                if get_origin(inner) is Literal:
+                    values[name] = [random.choice(get_args(inner))]
+                else:
+                    values[name] = [f"test [{name}]"]
+            else:
+                values[name] = f"{long_text}  [{name}]"
+        return response_model(**values)
 
     def create(self, response_model, messages: list, model: str | None = None, **kwargs):
         if self._client is None:
             raise RuntimeError("APIClient not initialized — call init() first")
 
+        if self._mock_output:
+            return self._mock_response(response_model)
         api_model = model or self._default_model
         caller = _caller()
         start = time.monotonic()
@@ -51,6 +73,7 @@ class APIClient:
                     model=api_model,
                     response_model=response_model,
                     messages=messages,
+                    generation_config={"thinking_config": {"thinking_level": "low"}},
                     **kwargs,
                 )
                 break

@@ -1,7 +1,7 @@
 from typing import Literal
 from pydantic import BaseModel, Field, create_model
 
-class SumamriseRoundBasic(BaseModel):
+class SummariseRoundBasic(BaseModel):
     round_summary: str = Field(description="A summary of the round to give to each player")
     
 class DynamicGameModelFactory:
@@ -44,15 +44,24 @@ class DynamicGameModelFactory:
                     f"Allowed names: {allowed_names}. The parameter for choosing: {parameter}"
                 )
             ),
-            thought_process=(str, Field(description="What's your thought proccess behind this decision?"))
+            thought_process=(str, Field(description="What's your thought process behind this decision?"))
         )
         
     @classmethod
-    def host_script_model(cls):
-        return create_model("host_script",
-            script=(str, Field(description=("Based on the directive, write a script that the host will read out. "))),
-            thought_process=(str, Field(description="What's your creative proccess and intent behind your writing?"))
-        )
+    def host_script_model(cls, cot_prompts):
+        dynamic_fields = {}
+        
+        if cot_prompts:
+            for i, prompt in enumerate(cot_prompts):
+                field_name = f"reasoning_analysis_{i}"
+                dynamic_fields[field_name] = (str, Field(description=prompt))
+
+        return create_model(
+            "host_script",
+            thought_process=(str, Field(description="What's your creative process and intent?")),
+            **dynamic_fields,  # Unpack the dynamic COT prompts here
+            script=(str, Field(description=f"Create a script for the host to say, based on the directive."))
+    )
 
 class SummariseRoundComplex(BaseModel):
     double_check: str = Field(description="Has a player lied of halucinated? Just double check you don't take everyone's word for granted")

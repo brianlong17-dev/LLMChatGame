@@ -83,21 +83,22 @@ class GameMaster(BaseAgent):
         )
         return turn.namesToChoose
     
-    def create_host_script(self, directive, context, context_explaination, game_context):
+    def create_host_script(self, directive, additional_context, context_explanation, game_context, cot_prompts = None):
         #It's referenced as directive in the model 
-        model = DynamicGameModelFactory.host_script_model()
+        model = DynamicGameModelFactory.host_script_model(cot_prompts)
         turn = api_client.create(
             response_model=model,
             messages=[
                 #in time we will put personality into the user content- favorites, opinions
-                {"role": "system", "content": f"You are the producer of this game. We need you to write a script for the host, based on the directive: {directive}. "
+                {"role": "system", "content": f"You are the HOST of this game. We need to you to act as host, and the script is your public remarks. "
                  "The host is speaking with the players, but also with an audience in mind. "
                  "ONLY DIALOG - only the script- no direction or scene description. "},
                 #Ie the context is the players own recap of their journey- use this 
-                {"role": "user", "content": f"Context explaination: {context_explaination}\n\n"
-                 f"Actual context to use:\n{context}"
-                 f"Game context : What happened before this point in the round:\n{game_context}",} 
+                {"role": "user", "content": f"Context explaination: {context_explanation}\n\n"
+                 f"Additional context:\n{additional_context}"
+                 f"Game context : What happened before this point in the round:\n{game_context}"
+                 f"Your DIRECTIVE: {directive}",} 
             ]
         )
         #print(turn.thought_process)
-        return turn.script
+        return turn

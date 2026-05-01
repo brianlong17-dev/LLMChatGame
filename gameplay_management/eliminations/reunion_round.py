@@ -5,6 +5,12 @@ from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 
 class FinaleReunionRound(VoteMechanicsMixin):
+    
+    _WAKEUP = "Wakeup"
+    _INTRODUCTION = "Introduction"
+    _QA = "Q&A"
+    _VOTING = "Voting"
+    _SEGMENTS = [_WAKEUP, _INTRODUCTION, _QA, _VOTING]
 
     @classmethod
     def display_name(cls, cfg):
@@ -48,15 +54,27 @@ class FinaleReunionRound(VoteMechanicsMixin):
             self._private_host_conversation_host_message(conversation_id, host_message)
             public_response_prompt = "Respond to the host. "
             self._private_host_conversation_get_response(player, conversation_id, public_response_prompt)
+            self.private_host_conversations[player.name] = conversation_id
             return conversation_id
 
     def _wake_up_round(self):
+        self._on_segment(self._WAKEUP)
+        self.private_host_conversations = {}
+        self.gameBoard._loading_string("Waking players up")
         conversation_ids = self._run_tasks([[agent] for agent in self.voting_players], self._wake_up_player_reunion, parallel=True)
         for conv_id in conversation_ids:
             self.gameBoard.close_private_conversation(conv_id)
+        self.gameBoard._end_loading()
 
+    def _set_segment_titles(self, segments):
+        self.gameBoard.game_sink.on_segment_titles(segments)
+        
+    def _on_segment(self, segment):
+        self.gameBoard.game_sink.on_feed_marker(segment)
+        
     def run_vote(self, immunity_players = None):
         #- set up -#
+        self._set_segment_titles(self._SEGMENTS)
         self.voting_players = list(self.simulationEngine.dead_agents)
         self.finalists = list(self.agents())
 
@@ -98,15 +116,16 @@ class FinaleReunionRound(VoteMechanicsMixin):
         )
 
     def competitors_last_statement(self):
+        self._on_segment(self._INTRODUCTION)
         prompt = "Respond to the host, and the other players. "
         player1, player2 = self.finalists[0], self.finalists[1]
         self._host_broadcast(f"Congratulations to our two finalists: {player1.name} and {player2.name}.")
 
-        player_1_highlights = self._get_highlights(player1)
+        player_1_highlights = self._get_highlights(player1).script
         self._host_broadcast(player_1_highlights)
         self._reunion_turn(player1, "", prompt)
 
-        player_2_highlights = self._get_highlights(player2)
+        player_2_highlights = self._get_highlights(player2).script
         self._host_broadcast(player_2_highlights)
         self._reunion_turn(player2, "", prompt)
 
@@ -177,6 +196,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
         return result
 
     def time_to_vote(self):
+        self._on_segment(self._VOTING)
         finalist_names = self._names(self.finalists)
         jurors = self.voting_players
         total_votes = len(jurors)
@@ -252,17 +272,40 @@ class FinaleReunionRound(VoteMechanicsMixin):
         # Invalid deadlock vote — pick randomly
         self._host_broadcast(f"{runner_up.name} has spoiled their vote. We will pick a random winner...")
         return random.choice(leaders)
+    
+    
+    def _question_intro_script(self, player):
+        return self.simulationEngine.game_master.create_host_script(
+                    directive = (f"{player.name} is about confront one of the finalists with a question . "
+                        f" You're introducing them, {player.name}. "
+                        f"With the knowledge you have from {player.name}'s private conversation with the host, "
+                        " - if they have concrete things to mention, mention them briefly in passing. "
+                        f" You're the HOST only introducing {player.name}- the finalists have already been introduced. "
+                        f" Try to mention a personal detail to {player.name} regarding the finalists if possible. "
+                        f" But still - at least feign neutrality. You're still the professional host. "
+                        ),
+                    additional_context = player.detailed_summaries_string(), 
+                    context_explanation =
+                    f"This is the players history. (You should also see their private converstation with the host in the current round context)" ,
+                    game_context = self.gameBoard.context_builder.current_round_formatted(player),
+                    cot_prompts = [f"Explain {player.name}'s personal history with finalists. What sensitive moments in there could be upsetting? Include detail that you could mention when you introduce {player.name} to ask their question. "]
+                )
 
     def _questions_and_answers(self):
+        self._on_segment(self._QA)
         self._host_broadcast("Finalists- some of our voters remain on the fence- It's time to face some of your voters.")
 
-        question = "Which players, based on the conversation with the host, do you think could have their minds changed? "
+        question = "Which players, based on the conversation with the host, would have the most explosive confrontation with either of the finalists? "
         undecided_names = self.simulationEngine.game_master.select_players(
             question, self._host_current_round_history(), self._names(self.voting_players), 3)
 
         for player_name in undecided_names:
+            
             player = self._agent_by_name(player_name, incl_dead=True)
             if player:
+                #host intro---
+                script = self._question_intro_script(player).script
+                self._host_broadcast(script)
                 #------ Ask the question ------
                 public_response_prompt = (
                     "You've been identified as a player who could have a question- maybe you could have your mind changed? "
