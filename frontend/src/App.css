@@ -521,6 +521,194 @@
   text-overflow: ellipsis;
 }
 
+/* ── Round Widget ── */
+
+.round-widget {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rw-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rw-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: normal;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.rw-label-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* Nominees */
+.rw-nominees {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rw-nominee {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rw-nominee-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.rw-nominee-name {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.rw-nominee.leading .rw-nominee-name {
+  color: var(--text);
+}
+
+.rw-nominee.winner .rw-nominee-name {
+  color: var(--text);
+}
+
+.rw-nominee-count {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.rw-nominee.leading .rw-nominee-count {
+  color: var(--accent);
+}
+
+.rw-nominee.winner .rw-nominee-count {
+  color: var(--winner-color, #c9a84c);
+}
+
+.rw-bar-track {
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.rw-bar-fill {
+  height: 100%;
+  background: var(--border);
+  border-radius: 1px;
+  transition: width 0.4s ease;
+}
+
+.rw-nominee.leading .rw-bar-fill {
+  background: var(--accent);
+}
+
+.rw-nominee.winner .rw-bar-fill {
+  background: var(--winner-color, #c9a84c);
+}
+
+/* Voters */
+.rw-voters {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rw-voter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.rw-voter-tick {
+  width: 8px;
+  flex-shrink: 0;
+  font-size: 10px;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+.rw-voter--done {
+  flex-direction: column;
+  align-items: stretch;
+  cursor: pointer;
+  gap: 0;
+}
+
+.rw-voter--done:hover .rw-voter-name { color: var(--text); }
+
+.rw-voter-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rw-voter--done.expanded .rw-voter-tick { transform: rotate(90deg); }
+
+.rw-voter-voted-for {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.6;
+  padding: 2px 0 3px 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rw-voter--done .rw-voter-tick {
+  color: var(--accent);
+}
+
+.rw-voter--done .rw-voter-name {
+  color: var(--text-dim);
+}
+
+.rw-voter--pending .rw-voter-tick {
+  color: transparent;
+}
+
+.rw-voter--pending .rw-voter-name {
+  color: var(--text-dim);
+  opacity: 0.35;
+}
+
+/* Master toggle on label */
+.rw-label-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.rw-label-toggle:hover { color: var(--text); }
+
 /* ── Segment tracker ── */
 
 .segment-tracker {
@@ -596,7 +784,7 @@
 .input-row {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .input-text {
@@ -609,6 +797,11 @@
   padding: 8px 12px;
   outline: none;
   transition: border-color 0.15s;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.6;
+  min-height: 36px;
+  max-height: 200px;
 }
 
 .input-text:focus {
@@ -994,6 +1187,22 @@
   gap: 14px;
 }
 
+.demo-card--locked {
+  opacity: 0.4;
+  position: relative;
+}
+
+.demo-locked-badge {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  align-self: flex-start;
+}
+
 .demo-title {
   font-family: var(--font-ui);
   font-size: 15px;
@@ -1020,6 +1229,20 @@
   color: var(--text-dim);
   border: 1px solid var(--border);
   padding: 2px 8px;
+}
+
+.demo-cast-chip--clickable {
+  cursor: pointer;
+}
+
+.demo-cast-chip--clickable:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.demo-cast-chip--selected {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .demo-mode {

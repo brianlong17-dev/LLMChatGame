@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { Message } from '../components/Messages'
 import Scoreboard from '../components/Scoreboard'
 import RoundTracker from '../components/RoundTracker'
+import RoundWidget from '../components/RoundWidget'
 import InputRequest from '../components/InputRequest'
 import SegmentTracker from '../components/SegmentTracker'
 
@@ -9,7 +10,7 @@ export default function GameView({
   status, events, scores, evicted,
   inputRequest, awaitingNext, phaseRounds, currentRoundIndex,
   submitInput, sendNext, skipAnimation, onAnimationComplete, skipRef,
-  isAnimating, settings, updateSetting, feedMarkers, segmentTitles
+  isAnimating, settings, updateSetting, feedMarkers, segmentTitles, widget
 }) {
   const { showPrivate, autoRun, animateText } = settings
 
@@ -117,7 +118,7 @@ export default function GameView({
           })()}
           <span className={`start-btn status-${status}`} style={{ cursor: 'default' }}>
             {status === 'connecting' && 'Connecting…'}
-            {status === 'running' && (awaitingNext && !autoRun ? 'Paused' : 'Running…')}
+            {status === 'running' && (awaitingNext && !autoRun && !isAnimating ? 'Waiting…' : 'Running…')}
             {status === 'done' && '✓ Done'}
             {status === 'error' && '⚠ Error'}
           </span>
@@ -130,12 +131,12 @@ export default function GameView({
           style={{ width: settings.leftSidebarOpen === false ? 0 : (settings.leftSidebarWidth ?? 220) }}
         >
           <div className="round-info">
-            <h2 className="scoreboard-title">Round</h2>
             {phaseRounds.length > 0
               ? <p className="round-info-name">{phaseRounds[currentRoundIndex]}</p>
               : <p className="round-info-empty">—</p>
             }
           </div>
+          <RoundWidget widget={widget} />
           <SegmentTracker titles={segmentTitles} markers={feedMarkers} />
 
         </aside>

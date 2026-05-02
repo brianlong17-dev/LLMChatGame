@@ -13,6 +13,7 @@ export default function Lobby({ onStart }) {
   const [humanName, setHumanName] = useState(saved.humanName || '')
   const [customNames, setCustomNames] = useState(saved.customNames || [])
   const [customInput, setCustomInput] = useState('')
+  const [gameEnabled, setGameEnabled] = useState(false)
 
   useEffect(() => {
     localStorage.setItem(LOBBY_STORAGE_KEY, JSON.stringify({ selected, mode, humanName, customNames }))
@@ -25,6 +26,9 @@ export default function Lobby({ onStart }) {
         setTabs(data.tabs)
         setActiveTab(Object.keys(data.tabs)[0])
       })
+    fetch('/api/flags')
+      .then(r => r.json())
+      .then(data => setGameEnabled(data.game_enabled))
   }, [])
 
   const toggle = (name) => {
@@ -48,7 +52,7 @@ export default function Lobby({ onStart }) {
     setSelected(selected.filter(n => n !== name))
   }
 
-  const canStart = selected.length >= 2 && (mode === 'watch' || humanName.trim())
+  const canStart = gameEnabled && selected.length >= 2 && (mode === 'watch' || humanName.trim())
 
   return (
     <div className="lobby">
@@ -152,7 +156,7 @@ export default function Lobby({ onStart }) {
           disabled={!canStart}
           onClick={() => onStart({ names: selected, humanName: mode === 'play' ? humanName.trim() : null })}
         >
-          Start Game
+          {gameEnabled ? 'Start Game' : 'Coming Soon'}
         </button>
       </div>
     </div>

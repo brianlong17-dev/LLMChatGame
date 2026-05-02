@@ -14,6 +14,10 @@ load_dotenv()
 
 app = FastAPI()
 
+# Feature flags — set to True to enable before publishing
+GAME_ENABLED = False
+DEMO_ENABLED = True
+
 _allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 _active_games = 0
 _active_games_lock = threading.Lock()
@@ -54,6 +58,14 @@ async def transcribe(audio: UploadFile = File(...)):
     return {"text": response.text.strip()}
 
 # ---------------------------------------------------------------------------
+# Flags endpoint
+# ---------------------------------------------------------------------------
+
+@app.get("/api/flags")
+async def get_flags():
+    return {"game_enabled": GAME_ENABLED, "demo_enabled": DEMO_ENABLED}
+
+# ---------------------------------------------------------------------------
 # Characters endpoint
 # ---------------------------------------------------------------------------
 
@@ -82,6 +94,12 @@ async def get_characters():
 async def game_ws(websocket: WebSocket):
     global _active_games
     await websocket.accept()
+
+    if not GAME_ENABLED:
+        await websocket.send_text(json.dumps({"type": "error", "message": "Game is not available yet."}))
+        await websocket.close()
+        return
+
     loop = asyncio.get_event_loop()
 
     with _active_games_lock:
@@ -149,6 +167,12 @@ async def game_ws(websocket: WebSocket):
 async def demo_ws(websocket: WebSocket):
     global _active_games
     await websocket.accept()
+
+    if not DEMO_ENABLED:
+        await websocket.send_text(json.dumps({"type": "error", "message": "Demo is not available yet."}))
+        await websocket.close()
+        return
+
     loop = asyncio.get_event_loop()
 
     with _active_games_lock:
@@ -164,6 +188,11 @@ async def demo_ws(websocket: WebSocket):
         msg = json.loads(data)
         demo_id = msg.get("demo_id")
         human_name = str(msg["human_name"])[:30] if msg.get("human_name") else None
+
+        LOCKED_DEMOS = {"game_phase"}
+        if demo_id in LOCKED_DEMOS:
+            await websocket.send_text(json.dumps({"type": "error", "message": "This demo is not available yet."}))
+            return
 
         runner = DEMO_REGISTRY.get(demo_id)
         if not runner:

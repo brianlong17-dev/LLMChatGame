@@ -18,6 +18,7 @@ const DEMOS = [
     title: 'Game Phase',
     description: 'A full Knives + Vote round from mid-game state. 11 real players.',
     cast: ['Aang', 'Michael Jackson', 'HAL 9000', 'Jo March', 'Lady Macbeth', 'Lady Diana', 'Morty Smith', 'Amy March', 'Benoit Blanc', 'Gollum', 'Buffy Summers'],
+    locked: true,
   },
 ]
 
@@ -27,13 +28,32 @@ function DemoCard({ demo, onStart }) {
 
   const canStart = mode === 'watch' || humanName.trim()
 
+  if (demo.locked) {
+    return (
+      <div className="demo-card demo-card--locked">
+        <span className="demo-locked-badge">Coming Soon</span>
+        <h2 className="demo-title">{demo.title}</h2>
+        <p className="demo-description">{demo.description}</p>
+        <div className="demo-cast">
+          {demo.cast.map(name => (
+            <span key={name} className="demo-cast-chip">{name}</span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="demo-card">
       <h2 className="demo-title">{demo.title}</h2>
       <p className="demo-description">{demo.description}</p>
       <div className="demo-cast">
         {demo.cast.map(name => (
-          <span key={name} className="demo-cast-chip">{name}</span>
+          <span
+            key={name}
+            className={`demo-cast-chip demo-cast-chip--clickable${humanName === name && mode === 'play' ? ' demo-cast-chip--selected' : ''}`}
+            onClick={() => { setMode('play'); setHumanName(name) }}
+          >{name}</span>
         ))}
       </div>
       <div className="demo-mode">
