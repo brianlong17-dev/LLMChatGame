@@ -55,6 +55,9 @@ def _run_reunion(sink, fixture_filename: str, finalist_scores: dict, elimination
 
     if human_name:
         human = Human(human_name)
+        agent_to_replace = next((a for a in engine.agents if a.name == human_name), None)
+        if agent_to_replace:
+            engine.agents.remove(agent_to_replace)
         engine.agents.append(human)
 
     engine.initialiseGameBoard()

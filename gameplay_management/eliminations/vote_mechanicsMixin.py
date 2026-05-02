@@ -89,6 +89,10 @@ class VoteMechanicsMixin(BaseRound):
         votes = []
         voting_results = []
         voting_futures = []
+
+        voter_names = [a.name for a in self.simulationEngine.agents]
+        self._initialise_voting_widget(players_up_for_elimination, voter_names, theme="blood")
+
         with ThreadPoolExecutor() as executor:
             for agent in self.simulationEngine.agents:
                 future = executor.submit(self.vote_one_player_off, agent, players_up_for_elimination)
@@ -99,7 +103,7 @@ class VoteMechanicsMixin(BaseRound):
         for agent, vote_response in zip(self.simulationEngine.agents, voting_results):
             actual_vote = getattr(vote_response, GamePromptLibrary.model_field_choose_name, None)
             actual_vote = actual_vote.strip() if actual_vote else ""
-            
+
             if actual_vote not in players_up_for_elimination:
                 if pass_allowed:
                     print(
@@ -118,6 +122,9 @@ class VoteMechanicsMixin(BaseRound):
                     actual_vote = agent.name
             if actual_vote:
                 votes.append(actual_vote)
+
+            self._update_voting_widget(agent.name, actual_vote or "—")
+
             self.publicPrivateResponse(agent, vote_response)
         return votes, voting_results
    
@@ -125,6 +132,7 @@ class VoteMechanicsMixin(BaseRound):
         
         if revote_count > 3:
             self.gameBoard.host_broadcast(VotePromptLibrary.voting_round_random_elimination_msg)
+            self._vote_widget_vote_finalised()
             return random.choice(players_up_for_elimination), initial_votes
             #easy to replace this later, with better choice...
         
@@ -138,6 +146,7 @@ class VoteMechanicsMixin(BaseRound):
 
         if not vote_counts:
             self.gameBoard.host_broadcast(VotePromptLibrary.voting_round_no_valid_votes_msg)
+            self._vote_widget_vote_finalised()
             return random.choice(players_up_for_elimination), voting_results
         
         # Process results
@@ -155,6 +164,7 @@ class VoteMechanicsMixin(BaseRound):
             self.gameBoard.host_broadcast(deadlock_string)
             return self.process_vote_rounds(players_with_most_votes, (revote_count + 1), voting_results)
         else:
+            self._vote_widget_vote_finalised()
             return players_with_most_votes[0], voting_results
      
        

@@ -73,10 +73,14 @@ class FinaleReunionRound(VoteMechanicsMixin):
         self.gameBoard.game_sink.on_feed_marker(segment)
         
     def run_vote(self, immunity_players = None):
+        
         #- set up -#
         self._set_segment_titles(self._SEGMENTS)
         self.voting_players = list(self.simulationEngine.dead_agents)
         self.finalists = list(self.agents())
+        
+        self._initialise_voting_widget(self._names(self.finalists), self._names(self.voting_players))
+                                       
 
         #- action -#
         self._wake_up_round()
@@ -210,6 +214,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
             vote = getattr(result, "target_name", "").strip()
             if vote in finalist_names:
                 vote_counts[vote] += 1
+                self._update_voting_widget(juror.name, vote)
                 self.host_vote_response(juror.name, vote, vote_counts, vote_number, total_votes)
             else:
                 self._host_broadcast(f"{juror.name} cast an invalid vote: '{vote}', skipping.")
@@ -232,40 +237,24 @@ class FinaleReunionRound(VoteMechanicsMixin):
     def _get_winner(self, vote_counts):
         finalist_names = list(vote_counts.keys())
 
-        if not any(vote_counts.values()):
-            self._host_broadcast("No valid votes were cast. The result is a draw.")
-            return random.choice(finalist_names)
-
         max_votes = max(vote_counts.values())
         leaders = [name for name, count in vote_counts.items() if count == max_votes]
 
         # Clear winner
         if len(leaders) == 1:
+            self._vote_widget_vote_finalised()
             return leaders[0]
 
-        # Tied — break by game score
-        self._host_broadcast(
-            f"We have a tie! {self.format_list(leaders)} are deadlocked on {max_votes} votes each. "
-            f"In this case, the player with the highest game score wins."
-        )
-        tied_agents = [self._agent_by_name(name) for name in leaders]
-        top_scorers = self.get_strategic_players(tied_agents, top_player=True, multiple=True)
-
-        if len(top_scorers) == 1:
-            winner = top_scorers[0]
-            score = self.gameBoard.agent_scores.get(winner.name, 0)
-            self._host_broadcast(f"With a game score of {score}, the tiebreaker goes to {winner.name}!")
-            return winner.name
-
-        # Still tied — deadlock vote from the most recently eliminated player
+       
+        
         runner_up = self.voting_players[-1]
         self._host_broadcast(
-            f"Unbelievable — scores are tied too! "
-            f"In this case, the player who will decide the winner is... {runner_up.name}!"
+            f"We have a tie... in this case, one additional vote will be given to our first runner up. "
+            f"The player who will decide the winner is... {runner_up.name}!"
         )
         result = self._cast_jury_vote(runner_up, leaders, deadlock_vote=True)
         winner_name = getattr(result, "target_name", "").strip()
-
+        self._update_voting_widget(runner_up.name, winner_name, is_final=True)
         if winner_name in leaders:
             return winner_name
 

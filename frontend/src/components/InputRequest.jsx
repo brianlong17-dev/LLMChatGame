@@ -6,10 +6,24 @@ export default function InputRequest({ request, onSubmit }) {
   const [listening, setListening] = useState(false)
   const recorderRef = useRef(null)
 
+  const textareaRef = useRef(null)
   const inactive = !request
   const description = request?.description ?? 'Waiting...'
 
-  const submit = (val) => { onSubmit(val); setValue('') }
+  const submit = (val) => { onSubmit(val); setValue(''); resetHeight() }
+
+  const resetHeight = () => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+  }
+
+  const handleChange = (e) => {
+    setValue(e.target.value)
+    const el = e.target
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
 
   const toggleMic = async () => {
     if (listening) {
@@ -46,13 +60,15 @@ export default function InputRequest({ request, onSubmit }) {
         </div>
       ) : (
         <div className="input-row">
-          <input
+          <textarea
+            ref={textareaRef}
             className="input-text"
             value={value}
-            onChange={e => setValue(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && value.trim()) submit(value.trim()) }}
+            onChange={handleChange}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && value.trim()) { e.preventDefault(); submit(value.trim()) } }}
             placeholder="Type your response..."
             autoFocus={!inactive}
+            rows={1}
           />
           {value.length > MAX_INPUT_CHARS && (
             <span className="input-truncate-warn">
@@ -60,7 +76,24 @@ export default function InputRequest({ request, onSubmit }) {
             </span>
           )}
           <button className={`mic-btn ${listening ? 'active' : ''}`} onClick={toggleMic} title="Voice input">
-            {listening ? '◼' : '🎙'}
+            {listening
+              ? (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect x="2" y="2" width="10" height="10" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  {/* capsule */}
+                  <rect x="4.5" y="1" width="5" height="7" rx="2.5" stroke="currentColor" strokeWidth="1.2" />
+                  {/* stand arc */}
+                  <path d="M2.5 7.5C2.5 10.0376 4.46243 12 7 12C9.53757 12 11.5 10.0376 11.5 7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="square" />
+                  {/* stem */}
+                  <line x1="7" y1="12" x2="7" y2="13.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="square" />
+                  {/* base */}
+                  <line x1="4.5" y1="13.5" x2="9.5" y2="13.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="square" />
+                </svg>
+              )
+            }
           </button>
           <button className="input-submit" onClick={() => { if (value.trim()) submit(value.trim()) }}>
             Send

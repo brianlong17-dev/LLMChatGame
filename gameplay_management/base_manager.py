@@ -199,3 +199,46 @@ class BaseRound:
     def debug_print(self, string):
         if self._debug:
             print(string)
+
+    #####################
+    #   Widgets         #
+    #####################
+    
+    
+                    
+    def _initialise_voting_widget(self, nominee_names, voter_names, theme="gold"):
+        self._voting_dictionary = {
+            "kind": "voting",
+            "theme": theme,
+            "nominees": [{"name": name, "votes": 0} for name in nominee_names],
+            "voters_done": [],
+            "voters_pending": list(voter_names),
+            "is_final": False,
+        }
+        self.gameBoard.game_sink.on_widget_update(self._voting_dictionary)
+                
+    
+    def _update_voting_widget(self, voter_name, target_name, is_final=False):
+        for nominee in self._voting_dictionary["nominees"]:
+            if nominee["name"] == target_name:
+                nominee["votes"] += 1
+                break
+        self._voting_dictionary["voters_pending"] = [
+            n for n in self._voting_dictionary["voters_pending"] if n != voter_name
+        ]
+        
+        # ---- (edge case - tie breaker second vote) ---- #
+        voters_done = self._voting_dictionary["voters_done"]
+        existing = next((v for v in voters_done if v["name"] == voter_name), None)
+        if existing:
+            existing["voted_for"] = target_name
+        else:
+            voters_done.append({"name": voter_name, "voted_for": target_name})
+        # ------------------------------------------------ #
+        self._voting_dictionary["is_final"] = is_final
+        self.gameBoard.game_sink.on_widget_update(self._voting_dictionary)
+        
+    def _vote_widget_vote_finalised(self):
+        self._voting_dictionary["is_final"] = True
+        self.gameBoard.game_sink.on_widget_update(self._voting_dictionary)
+        

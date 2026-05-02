@@ -129,6 +129,9 @@ class WebSocketSink(GameEventSink):
     def on_feed_marker(self, label: str):
         self._send({"type": "feed_marker", "label": label})
 
+    def on_widget_update(self, widget):
+        self._send({"type": "widget_update", "widget": widget})
+
     def loading_string(self, message: str):
         self._send({"type": "loading", "message": message})
 

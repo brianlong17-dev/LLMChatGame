@@ -20,6 +20,7 @@ export function useGameSocket(autoRun, animateText) {
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0)
   const [feedMarkers, setFeedMarkers] = useState([])
   const [segmentTitles, setSegmentTitles] = useState([])
+  const [widget, setWidget] = useState(null)
 
   const wsRef = useRef(null)
   const autoRunRef = useRef(autoRun)
@@ -40,12 +41,12 @@ export function useGameSocket(autoRun, animateText) {
       const evt = pendingQueue.current.shift()
       if (evt.type === 'points_update') { setScores(evt.scores); continue }
       if (evt.type === 'evicted_update') { setEvicted(evt.evicted_names); continue }
+      if (evt.type === 'widget_update') { setWidget(evt.widget ?? null); continue }
       if (evt.type === 'feed_marker') {
         setFeedMarkers(prev => [...prev, evt.label])
         setEvents(prev => [...prev, evt])
         continue
       }
-      //will eventually include round part update and widged update 
 
       if (isAnimatableEvent(evt, animateTextRef.current)) {
         isAnimating.current = true
@@ -98,8 +99,9 @@ export function useGameSocket(autoRun, animateText) {
       return
     }
     if (evt.type === 'phase_rounds') { setPhaseRounds(evt.rounds); setCurrentRoundIndex(0); return }
-    if (evt.type === 'phase_round_index') { setCurrentRoundIndex(evt.index); setFeedMarkers([]); setSegmentTitles([]); return }
+    if (evt.type === 'phase_round_index') { setCurrentRoundIndex(evt.index); setFeedMarkers([]); setSegmentTitles([]); setWidget(null); return }
     if (evt.type === 'set_segments') { setSegmentTitles(evt.titles); return }
+    if (evt.type === 'widget_update') { setWidget(evt.widget ?? null); return }
 
     if (evt.type === 'game_over') setStatus('done')
     if (evt.type === 'error') setStatus('error')
@@ -115,6 +117,7 @@ export function useGameSocket(autoRun, animateText) {
     setEvicted([])
     setFeedMarkers([])
     setSegmentTitles([])
+    setWidget(null)
     pendingQueue.current = []
     isAnimating.current = false
     setIsAnimatingState(false)
@@ -162,6 +165,7 @@ export function useGameSocket(autoRun, animateText) {
   return {
     status, events, scores, evicted,
     inputRequest, awaitingNext, phaseRounds, currentRoundIndex, feedMarkers, segmentTitles,
+    widget,
     startGame, startDemo, submitInput, sendNext, skipAnimation,
     onAnimationComplete, skipRef, isAnimating: isAnimatingState,
   }

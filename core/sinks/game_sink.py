@@ -151,6 +151,10 @@ class GameEventSink(ABC):
         """Drop an invisible anchor in the feed at the start of a named segment. No-op by default."""
         pass
 
+    def on_widget_update(self, widget: dict | None) -> None:
+        """Push a full widget state snapshot to the sidebar. No-op by default."""
+        pass
+
     def await_continue(self) -> None:
         """Pause and wait for the viewer to advance to the next turn. No-op by default."""
         pass
@@ -216,6 +220,7 @@ class NoopGameSink(GameEventSink):
     def on_points_update(self, points): pass
     def on_evictions_update(self, evicted_names): pass
     def on_private_conversation(self, entry): pass
+    def on_widget_update(self, widget): pass
 
 class CapturingGameSink(GameEventSink):
     """
@@ -243,6 +248,7 @@ class CapturingGameSink(GameEventSink):
         self.inner_workings: list[dict] = []
         self.points_updates: list[dict[str, int]] = []
         self.evictions_updates: list[str] = []
+        self.widget_updates: list = []
         
 
     def get_user_input_simple(self, field_name, description):
@@ -307,4 +313,7 @@ class CapturingGameSink(GameEventSink):
 
     def on_private_conversation(self, entry) -> None:
         pass
+
+    def on_widget_update(self, widget) -> None:
+        self.widget_updates.append(widget)
         
