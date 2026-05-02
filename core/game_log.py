@@ -29,14 +29,18 @@ class GameLog:
     def _current_round_messages_up_to(self, message_id: int) -> list[MessageEntry]:
                 return [m for m in self.current_round.messageEntries if m.id <= message_id and not self._is_sys_admin_message(m)]
 
-    def _current_round_most_recent_player_entry(self, reserved_names: set):
+    def _current_round_most_recent_player_entry(self, reserved_names):
         for entry in reversed(self.current_round.messageEntries):
             if len(entry.messages) == 1 and entry.messages[0]['speaker'] not in reserved_names:
                 return entry
         return None
 
+
     def _current_round_most_recent_message_entry(self):
-        entries = self.current_round.messageEntries
+        entries = [
+            entry for entry in self.current_round.messageEntries 
+            if entry.visibility_restriction is None
+        ] # we dont care about pvt messages
         return entries[-1] if entries else None
 
     def _is_host_message(self, message_entry, host_name: str) -> bool:

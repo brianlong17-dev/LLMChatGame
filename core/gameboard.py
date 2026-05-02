@@ -113,7 +113,7 @@ class GameBoard:
         ]
 
     def handle_public_private_output(self, agent: BaseAgent, response, delay: float = 0.0, output_inner_workings=False):
-        if self.game_log._current_round_most_recent_player_entry(self.RESERVED_NAMES):
+        if self.game_log._current_round_most_recent_player_entry(self.RESERVED_NAMES) and not agent.is_human():
             self.game_sink.await_continue()
         public_message, private_message = response.public_response, response.private_thoughts
         self.broadcast_public_action(agent, public_message)
@@ -139,9 +139,15 @@ class GameBoard:
         else:
             self.broadcast_public_action("SYSTEM", message)
 
+    def _is_sys_host_message(self, message_entry):
+        if len(message_entry.messages) == 1:
+            msg = message_entry.messages[0]
+            return msg.get('speaker') in self.RESERVED_NAMES
+        return False
+        
     def host_broadcast(self, message, delay: float = 0.0):
-        most_recent_message = self.game_log._current_round_most_recent_message_entry()
-        if most_recent_message and not self.game_log._is_host_message(most_recent_message, self.HOST_NAME):
+        entry = self.game_log._current_round_most_recent_message_entry()
+        if entry and not self._is_sys_host_message(entry):
             self.game_sink.await_continue()
         self.broadcast_public_action(self.HOST_NAME, message)
         if delay:
