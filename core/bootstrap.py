@@ -11,6 +11,7 @@ from core.phase_recipe_factory import PhaseRecipeFactoryDefault
 from core.simulation_engine import SimulationEngine
 from core.api_client import api_client
 from agents.player import Debater
+import google.genai as genai
 
 
 #gemini-2.0-flash-lite
@@ -30,7 +31,14 @@ def create_engine(game_sink, number_of_players: int = 0, generic_players: bool =
                   model_name=DEFAULT_MODEL_NAME, higher_model_name=DEFAULT_HIGHER_MODEL_NAME,
                   phase_factory=PhaseRecipeFactoryDefault):
     load_dotenv()
-    client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
+    #client = instructor.from_provider('google/' + model_name, api_key=os.getenv("GEMINI_API_KEY"))
+    project=os.getenv("PROJECT")
+    location=os.getenv("LOCATION") 
+    client = genai.Client(
+        vertexai=True,
+        project=project,
+        location=location
+    )
     api_client.init(client, model_name)
     game_master = GameMaster(model_name, higher_model_name=higher_model_name)
     gameBoard = GameBoard(game_sink)

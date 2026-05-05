@@ -87,12 +87,16 @@ class FinaleReunionRound(VoteMechanicsMixin):
         #- action -#
         self._wake_up_round()
         self._host_broadcast("In this last round, our eliminated players will return to cast the final vote to determine the winner of the game.")
-        self.competitors_last_statement()
+        self.host_intro_finalists()
         self._questions_and_answers()
+        
+        self._host_broadcast("Finalists- what is the last thing you would like to say to the players before the vote?")
+        for agent in self.finalists:
+            self._reunion_turn(agent, "", "Respond to the host, and the other players. ")
         self.time_to_vote()
 
     def _reunion_turn(self, agent, user_content_prompt, public_response_prompt, optional=False):
-        
+        #TODO depreciate
         if optional:
             public_response_prompt += " Note: this is an optional turn. If you have nothing to say leave this blank. "
             additional_thought_nudge = "This is an option turn- do you want to speak here? You have to option to leave public response blank."
@@ -121,7 +125,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
             self._host_current_round_history()
         )
 
-    def competitors_last_statement(self):
+    def host_intro_finalists(self):
         self._on_segment(self._INTRODUCTION)
         prompt = "Respond to the host, and the other players. "
         player1, player2 = self.finalists[0], self.finalists[1]
@@ -135,9 +139,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
         self._host_broadcast(player_2_highlights)
         self._reunion_turn(player2, "", prompt)
 
-        self._host_broadcast("Finalists- what is the last thing you would like to say to the players before the vote?")
-        for agent in self.finalists:
-            self._reunion_turn(agent, "", prompt)
+        
 
     def host_vote_intro(self, voter_name, vote_number, total_votes, vote_counts):
         scores_str = ", ".join([f"{name}: {count}" for name, count in vote_counts.items()])

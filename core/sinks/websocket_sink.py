@@ -124,6 +124,9 @@ class WebSocketSink(GameEventSink):
         self._input_queue.put(None)
         self._step_queue.put(None)
 
+    def on_cast(self, names: list[str]):
+        self._send({"type": "cast", "names": names})
+
     def on_segment_titles(self, titles: list[str]):
         self._send({"type": "set_segments", "titles": titles})
 

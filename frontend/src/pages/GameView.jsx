@@ -12,7 +12,7 @@ export default function GameView({
   inputRequest, awaitingNext, phaseRounds, currentRoundIndex,
   submitInput, sendNext, skipAnimation, onAnimationComplete, skipRef,
   isAnimating, settings, updateSetting, feedMarkers, segmentTitles, widget,
-  privateConversations,
+  privateConversations, playerNames = [],
 }) {
   const { showPrivate, autoRun, animateText, showPrivateChats } = settings
 
@@ -208,7 +208,7 @@ export default function GameView({
               <div ref={privateBottomRef} />
             </main>
           )}
-          <InputRequest request={inputRequest} onSubmit={submitInput} />
+          <InputRequest request={inputRequest} onSubmit={submitInput} playerNames={playerNames} />
         </div>
 
         <button

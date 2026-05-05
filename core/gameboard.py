@@ -192,6 +192,7 @@ class GameBoard:
             seen.add(agent.name)
             self.add_agent_state(agent.name)
             self.game_sink.on_points_update(self.agent_scores)
+        self.game_sink.on_cast([a.name for a in agent_list])
 
     def add_agent_state(self, agent_name: str):
         self.agent_scores[agent_name] = 0

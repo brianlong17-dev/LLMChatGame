@@ -143,6 +143,10 @@ class GameEventSink(ABC):
         """A private conversation between specific players."""
         ...
 
+    def on_cast(self, names: list[str]) -> None:
+        """Announce the full player roster once the game's agents are finalized. No-op by default."""
+        pass
+
     def on_segment_titles(self, titles: list[str]) -> None:
         """Send the predetermined list of segment names for the current round. No-op by default."""
         pass

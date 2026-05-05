@@ -9,6 +9,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Literal, get_args, get_origin
+import google.genai.types as types
 
 
 @dataclass(frozen=True)
@@ -23,7 +24,6 @@ class CallRecord:
     total_tokens: int | None
     duration_ms: int
 
-
 class APIClient:
     def __init__(self) -> None:
         self._client = None
@@ -31,7 +31,7 @@ class APIClient:
         self._lock = threading.Lock()
         self._index = 0
         self._log_path: str | None = None
-        self._mock_output = True
+        self._mock_output = False
 
     def init(self, client, model: str) -> None:
         self._client = client
@@ -55,26 +55,26 @@ class APIClient:
                 values[name] = f"{long_text}  [{name}]"
         return response_model(**values)
 
-    def create(self, response_model, messages: list, model: str | None = None, **kwargs):
-        if self._client is None:
-            raise RuntimeError("APIClient not initialized — call init() first")
-
-        if self._mock_output:
-            return self._mock_response(response_model)
-        api_model = model or self._default_model
-        caller = _caller()
-        start = time.monotonic()
-
+    def _make_call(self, messages, api_model, response_model):
+        system_content = next((m["content"] for m in messages if m["role"] == "system"), None)
+        user_content = next((m["content"] for m in messages if m["role"] == "user"), None)
         max_429_retries = 5
         backoff = 2
         for attempt in range(max_429_retries):
-            try:
-                response, raw = self._client.create_with_completion(
+            try: 
+                response = self._client.models.generate_content(
                     model=api_model,
-                    response_model=response_model,
-                    messages=messages,
-                    generation_config={"thinking_config": {"thinking_level": "low"}},
-                    **kwargs,
+                    contents=user_content,  # just the user message string
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_content,
+                        response_mime_type="application/json",
+                        response_schema=response_model,
+                        thinking_config=types.ThinkingConfig(#thinking_budget=512, 
+                                                            include_thoughts=False,),
+                        temperature=1.5,
+                        #top_p=0.99,
+                        #top_k=64
+                    ),
                 )
                 break
             except Exception as e:
@@ -84,8 +84,20 @@ class APIClient:
                     time.sleep(wait)
                 else:
                     raise
+        result = response_model(**json.loads(response.text))
+        return response, result
+    
+    def create(self, response_model, messages: list, model: str | None = None):
+        if self._client is None:
+            raise RuntimeError("APIClient not initialized — call init() first")
 
-        prompt, completion, total = _extract_usage(raw)
+        if self._mock_output:
+            return self._mock_response(response_model)
+        api_model = model or self._default_model
+        caller = _caller()
+        start = time.monotonic()
+        response, result = self._make_call(messages, api_model, response_model)
+        prompt, completion, total = _extract_usage(response)
         with self._lock:
             record = CallRecord(
                 index=self._index,
@@ -102,8 +114,23 @@ class APIClient:
             self._records.append(record)
 
         _write(self._log_path, record)
-        return response
+        return result
 
+    def transcribe(self, audio_bytes: bytes, mime_type: str = "audio/webm", model: str | None = None, hints: list[str] | None = None) -> str:
+        hint_text = ""
+        if hints:
+            hint_text = f"\nThe following names and terms may appear: {', '.join(hints)}."
+            
+        api_model = model or self._default_model
+        response = self._client.models.generate_content(
+            model=api_model,
+            contents=[
+                types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                f"Transcribe this audio exactly. Return only the spoken words, nothing else. {hint_text}",
+            ],
+        )
+        return response.text.strip()
+        
     def summary(self) -> dict:
         with self._lock:
             records = list(self._records)
@@ -132,7 +159,6 @@ class APIClient:
             summary_path = self._log_path.replace(".jsonl", "_summary.json")
             with open(summary_path, "w", encoding="utf-8") as f:
                 json.dump(s, f, indent=2)
-
 
 # ── module-level singleton ───────────────────────────────────────────────────
 api_client = APIClient()

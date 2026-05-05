@@ -6,7 +6,7 @@ import json
 import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from core.bootstrap import create_engine, ConsoleGameEventSink
+from core.bootstrap import create_engine, ConsoleGameEventSink, create_agent
 from core.phase_recipe import PhaseRecipe
 from gameplay_management.eliminations.reunion_round import FinaleReunionRound
 
@@ -18,8 +18,10 @@ if __name__ == "__main__":
 
     # ── 2. Bootstrap with the real character names ──
     all_names = list(agent_state.keys())
+    agents = [create_agent(name) for name in all_names]
     sink = ConsoleGameEventSink()
-    engine = create_engine(sink, names=all_names, allow_rename=False)
+    
+    engine = create_engine(sink, agents = agents, allow_rename=False)
     engine.initialiseGameBoard()
 
     # ── 3. Build name->agent lookup ──

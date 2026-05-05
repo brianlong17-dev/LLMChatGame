@@ -22,6 +22,7 @@ export function useGameSocket(autoRun, animateText) {
   const [segmentTitles, setSegmentTitles] = useState([])
   const [widget, setWidget] = useState(null)
   const [privateConversations, setPrivateConversations] = useState([])
+  const [playerNames, setPlayerNames] = useState([])
 
   const wsRef = useRef(null)
   const autoRunRef = useRef(autoRun)
@@ -99,6 +100,7 @@ export function useGameSocket(autoRun, animateText) {
       setPrivateConversations(prev => [...prev, { participants: evt.participants ?? [], messages: evt.messages }])
       return
     }
+    if (evt.type === 'cast') { setPlayerNames(evt.names ?? []); return }
     if (evt.type === 'input_request') { setInputRequest(evt); return }
     if (evt.type === 'loading_done') {
       setEvents(prev => prev.filter(e => e.type !== 'loading'))
@@ -126,6 +128,7 @@ export function useGameSocket(autoRun, animateText) {
     setSegmentTitles([])
     setWidget(null)
     setPrivateConversations([])
+    setPlayerNames([])
     pendingQueue.current = []
     isAnimating.current = false
     setIsAnimatingState(false)
@@ -173,7 +176,7 @@ export function useGameSocket(autoRun, animateText) {
   return {
     status, events, scores, evicted,
     inputRequest, awaitingNext, phaseRounds, currentRoundIndex, feedMarkers, segmentTitles,
-    widget, privateConversations,
+    widget, privateConversations, playerNames,
     startGame, startDemo, submitInput, sendNext, skipAnimation,
     onAnimationComplete, skipRef, isAnimating: isAnimatingState,
   }

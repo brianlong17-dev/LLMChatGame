@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { MAX_INPUT_CHARS } from '../utils/settings'
 
-export default function InputRequest({ request, onSubmit }) {
+export default function InputRequest({ request, onSubmit, playerNames = [] }) {
   const [value, setValue] = useState('')
   const [listening, setListening] = useState(false)
   const recorderRef = useRef(null)
@@ -40,6 +40,7 @@ export default function InputRequest({ request, onSubmit }) {
       const blob = new Blob(chunks, { type: recorder.mimeType })
       const form = new FormData()
       form.append('audio', blob, 'recording.webm')
+      if (playerNames.length) form.append('names', JSON.stringify(playerNames))
       const res = await fetch('/api/transcribe', { method: 'POST', body: form })
       const data = await res.json()
       if (data.text) setValue(data.text)

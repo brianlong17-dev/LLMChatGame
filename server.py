@@ -2,13 +2,15 @@ import asyncio
 import json
 import os
 import threading
+from datetime import date
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.sinks.websocket_sink import WebSocketSink
 from runtime_tests.demo_runner import DEMO_REGISTRY
+from core.api_client import api_client
 
 load_dotenv()
 
@@ -23,6 +25,33 @@ _active_games = 0
 _active_games_lock = threading.Lock()
 MAX_CONCURRENT_GAMES = 5
 
+_limit_lock = threading.Lock()
+_games_today = 0
+_limit_date = date.today()
+DAILY_CAP = 20
+
+def check_and_increment_global_limit() -> bool:
+    global _games_today, _limit_date
+    with _limit_lock:
+        today = date.today()
+        if today != _limit_date:
+            _games_today = 0
+            _limit_date = today
+        if _games_today >= DAILY_CAP:
+            return False
+        _games_today += 1
+        return True
+    
+@app.get("/api/status")
+async def status():
+    return {
+        "games_today": _games_today,
+        "cap": DAILY_CAP,
+        "date": _limit_date.isoformat(),
+        "remaining": max(0, DAILY_CAP - _games_today)
+    }
+    
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
@@ -36,26 +65,15 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 @app.post("/api/transcribe")
-async def transcribe(audio: UploadFile = File(...)):
-    import os
-    from dotenv import load_dotenv
-    from google import genai
-    from google.genai import types
-    load_dotenv()
+async def transcribe(audio: UploadFile = File(...), names: str = Form("")):
+    from fastapi import HTTPException
     MAX_AUDIO_BYTES = 10 * 1024 * 1024  # 10 MB
     audio_bytes = await audio.read(MAX_AUDIO_BYTES + 1)
     if len(audio_bytes) > MAX_AUDIO_BYTES:
-        from fastapi import HTTPException
         raise HTTPException(status_code=413, detail="Audio file too large (max 10 MB)")
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-lite",
-        contents=[
-            types.Part.from_bytes(data=audio_bytes, mime_type=audio.content_type or "audio/webm"),
-            "Transcribe this audio exactly. Return only the spoken words, nothing else.",
-        ],
-    )
-    return {"text": response.text.strip()}
+    hints = json.loads(names) if names else None
+    text = api_client.transcribe(audio_bytes, audio.content_type or "audio/webm", hints=hints)
+    return {"text": text}
 
 # ---------------------------------------------------------------------------
 # Flags endpoint
@@ -102,12 +120,21 @@ async def game_ws(websocket: WebSocket):
 
     loop = asyncio.get_event_loop()
 
+    if not check_and_increment_global_limit():
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "Daily game limit reached. Come back tomorrow."
+        }))
+        await websocket.close()
+        return
+    
     with _active_games_lock:
         if _active_games >= MAX_CONCURRENT_GAMES:
             await websocket.send_text(json.dumps({"type": "error", "message": f"Server is at capacity ({MAX_CONCURRENT_GAMES} active games). Try again soon."}))
             await websocket.close()
             return
         _active_games += 1
+        
 
     sink = None
     try:
@@ -174,13 +201,24 @@ async def demo_ws(websocket: WebSocket):
         return
 
     loop = asyncio.get_event_loop()
-
+    
+    
+    if not check_and_increment_global_limit():
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "Daily game limit reached. Come back tomorrow."
+        }))
+        await websocket.close()
+        return
+    
     with _active_games_lock:
         if _active_games >= MAX_CONCURRENT_GAMES:
             await websocket.send_text(json.dumps({"type": "error", "message": f"Server is at capacity ({MAX_CONCURRENT_GAMES} active games). Try again soon."}))
             await websocket.close()
             return
         _active_games += 1
+        
+    
 
     sink = None
     try:
