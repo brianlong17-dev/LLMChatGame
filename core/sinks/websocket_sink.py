@@ -92,8 +92,9 @@ class WebSocketSink(GameEventSink):
         self._send({"type": "evicted_update", "evicted_names": evicted_names})
 
     def on_private_conversation(self, entry) -> None:
+        participants = sorted(entry.visibility_restriction) if entry.visibility_restriction else []
         messages = [{"speaker": m["speaker"], "message": m["message"]} for m in entry.messages]
-        self._send({"type": "private_conversation", "messages": messages})
+        self._send({"type": "private_conversation", "participants": participants, "messages": messages})
 
     # -- Human input ----------------------------------------------------------
 

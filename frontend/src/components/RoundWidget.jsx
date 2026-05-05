@@ -34,6 +34,16 @@ function SparkCanvas({ colors = GOLD_COLORS }) {
     const ctx = canvas.getContext('2d')
     const particles = []
 
+    const syncSize = () => {
+      if (canvas.offsetWidth > 0) {
+        canvas.width = canvas.offsetWidth
+        canvas.height = canvas.offsetHeight || 120
+      }
+    }
+    syncSize()
+    const ro = new ResizeObserver(syncSize)
+    ro.observe(canvas)
+
     const spawn = () => {
       const x = Math.random() * canvas.width
       particles.push({
@@ -49,13 +59,6 @@ function SparkCanvas({ colors = GOLD_COLORS }) {
     }
 
     const tick = () => {
-      // Size canvas once DOM is ready
-      if (!canvas._sized && canvas.offsetWidth > 0) {
-        canvas.width = canvas.offsetWidth
-        canvas.height = canvas.offsetHeight || 120
-        canvas._sized = true
-      }
-
       const spawnCount = Math.floor(Math.random() * 2) + 1
       for (let i = 0; i < spawnCount; i++) spawn()
 
@@ -104,6 +107,7 @@ function SparkCanvas({ colors = GOLD_COLORS }) {
     rafRef.current = requestAnimationFrame(tick)
     return () => {
       cancelAnimationFrame(rafRef.current)
+      ro.disconnect()
       ctx.clearRect(0, 0, canvas.width, canvas.height)
     }
   }, [colors])

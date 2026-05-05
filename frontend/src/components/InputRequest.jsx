@@ -65,7 +65,7 @@ export default function InputRequest({ request, onSubmit }) {
             className="input-text"
             value={value}
             onChange={handleChange}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && value.trim()) { e.preventDefault(); submit(value.trim()) } }}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(value.trim()) } }}
             placeholder="Type your response..."
             autoFocus={!inactive}
             rows={1}
@@ -95,7 +95,7 @@ export default function InputRequest({ request, onSubmit }) {
               )
             }
           </button>
-          <button className="input-submit" onClick={() => { if (value.trim()) submit(value.trim()) }}>
+          <button className="input-submit" onClick={() => submit(value.trim())}>
             Send
           </button>
         </div>

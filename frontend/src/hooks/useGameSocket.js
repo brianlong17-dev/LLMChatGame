@@ -21,6 +21,7 @@ export function useGameSocket(autoRun, animateText) {
   const [feedMarkers, setFeedMarkers] = useState([])
   const [segmentTitles, setSegmentTitles] = useState([])
   const [widget, setWidget] = useState(null)
+  const [privateConversations, setPrivateConversations] = useState([])
 
   const wsRef = useRef(null)
   const autoRunRef = useRef(autoRun)
@@ -47,6 +48,15 @@ export function useGameSocket(autoRun, animateText) {
         setEvents(prev => [...prev, evt])
         continue
       }
+      if (evt.type === 'awaiting_next') {                                       // ← new
+        if (autoRunRef.current) {
+          wsRef.current?.send(JSON.stringify({ type: 'next_turn' }))
+        } else {
+          setAwaitingNext(true)
+        }
+        continue
+      }
+
 
       if (isAnimatableEvent(evt, animateTextRef.current)) {
         isAnimating.current = true
@@ -85,19 +95,16 @@ export function useGameSocket(autoRun, animateText) {
     //if (evt.type === 'evicted_update') { setEvicted(evt.evicted_names); return }
     // We move these too the queue
 
+    if (evt.type === 'private_conversation') {
+      setPrivateConversations(prev => [...prev, { participants: evt.participants ?? [], messages: evt.messages }])
+      return
+    }
     if (evt.type === 'input_request') { setInputRequest(evt); return }
     if (evt.type === 'loading_done') {
       setEvents(prev => prev.filter(e => e.type !== 'loading'))
       return
     }
-    if (evt.type === 'awaiting_next') {
-      if (autoRunRef.current) {
-        wsRef.current?.send(JSON.stringify({ type: 'next_turn' }))
-      } else {
-        setAwaitingNext(true)
-      }
-      return
-    }
+        
     if (evt.type === 'phase_rounds') { setPhaseRounds(evt.rounds); setCurrentRoundIndex(0); return }
     if (evt.type === 'phase_round_index') { setCurrentRoundIndex(evt.index); setFeedMarkers([]); setSegmentTitles([]); setWidget(null); return }
     if (evt.type === 'set_segments') { setSegmentTitles(evt.titles); return }
@@ -118,6 +125,7 @@ export function useGameSocket(autoRun, animateText) {
     setFeedMarkers([])
     setSegmentTitles([])
     setWidget(null)
+    setPrivateConversations([])
     pendingQueue.current = []
     isAnimating.current = false
     setIsAnimatingState(false)
@@ -165,7 +173,7 @@ export function useGameSocket(autoRun, animateText) {
   return {
     status, events, scores, evicted,
     inputRequest, awaitingNext, phaseRounds, currentRoundIndex, feedMarkers, segmentTitles,
-    widget,
+    widget, privateConversations,
     startGame, startDemo, submitInput, sendNext, skipAnimation,
     onAnimationComplete, skipRef, isAnimating: isAnimatingState,
   }

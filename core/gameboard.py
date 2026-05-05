@@ -35,9 +35,15 @@ class GameBoard:
 
     def log_new_restricted_conversation(self, restricted_users, player_name, message):
         if self._human_in_restriction(restricted_users):
+            self.game_sink._on_user_private_conversation(restricted_users, player_name, message, new = True)
+            ##
+            # web we need to implement , we can no-op for now
+            ##
+            #this goes to the game_sink console. 
             header = f"[Private: {' & '.join(restricted_users)}]"
             self.game_sink.system_private(header)
             self.game_sink.on_public_action(player_name, message, "RED")
+            #####
         return self.game_log._update_history(player_name, message, restricted_users)
 
     def log_message_to_conversation(self, conversation_id, player_name: str, message: str):
@@ -45,6 +51,8 @@ class GameBoard:
         if entry:
             entry.messages.append({"speaker": player_name, "message": message})
             if self._human_in_restriction(entry.visibility_restriction):
+                self.game_sink._on_user_private_conversation(restricted_users, player_name, message)
+                #same can go into console sink, no-op on web
                 self.game_sink.on_public_action(player_name, message, "RED")
 
     def _get_conversation_entry(self, conversation_id):
@@ -55,11 +63,10 @@ class GameBoard:
 
     def close_private_conversation(self, conversation_id, silent=False):
         entry = self._get_conversation_entry(conversation_id)
-        if entry:
-            if not self._human_in_restriction(entry.visibility_restriction):
-                if not silent:
-                    self.game_sink.on_private_conversation(entry)
-
+        if entry and not self._human_in_restriction(entry.visibility_restriction):
+            if not silent:
+                self.game_sink.on_private_conversation(entry) 
+                
     def get_agent_score(self, agent_name: str) -> int:
         if agent_name not in self.agent_scores:
             raise RuntimeError(f"Missing score for active player '{agent_name}'")

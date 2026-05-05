@@ -5,21 +5,28 @@ import RoundTracker from '../components/RoundTracker'
 import RoundWidget from '../components/RoundWidget'
 import InputRequest from '../components/InputRequest'
 import SegmentTracker from '../components/SegmentTracker'
+import PrivateChatsPanel from '../components/PrivateChatsPanel'
 
 export default function GameView({
   status, events, scores, evicted,
   inputRequest, awaitingNext, phaseRounds, currentRoundIndex,
   submitInput, sendNext, skipAnimation, onAnimationComplete, skipRef,
-  isAnimating, settings, updateSetting, feedMarkers, segmentTitles, widget
+  isAnimating, settings, updateSetting, feedMarkers, segmentTitles, widget,
+  privateConversations,
 }) {
-  const { showPrivate, autoRun, animateText } = settings
+  const { showPrivate, autoRun, animateText, showPrivateChats } = settings
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('feed')
+  const [seenPrivateCount, setSeenPrivateCount] = useState(0)
   const settingsRef = useRef(null)
   const colorMapRef = useRef({})
   const bottomRef = useRef(null)
   const feedRef = useRef(null)
+  const privateBottomRef = useRef(null)
+  const lastSeenPrivateCountRef = useRef(0)
   const userScrolledUpRef = useRef(false)
+  const lastScrollTopRef = useRef(0)
   const leftDragRef = useRef({ startX: 0, startWidth: 0, moved: false })
 
   const onLeftResizeStart = (e) => {
@@ -48,15 +55,15 @@ export default function GameView({
   const handleFeedScroll = () => {
     const feed = feedRef.current
     if (!feed) return
-    // Only re-enable auto-scroll when user scrolls back near the bottom
-    if (feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80) {
-      userScrolledUpRef.current = false
-    }
-  }
+    const distFromBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight
+    const movedUp = feed.scrollTop < lastScrollTopRef.current - 1
+    lastScrollTopRef.current = feed.scrollTop
 
-  const handleFeedWheel = (e) => {
-    // Any upward wheel gesture immediately releases auto-scroll
-    if (e.deltaY < 0) userScrolledUpRef.current = true
+    if (distFromBottom < 80) {
+      userScrolledUpRef.current = false
+    } else if (movedUp) {
+      userScrolledUpRef.current = true
+    }
   }
 
   useEffect(() => {
@@ -78,6 +85,14 @@ export default function GameView({
     return () => clearInterval(id)
   }, [status])
 
+  useEffect(() => {
+    if (activeTab !== 'private') return
+    if (privateConversations.length > lastSeenPrivateCountRef.current) {
+      lastSeenPrivateCountRef.current = privateConversations.length
+      privateBottomRef.current?.scrollIntoView({ behavior: 'instant' })
+    }
+  }, [privateConversations, activeTab])
+
   const visibleEvents = showPrivate
     ? events
     : events.filter(e => e.type !== 'private_thought' && e.type !== 'system_private')
@@ -85,7 +100,20 @@ export default function GameView({
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">THE GAME</h1>
+        <div className="header-left">
+          <h1 className="app-title">THE GAME</h1>
+          {showPrivateChats && (
+            <div className="header-tabs">
+              <button className={`header-tab${activeTab === 'feed' ? ' active' : ''}`} onClick={() => setActiveTab('feed')}>
+                Main Feed
+              </button>
+              <button className={`header-tab${activeTab === 'private' ? ' active' : ''}`} onClick={() => { setActiveTab('private'); setSeenPrivateCount(privateConversations.length) }}>
+                Private Conversations
+                {privateConversations.length > seenPrivateCount && <span className="feed-tab-badge">{privateConversations.length - seenPrivateCount}</span>}
+              </button>
+            </div>
+          )}
+        </div>
         <div className="header-controls">
           <div className="settings-menu" ref={settingsRef}>
             <button className="gear-btn" onClick={() => setSettingsOpen(o => !o)}>⚙</button>
@@ -102,6 +130,10 @@ export default function GameView({
                 <label className="toggle-label">
                   <input type="checkbox" checked={animateText} onChange={e => updateSetting('animateText', e.target.checked)} />
                   Animate text
+                </label>
+                <label className="toggle-label">
+                  <input type="checkbox" checked={showPrivateChats} onChange={e => updateSetting('showPrivateChats', e.target.checked)} />
+                  Show private conversations
                 </label>
               </div>
             )}
@@ -149,7 +181,12 @@ export default function GameView({
         </button>
 
         <div className="feed-col">
-          <main className="feed" ref={feedRef} onScroll={handleFeedScroll} onWheel={handleFeedWheel}>
+          <main
+            className="feed"
+            ref={feedRef}
+            onScroll={handleFeedScroll}
+            style={{ display: showPrivateChats && activeTab === 'private' ? 'none' : undefined }}
+          >
             {visibleEvents.map((evt, i) => (
               <Message
                 key={i}
@@ -162,6 +199,15 @@ export default function GameView({
             ))}
             <div ref={bottomRef} />
           </main>
+          {showPrivateChats && (
+            <main
+              className="feed"
+              style={{ display: activeTab === 'private' ? undefined : 'none' }}
+            >
+              <PrivateChatsPanel conversations={privateConversations} colorMap={colorMapRef.current} />
+              <div ref={privateBottomRef} />
+            </main>
+          )}
           <InputRequest request={inputRequest} onSubmit={submitInput} />
         </div>
 
