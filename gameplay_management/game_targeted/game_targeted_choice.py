@@ -45,7 +45,7 @@ class GameTargetedChoice(GameMechanicsMixin):
                 response = player.take_turn_standard(game_instruction, self.gameBoard, response_model)
                 self.publicPrivateResponse(player, response)
                 
-                target_name = getattr(response, GamePromptLibrary.model_field_choose_name)
+                target_name = self._get_target_name_from_response(response)
                 target_agent = self._agent_by_name(self._clean_target_name(target_name))
                 
                 if validate_name and (not target_agent or target_agent.name == player.name):

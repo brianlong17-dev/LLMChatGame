@@ -21,6 +21,9 @@ class TurnManager:
         return self.base_manager.gameBoard
 
     # --- Model Creation ---
+    
+    def _get_target_name_from_response(self, response):
+        return self.base_manager._get_target_name_from_response(response)
 
     def _make_model_optional(self, model, agent):
         buffer = agent.optional_response_buffer
@@ -88,7 +91,8 @@ class TurnManager:
                   game_logic_fields = None,
                   instruction_override = None,
                   optional: bool = False,
-                  broadcast: bool = False):
+                  broadcast: bool = False,
+                  include_target_name = False):
         
         
         optional = optional and self.optional_responses_in_use
@@ -117,22 +121,25 @@ class TurnManager:
             result = player.take_turn_standard(user_content, self.gameBoard, model, instruction_override=instruction_override)
 
         if broadcast and result and result.public_response:
-            self.gameBoard.handle_public_private_output(player, result)
+            directed_to_name = self._get_target_name_from_response(result) if include_target_name else None
+            self.gameBoard.handle_public_private_output(player, result, directed_to_name = directed_to_name)
 
         return result
 
     def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None,
-                   private_thoughts_prompt: str = None, instruction_override = None):
-        return self.take_turn(player, text_to_respond_to,
+                   private_thoughts_prompt: str = None, instruction_override = None, broadcast = False):
+        return self.take_turn(player, text_to_respond_to, #TODO rename as turn prompt
                               public_response_prompt=public_response_prompt,
                               private_thoughts_prompt=private_thoughts_prompt,
-                              instruction_override=instruction_override)
+                              instruction_override=instruction_override,
+                              broadcast = broadcast)
 
-    def get_response(self, player, model_name, context_msg, action_fields = None, additional_thought_nudge = None):
+    def get_response(self, player, model_name, context_msg, action_fields = None, additional_thought_nudge = None, broadcast = False):
         return self.take_turn(player, context_msg,
                               model_name=model_name,
                               additional_thought_nudge=additional_thought_nudge,
-                              action_fields=action_fields)
+                              action_fields=action_fields,
+                              broadcast = broadcast)
 
     def _ask_directed_question(self, player, possible_target_names, user_content,
                                public_response_prompt, additional_thought_nudge = None):
@@ -141,7 +148,8 @@ class TurnManager:
                               public_response_prompt=public_response_prompt,
                               additional_thought_nudge=additional_thought_nudge,
                               action_fields=action_fields,
-                              broadcast=True)
+                              broadcast=True,
+                              include_target_name = True)
 
     def _basic_turn(self, agent, user_content_prompt, public_response_prompt,
                     private_thoughts_prompt = None, optional = False):

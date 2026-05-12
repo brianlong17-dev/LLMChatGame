@@ -86,10 +86,11 @@ class ContextBuilder:
                             output += f"\n [Private System Message] {message['message']} [End Private Message]"
                     else:
                         names = ", ".join(entry.visibility_restriction)
-                        output += f"\n--------------- Private Conversation between {names} ----------------\n"
+                        output += f"\n=== Private Conversation between {names} ===\n"
                         for message in entry.messages:
                             output += (f"\n{message['speaker']}: {message['message']}")
-                        output += f"\n--------------- END OF Private Conversation between {names} ----------------\n"
+                        if entry.closed:
+                            output += f"\n=== END OF Private Conversation between {names} ===\n"
         return output
 
     

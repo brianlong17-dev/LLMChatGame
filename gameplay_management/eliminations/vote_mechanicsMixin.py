@@ -101,7 +101,7 @@ class VoteMechanicsMixin(BaseRound):
             voting_results = [vote_future.result() for vote_future in voting_futures]
 
         for agent, vote_response in zip(self.simulationEngine.agents, voting_results):
-            actual_vote = getattr(vote_response, GamePromptLibrary.model_field_choose_name, None)
+            actual_vote = self._get_target_name_from_response(vote_response)
             actual_vote = actual_vote.strip() if actual_vote else ""
 
             if actual_vote not in players_up_for_elimination:
@@ -173,7 +173,7 @@ class VoteMechanicsMixin(BaseRound):
             points_per_survived_vote = GamePromptLibrary.points_per_survived_vote
         survivors_rewarded = {}
         for vote_obj in voting_results:
-            targeted_player = getattr(vote_obj, GamePromptLibrary.model_field_choose_name, None)
+            targeted_player = self._get_target_name_from_response(vote_obj)
             targeted_player = targeted_player.strip() if targeted_player else ""
             if targeted_player and targeted_player != victim_name:
                 self.gameBoard.append_agent_points(targeted_player, points_per_survived_vote)

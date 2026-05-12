@@ -5,6 +5,7 @@ from typing import Callable, Sequence
 from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
 from gameplay_management.turn_manager import TurnManager
+from prompts.gamePrompts import GamePromptLibrary
 from pydantic import Field
 
 from typing import TYPE_CHECKING
@@ -136,6 +137,9 @@ class BaseRound:
 
     def _choose_name_field(self, allowed_names, reason_for_choosing_prompt, field_name = None):
         return self.turn_manager._choose_name_field(allowed_names, reason_for_choosing_prompt, field_name)
+
+    def _get_target_name_from_response(self, response):
+        return getattr(response, GamePromptLibrary.model_field_choose_name, None)
 
     #####################
     #   Player Turns    #

@@ -82,7 +82,7 @@ class GameEventSink(ABC):
     # -- Speech and thought ---------------------------------------------------
 
     @abstractmethod
-    def on_public_action(self, speaker: Speaker, message: str, color: str = "", animate: bool = True) -> None:
+    def on_public_action(self, speaker: Speaker, message: str, color: str = "", animate: bool = True, directed_to_name=None) -> None:
         """
         A speaker acted publicly — goes into game history, visible to all agents.
         color is a hint for terminal renderers; animate signals whether the frontend
@@ -215,7 +215,7 @@ class NoopGameSink(GameEventSink):
     def on_round_start(self, round_number, scores): pass
     def on_round_summary(self, summary): pass
     def on_turn_header(self, turn_number): pass
-    def on_public_action(self, speaker, message, color="", animate=True): pass
+    def on_public_action(self, speaker, message, color="", animate=True, directed_to_name=None): pass
     def on_private_thought(self, speaker, message): pass
     def on_inner_workings(self, speaker, inner_workings, override=False): pass
     def system_private(self, message): pass
@@ -285,7 +285,9 @@ class CapturingGameSink(GameEventSink):
     def on_turn_header(self, turn_number):
         self.turn_headers.append(turn_number)
 
-    def on_public_action(self, speaker, message, color="", animate=True):
+    def on_public_action(self, speaker, message, color="", animate=True, directed_to_name=None):
+        if directed_to_name:
+            message = f"@{directed_to_name} - {message}"
         self.public_actions.append({"speaker": speaker, "message": message, "color": color})
 
     def on_private_thought(self, speaker, message):

@@ -27,7 +27,7 @@ class Dashboard:
             points_behind = max_score - my_score
 
             if is_leader:
-                if score > 0:
+                if my_score > 0:
                     if len(leaders) > 1:
                         tied_with = [l for l in leaders if l != agent_name]
                         dash.append(f"STATUS: Tied for 1st.")

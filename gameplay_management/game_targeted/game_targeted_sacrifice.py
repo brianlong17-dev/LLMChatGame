@@ -66,7 +66,7 @@ class GameTargetedChoiceSacrifice(GameTargetedChoice):
         def sacrifice_points_logic(player, target_agent, response):
             
             spent = response.points_to_spend
-            target_name = getattr(response, GamePromptLibrary.model_field_choose_name, None)
+            target_name = self._get_target_name_from_response(response)
             normalized_target = self._normalize_target_string(target_name)
             
             if normalized_target == "pass" or spent <= 0:

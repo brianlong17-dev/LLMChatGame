@@ -5,7 +5,6 @@ from typing import Optional, Sequence
 
 from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMixin
 from models.player_models import DynamicModelFactory
-from prompts.gamePrompts import GamePromptLibrary
 
 
 class VoteElectLeader(VoteMechanicsMixin):
@@ -45,7 +44,7 @@ class VoteElectLeader(VoteMechanicsMixin):
         for agent, vote_response in zip(self.simulationEngine.agents, voting_results):
             #I think all public private responses with action should probably take an action as well, to output it
             self.publicPrivateResponse(agent, vote_response, delay = 1)
-            target_name = getattr(vote_response, GamePromptLibrary.model_field_choose_name)
+            target_name = self._get_target_name_from_response(vote_response)
             choice = self._agent_by_name(target_name)
             if choice:
                 votes.append(choice.name)
@@ -87,7 +86,7 @@ class VoteElectLeader(VoteMechanicsMixin):
         self.publicPrivateResponse(leader, leader_response)
 
         # --- Step 4: Reveal and eliminate ---
-        victim_name = getattr(leader_response, GamePromptLibrary.model_field_choose_name)
+        victim_name = self._get_target_name_from_response(leader_response)
         if not victim_name or victim_name not in players_up_for_elimination:
             self.gameBoard.host_broadcast(f"⚡ {leader_name} has made an invalid choice of... {victim_name}.")
             victim_name = random.choice(players_up_for_elimination)

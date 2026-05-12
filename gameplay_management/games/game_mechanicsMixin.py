@@ -1,6 +1,5 @@
 from gameplay_management.base_manager import BaseRound
 from models.player_models import DynamicModelFactory
-from prompts.gamePrompts import GamePromptLibrary
 import random
 from typing import TYPE_CHECKING
 
@@ -52,7 +51,7 @@ class GameMechanicsMixin(BaseRound):
         action_fields = self._choose_name_field(available_agents_names, name_field_prompt) 
         response_model = DynamicModelFactory.create_model_(chooser, model_name="PickPartner", action_fields=action_fields) 
         response = chooser.take_turn_standard(user_content, self.gameBoard, response_model)
-        partner_name = getattr(response, GamePromptLibrary.model_field_choose_name, None)
+        partner_name = self._get_target_name_from_response(response)
         partner = self._agent_by_name(partner_name)
         #-----------------------
         self.publicPrivateResponse(chooser, response)

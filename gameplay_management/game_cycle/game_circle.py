@@ -1,7 +1,6 @@
 import random
 from gameplay_management.game_cycle.game_cycle import CycleRound
 from models.player_models import DynamicModelFactory
-from prompts.gamePrompts import GamePromptLibrary
 
 
 class GameCircle(CycleRound):
@@ -35,7 +34,7 @@ class GameCircle(CycleRound):
                         f"There's room for one more... {self.format_list(pool_names)} are all in danger- who will you call to protect? ")
         result = shield_holder.take_turn_standard(user_content, self.gameBoard, model)
         self.gameBoard.handle_public_private_output(shield_holder, result)
-        protected_name = getattr(result, GamePromptLibrary.model_field_choose_name).strip()
+        protected_name = self._get_target_name_from_response(result).strip()
         if protected_name in pool_names:
             self._shield_host_response(shield_holder.name, protected_name)
             return [a for a in unprotected_pool if a.name != protected_name]
