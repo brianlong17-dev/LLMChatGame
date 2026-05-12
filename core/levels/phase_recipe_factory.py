@@ -26,7 +26,7 @@ from gameplay_management.game_cycle.game_mob import GameMob
 class PhaseRecipeFactory:
     
     @classmethod
-    def make_phase(self, pre_game_discussion_rounds, game, pre_vote_discussion_rounds,
+    def make_phase(cls, pre_game_discussion_rounds, game, pre_vote_discussion_rounds,
                    vote, post_vote_discussion_rounds, immunity_types, config_mutations=None):
         rounds = []
 
@@ -75,10 +75,6 @@ class PhaseRecipeFactory:
 class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
     
     @classmethod
-    def get_game_rules(cls):
-        "Players are eliminated until one winner remains."
-        
-    @classmethod
     def get_phase_recipe(cls, phase_number, agent_number, cfg: GameConfig, voting=None, incl_games = True, speed=1):
         return cls.get_phase_compelling(phase_number, agent_number, cfg, voting, incl_games, speed)
     
@@ -87,8 +83,8 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
         return [
             None,  # phase 0 unused
             
-            #rich foes
-            PhaseRecipe(rounds=[IntroRound, DiscussionRound, GameRockPaperScissors, VoteElectLeader]),
+            #rich foes IntroRound, DiscussionRound,
+            PhaseRecipe(rounds=[DiscussionRound,  GameRockPaperScissors, VoteElectLeader]),
             PhaseRecipe(rounds=[GameTargetedChoiceGive, VoteBottomTwo]),
             PhaseRecipe(rounds=[GameTargetedChoiceSteal, VoteBottomTwo]),
             PhaseRecipe(rounds=[GameCircle, DiscussionRound, VoteBottomTwo]),

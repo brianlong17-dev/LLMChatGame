@@ -17,7 +17,6 @@ class PhaseRunner:
         self.simulation_engine = simulation_engine
         self.current_recipe = None
         self.current_round_index = 0
-        self.overall_game_rules = ""
         
 
     @property
@@ -83,9 +82,6 @@ class PhaseRunner:
         
     def run_phase(self, recipe: 'PhaseRecipe'):
         
-        if recipe.overall_game_rules:
-            self.overall_game_rules = recipe.overall_game_rules
-            
         self.current_round_index = 0
 
         cfg = self._cfg()

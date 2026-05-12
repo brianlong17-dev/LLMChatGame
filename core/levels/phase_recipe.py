@@ -8,7 +8,6 @@ from gameplay_management.immunities.immunity_mechanicsMixin import ImmunityMecha
 class PhaseRecipe(BaseModel):
     rounds: List[Type[BaseRound]] = None
     immunity_types: Optional[List[Type[ImmunityMechanicsMixin]]] = None
-    overall_game_rules: Optional[str] = None
     config_mutations: List[tuple] = []
 
     def phase_summary_string(self, cfg):
@@ -18,20 +17,30 @@ class PhaseRecipe(BaseModel):
         return round_summary
 
     def phase_progress_string(self, cfg, current_index):
-        round_summary = ''
         current_index -= 1
+        lines = []
         for i, round in enumerate(self.rounds):
             if i < current_index:
-                status = "COMPLETED"
+                prefix = "✓"
+                suffix = ""
             elif i == current_index:
-                status = "CURRENTLY ONGOING"
+                prefix = "▶"
+                suffix = "  [NOW]"
             else:
-                status = "UPCOMING"
+                prefix = " "
+                suffix = ""
 
-            round_summary += f"{round.display_name(cfg)} - {status}\n"
-        round_summary += self.detailed_rules_string(cfg, current_index)
+            line = f"  {prefix} {round.display_name(cfg)}{suffix}"
+            
+            # Inline rules for upcoming/current rounds only
+            if i >= current_index:
+                rules = round.rules_brief(cfg)
+                if rules:
+                    line += f"  — {rules}"
+            
+            lines.append(line)
 
-        return round_summary
+        return "\n".join(lines)
 
     def detailed_rules_string(self, cfg, current_index):
         rules = []

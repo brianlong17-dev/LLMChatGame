@@ -1,5 +1,7 @@
 from collections import deque
 from pydantic import Field
+from core.game_context.system_prompt import SystemPrompt
+from core.game_context.user_content import UserContent
 from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 from prompts.prompts import PromptLibrary
@@ -31,6 +33,7 @@ class Debater(BaseAgent):
         self.phase_summaries_brief = {}
         self.detailed_summary_count = 2
         self.game_over = False
+        self.initialising = False
         self.optional_response_buffer = 0
         #todo : implement temperature
     
@@ -68,7 +71,21 @@ class Debater(BaseAgent):
         return {**self.logic_fields(), **self.internal_thinking_fields()}
     
     def _system_prompt(self, gameBoard):
-        return PromptLibrary.player_system_prompt(self, gameBoard)
+        return SystemPrompt.render(self)
+        
+        
+    
+    def system_prompt_init(self):
+        
+        return ("This is not a performance. You are generating the specific, concrete "
+        "details of your own life — the memories and backstory that will ground "
+        "everything you say and do from this point forward."
+
+        "Answer each question as if you are genuinely remembering real things. "
+        "Be specific. Commit to details. Vague answers are wrong answers. "
+
+        "These become your permanent memory. ")
+
       
     def process_turn_cognitive_fields(self, turn):
         
@@ -94,23 +111,13 @@ class Debater(BaseAgent):
                 setattr(self, target_attr_name, value)
     
     def _get_full_user_content(self, gameBoard, user_content, instruction_override=None) :
-        
-        if instruction_override:
-            instructions = instruction_override
-        else:
-            instructions = PromptLibrary.player_user_prompt(
-                self.phase_summaries_string(),
-                gameBoard.context_builder.get_full_context(self), 
-                gameBoard.score_string())
+        return UserContent.render(self, gameBoard, user_content, instruction_override)
 
-        # 2. Combine
-        full_user_content = (f"{instructions}\n\n{user_content}\n\nYour Turn:")
-        return full_user_content
-                     
     def take_turn_standard(self, user_content, gameBoard, model, system_content = None, instruction_override=None):
                            #, context_model = StandardContext):
         #TODO instruction_override is redudundant now
         #user_content = context_model._get_full_user_content(gameBoard, user_content, instruction_override)
+        #TODO - system conent should also be generated here?
         
         user_content = self._get_full_user_content(gameBoard, user_content, instruction_override) 
         turn = self.get_response(user_content, model, gameBoard, system_content) #TODO temperature
@@ -130,7 +137,7 @@ class Debater(BaseAgent):
             set(self.phase_summaries_brief.keys())
         )
         if not all_keys:
-            return "No summaries yet.\n"
+            return ""
             
         sorted_keys = sorted(list(all_keys))
         total_summaries = len(sorted_keys)
@@ -149,7 +156,7 @@ class Debater(BaseAgent):
     
     def _summarise_phase_context_string(self, game_board):
         phase_rounds_formatted = game_board.context_builder.phase_rounds_string(self)
-        context_string = "------------YOUR PREVIOUS PHASE SUMMARIES-----------------\n"
+        context_string = "=== YOUR SUMMARIES OF PREVIOUS PHASES ===\n"
         context_string += self.phase_summaries_string() #this should say none yet if empty.
         context_string += "\n\n------------ The current phase to summarise into memory: ---------\n"
         context_string += phase_rounds_formatted

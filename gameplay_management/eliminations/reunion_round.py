@@ -4,7 +4,6 @@ from gameplay_management.eliminations.vote_mechanicsMixin import VoteMechanicsMi
 from models.player_models import DynamicModelFactory
 from prompts.gamePrompts import GamePromptLibrary
 from pydantic import Field
-import time
 from concurrent.futures import ThreadPoolExecutor
 
 class FinaleReunionRound(VoteMechanicsMixin):
@@ -32,36 +31,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
         return False
     
     
-    def _host_back_and_forth(self, player, questions, instruction_override=None):
     
-        conversation_id = None
-
-        action_fields = {}
-        for key, value in questions.items():
-            action_fields = action_fields | {key: (str, Field(description=value))}
-
-        basic_model = DynamicModelFactory.create_model_(
-            player, "basic_turn",
-            action_fields=action_fields,
-            action_post_response=True #need - we're overwriting public response
-        )
-        user_content = "Respond privately to each question, back and forth with the host."
-        result = player.take_turn_standard(
-            user_content, self.gameBoard, basic_model,
-            instruction_override=instruction_override
-        )
-
-        for key, value in questions.items():
-            answer = getattr(result, key, "")
-            if not conversation_id:
-                conversation_id = self._initialise_private_host_conversation(player, value)
-            else:
-                self._private_host_conversation_host_message(conversation_id, value)
-            self.gameBoard.log_message_to_conversation(conversation_id, player.name, answer)
-        elapsed = time.time() - self.start
-        self.debug_print(f"done : {player.name} -  {elapsed:.2f}s")
-        return conversation_id
-
 
     def _wake_up_player_reunion(self, player):
         if player.is_human():
@@ -118,7 +88,6 @@ class FinaleReunionRound(VoteMechanicsMixin):
                                        
 
         #- action -#
-        self.start = time.time()
         executor = ThreadPoolExecutor()
         wake_up_future = executor.submit(self._wake_up_round)
                 
@@ -134,7 +103,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
             self._reunion_turn(agent, "", "Respond to the host, and the other players. ")
         self.time_to_vote()
 
-    def _reunion_turn(self, agent, user_content_prompt, public_response_prompt, optional=False):
+    def _reunion_turn(self, agent, user_content_prompt, public_response_prompt, optional=False, private_thoughts_prompt = None):
         #TODO depreciate
         if optional:
             public_response_prompt += " Note: this is an optional turn. If you have nothing to say leave this blank. "
@@ -143,7 +112,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
             additional_thought_nudge = None
             
         basic_model = DynamicModelFactory.create_model_(agent, "basic_turn", public_response_prompt=public_response_prompt, 
-                                                        additional_thought_nudge=additional_thought_nudge )
+                                                        additional_thought_nudge=additional_thought_nudge, private_thoughts_prompt = private_thoughts_prompt )
         result = agent.take_turn_standard(user_content_prompt, self.gameBoard, basic_model)
         
         if not result.public_response:
@@ -360,4 +329,5 @@ class FinaleReunionRound(VoteMechanicsMixin):
                     chosen_agent = self._agent_by_name(chosen_name.strip())
                     if chosen_agent:
                         self._reunion_turn(chosen_agent, "", f"Respond to {player_name}'s question. Directly say anything else you want to say.")
-                        self._reunion_turn(player, "", "Anything else to add?", optional=True)
+                        self._reunion_turn(player, f"{chosen_agent.name} has responded to your question. Do you have anything to say in response to their answer? Do not repeat what you said in your question. ", "Anything else to add?", 
+                                           optional=True, private_thoughts_prompt = "They responded to your question. Did they answer well enough? Do you have anything left to say to them, or to the other voters? You will have another chance to share your mind when you vote. ")

@@ -101,3 +101,6 @@ class ConsoleGameEventSink(GameEventSink):
 
     def on_evictions_update(self, evicted_names: list[str]) -> None:
         pass
+    
+    def _on_user_private_conversation(self, restricted_users, player_name, message):
+        pass

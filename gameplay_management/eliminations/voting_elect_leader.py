@@ -17,6 +17,10 @@ class VoteElectLeader(VoteMechanicsMixin):
     def rules_description(cls, cfg):
         return "Each player votes to elect the executioner. The leader chosen will have to choose who is going home."
 
+    @classmethod
+    def rules_brief(cls, cfg):
+        return "Vote for who will choose who to send home."
+
     def _vote_for_leader(self, agent, all_names):
         eligible = all_names #[n for n in all_names if n != agent.name]
         user_content = (

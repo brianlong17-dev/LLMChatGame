@@ -5,6 +5,7 @@ from typing import Callable, Sequence
 from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
 from gameplay_management.turn_manager import TurnManager
+from pydantic import Field
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -42,6 +43,10 @@ class BaseRound:
     @classmethod
     def is_vote(cls):
         return False
+    
+    @classmethod
+    def rules_brief(cls, cfg):
+        return ""
 
     #####################
     #   Agent Access    #
@@ -186,6 +191,32 @@ class BaseRound:
         result = player.take_turn_standard(user_content, self.gameBoard, basic_model, instruction_override=instruction_override)
         self.gameBoard.log_message_to_conversation(conversation_id, player.name, result.public_response)
         return result
+    
+    def _host_back_and_forth(self, player, questions, instruction_override=None, conversation_id = None):
+    
+        action_fields = {}
+        for key, value in questions.items():
+            action_fields = action_fields | {key: (str, Field(description=value))}
+
+        basic_model = DynamicModelFactory.create_model_(
+            player, "basic_turn",
+            action_fields=action_fields,
+            action_post_response=True #need - we're overwriting public response
+        )
+        user_content = "Respond privately to each question, back and forth with the host."
+        result = player.take_turn_standard(
+            user_content, self.gameBoard, basic_model,
+            instruction_override=instruction_override
+        )
+        for key, value in questions.items():
+            answer = getattr(result, key, "")
+            if not conversation_id:
+                conversation_id = self._initialise_private_host_conversation(player, value)
+            else:
+                self._private_host_conversation_host_message(conversation_id, value)
+            self.gameBoard.log_message_to_conversation(conversation_id, player.name, answer)
+        return conversation_id
+
 
     #####################
     #   Utilities       #

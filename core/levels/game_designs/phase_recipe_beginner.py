@@ -17,6 +17,7 @@ class PhaseRecipeFactoryBeginner(PhaseRecipeFactory):
     
     @classmethod
     def get_game_rules(cls):
+        #depreciated, but this is something that will go into intro
         return "In this game, you will play rounds of prisoner's dilemma. After each game, the bottom two players face the vote to be eliminated. "
         
     @classmethod

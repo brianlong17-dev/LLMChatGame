@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING
+from core.game_context.dashboard import Dashboard
 from core.models import RoundEntry
 
 if TYPE_CHECKING:
     from core.gameboard import GameBoard
-    from core.game_log import GameLog
+    from core.game_context.game_log import GameLog
     from agents.base_agent import BaseAgent
 
 
@@ -32,22 +33,21 @@ class ContextBuilder:
                 round_messages.append(message)
         return RoundEntry(phase_number=round.phase_number, round_number=round.round_number, messageEntries=round_messages)
 
-    def get_full_context(self, agent: 'BaseAgent'):
-        current_text = self.current_round_formatted(agent)
+    def previous_rounds(self, agent: 'BaseAgent'):
+        
         rounds = self.game_log.phase_rounds(self.game_board.phase_number)
         if len(rounds) < self.min_rounds_for_context:
             rounds = self.game_log.completed_round_entries[-self.min_rounds_for_context:]
         if len(rounds) == 0:
-            rounds_string = "This is the first round. There is no prior history. \n"
+            return "" 
         else:
-            rounds_string = f"### PAST {len(rounds)} ROUNDS  ###\n"
+            rounds_string = f"=== PAST {len(rounds)} ROUNDS  ===\n"
             rounds_string += "\n\n".join(self._formatted_round(r, agent) for r in rounds)
-        context_string = (
-            f"{rounds_string}"
-            f"\n\n### CURRENT ROUND DIALOGUE ###\n"
-            f"{current_text}"
-        )
-        return context_string
+        return rounds_string
+    
+    def current_round(self, agent: 'BaseAgent'):
+        return self.current_round_formatted(agent)
+        
 
     def phase_rounds_string(self, agent: 'BaseAgent'):  # Used to make a phase to summarise
         return self._formatted_phase(self.game_board.phase_number, agent)
@@ -67,7 +67,7 @@ class ContextBuilder:
         return "\n\n".join(history_blocks)
 
     def _round_header(self, round):
-        return f"------- Phase: {round.phase_number}, Round: {round.round_number} --------"
+        return f"--- Phase: {round.phase_number}, Round: {round.round_number} ---"
 
     def _formatted_round(self, round: 'RoundEntry', agent: 'BaseAgent'):
         output = f"\n{self._round_header(round)}\n"
@@ -92,67 +92,8 @@ class ContextBuilder:
                         output += f"\n--------------- END OF Private Conversation between {names} ----------------\n"
         return output
 
+    
+
     def get_dashboard_string(self, agent: 'BaseAgent') -> str:
-        agent_name = agent.name
-        game_over = agent.game_over
-        agent_scores = dict(self.game_board.agent_scores)
-
-        # 1. Calculate Standings
-        # Sort by score (descending)
-        sorted_scores = sorted(agent_scores.items(), key=lambda x: x[1], reverse=True)
-        max_score = sorted_scores[0][1] if sorted_scores else 0
-        leaders = [name for name, score in agent_scores.items() if score == max_score]
-
-        dash = []
-        if game_over:
-             dash.append("=== YOUR STATUS: ELIMINATED ===")
-        if not game_over:
-            my_score = agent_scores[agent_name]
-            is_leader = agent_name in leaders
-            points_behind = max_score - my_score
-
-        # 2. Build the Visual Dashboard
-
-        dash.append("=== REALITY CHECK DASHBOARD ===")
-        overall_game_rules = self.game_board.phase_runner.overall_game_rules #Do we really want this--- this needs more attention
-        if overall_game_rules:
-            dash.append("OVERALL GAME:")
-            dash.append(overall_game_rules)
-
-        # A. The Leaderboard (Clean List)
-        dash.append("LIVE SCORES (updated each turn — already reflects every event shown below):")
-        for name, score in sorted_scores:
-            marker = " <-- YOU" if name == agent_name else ""
-            dash.append(f"- {name}: {score} points{marker}")
-
-        dash.append("") # Empty line for spacing
-        if game_over:
-            dash.append(f"STATUS: You have already been eliminated from the game. You are now an observer. ")
-
-        else:
-            # B. The Narrative Status
-            if is_leader:
-                if len(leaders) > 1:
-                    tied_with = [l for l in leaders if l != agent_name]
-                    dash.append(f"STATUS: TIED FOR 1ST with {', '.join(tied_with)}.")
-                else:
-                    dash.append("STATUS: YOU ARE WINNING.")
-            else:
-                dash.append("STATUS: YOU ARE LOSING.")
-                dash.append(f"MATH: You are exactly {points_behind} points behind the leader.")
-
-        # C. The Roster (Who is left?)
-        # (Optional: You might not need this if everyone is in the leaderboard above,
-        # but strictly separating 'Dead' is useful)
-        removed_agent_names = self.game_board.phase_runner.removed_agent_names()
-        dead_str = ", ".join(removed_agent_names) if removed_agent_names else "None"
-        dash.append(f"EVICTED PLAYERS: {dead_str}")
-        if not game_over:
-            dash.append(self.current_phase_progress())
-        dash.append("===============================")
-        return "\n".join(dash)
-
-    def current_phase_progress(self):
-        string = "\nCURRENT PHASE PROGRESS:\n"
-        string += self.game_board.phase_runner.get_phase_progress_string()
-        return string
+        return Dashboard.render(agent, self.game_board)
+       

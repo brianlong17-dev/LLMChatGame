@@ -1,7 +1,7 @@
 from typing import Union
 from agents.base_agent import BaseAgent
-from core.context_builder import ContextBuilder
-from core.game_log import GameLog
+from core.game_context.context_builder import ContextBuilder
+from core.game_context.game_log import GameLog
 from core.models import RoundEntry
 
 
@@ -35,7 +35,8 @@ class GameBoard:
 
     def log_new_restricted_conversation(self, restricted_users, player_name, message):
         if self._human_in_restriction(restricted_users):
-            self.game_sink._on_user_private_conversation(restricted_users, player_name, message, new = True)
+            #TODO
+            #self.game_sink._on_user_private_conversation(restricted_users, player_name, message, new = True)
             ##
             # web we need to implement , we can no-op for now
             ##
@@ -51,7 +52,9 @@ class GameBoard:
         if entry:
             entry.messages.append({"speaker": player_name, "message": message})
             if self._human_in_restriction(entry.visibility_restriction):
-                self.game_sink._on_user_private_conversation(restricted_users, player_name, message)
+                #TODO
+                #if a human involved - we need to print it! normal - do we need a header?
+                #self.game_sink._on_user_private_conversation(restricted_users, player_name, message)
                 #same can go into console sink, no-op on web
                 self.game_sink.on_public_action(player_name, message, "RED")
 
