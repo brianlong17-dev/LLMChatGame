@@ -37,30 +37,30 @@ if __name__ == "__main__":
 
     # ── 4. Fill agent fields ──
     alpha.game_strategy = "Dominate through points and let my record speak. Stay calm in the finale."
-    alpha.mathematical_assessment = "I'm leading with 22 points. Beta has 18. I have the edge but can't be complacent."
+    alpha.position_assessment = "I'm leading with 22 points. Beta has 18. I have the edge but can't be complacent."
     alpha.life_lessons.append("Winning the first game set the tone — come out strong.")
     alpha.life_lessons.append("Beta is dangerous. Smooth talker, always scheming behind the scenes.")
     alpha.life_lessons.append("Don't trust anyone who smiles while voting you out.")
 
     beta.game_strategy = "Win through social game. Get the jury to like me more than Alpha."
-    beta.mathematical_assessment = "I'm 4 points behind Alpha. In a jury vote that won't matter — it's about relationships."
+    beta.position_assessment = "I'm 4 points behind Alpha. In a jury vote that won't matter — it's about relationships."
     beta.life_lessons.append("I got Capa and Delta out through persuasion. That's my strength.")
     beta.life_lessons.append("Alpha is respected but not loved. I can use that.")
     beta.life_lessons.append("The eliminated players remember who sent them home.")
 
     capa.game_strategy = ""
-    capa.mathematical_assessment = ""
+    capa.position_assessment = ""
     capa.life_lessons.append("Beta betrayed me. I thought we were allies.")
     capa.life_lessons.append("I should have been less trusting in the early rounds.")
 
     delta.game_strategy = ""
-    delta.mathematical_assessment = ""
+    delta.position_assessment = ""
     delta.life_lessons.append("Beta manipulated the vote against me. Furious.")
     delta.life_lessons.append("I tried to form an alliance with Elphie but it was too late.")
     delta.life_lessons.append("Alpha at least played an honest game.")
 
     elphie.game_strategy = ""
-    elphie.mathematical_assessment = ""
+    elphie.position_assessment = ""
     elphie.life_lessons.append("Alpha and Beta both stole from me in the prisoner's dilemma. Brutal.")
     elphie.life_lessons.append("I cooperated and got burned. Never again.")
     elphie.life_lessons.append("I respect Alpha's game more than Beta's. At least Alpha was upfront about it.")

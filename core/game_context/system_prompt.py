@@ -29,7 +29,7 @@ class SystemPrompt:
             f"=== YOUR PROFILE ===\n"
             f"Persona: {agent.persona}\n"
             f"Speaking Style: {agent.speaking_style}\n\n"
-            
+
             f"=== LIFE LESSONS ===\n"
             f"Use these past learnings to guide your current behavior:\n"
             f"{lessons_str}\n\n")
@@ -39,11 +39,11 @@ class SystemPrompt:
             f"{optional_response_buffer_string}"
             f"=== YOUR INTERNAL STRATEGY AND ASSESSMENT ===\n"
             f"Current Strategy: {agent.game_strategy}\n"
-            f"Mathematical Assessment: {agent.mathematical_assessment}\n")
-        
+            f"Position Assessment: {agent.position_assessment}\n")
+
         if agent.initialising:
             output_string += f"\n{agent.system_prompt_init()}"
-    
+
         return output_string
             
     

@@ -26,7 +26,7 @@ class Debater(BaseAgent):
         self.rating = 0
         self.persona = initial_persona
         self.game_strategy = "Begin to take action and form strategy."
-        self.mathematical_assessment = ""
+        self.position_assessment = ""
         self.life_lessons = deque(maxlen=8)
         self.speaking_style = speaking_style
         self.phase_summaries_detailed = {}
@@ -44,7 +44,7 @@ class Debater(BaseAgent):
         return {
             "updated_persona_summary": "persona",
             "updated_game_strategy": "game_strategy",
-            "mathematical_assessment": "mathematical_assessment",
+            "position_assessment": "position_assessment",
             "lifeLesson": "life_lessons",
             "speaking_style": "speaking_style"
         }
@@ -54,7 +54,7 @@ class Debater(BaseAgent):
             return {}
         else:
             return {
-                "mathematical_assessment": (str, Field(description=PromptLibrary.desc_agent_mathematical_assessment))
+                "position_assessment": (str, Field(description=PromptLibrary.desc_agent_position_assessment))
             }
     
     def internal_thinking_fields(self):
@@ -88,7 +88,7 @@ class Debater(BaseAgent):
 
       
     def process_turn_cognitive_fields(self, turn):
-        
+
         simple_personality_fields = self.cognitive_fields()
         for field_name in simple_personality_fields:
             value = getattr(turn, field_name, None)
@@ -96,9 +96,9 @@ class Debater(BaseAgent):
                 continue
             target_attr_name = self.field_mappings.get(field_name)
             if not target_attr_name:
-                continue #ie could maybe include mathemtical assesment 
-            
-            
+                continue 
+
+
             current_attr_value = getattr(self, target_attr_name)
             # if its a queue we need to append
             if isinstance(current_attr_value, (list, deque)):
@@ -109,7 +109,7 @@ class Debater(BaseAgent):
                     current_attr_value.append(clean_val)
             else:
                 setattr(self, target_attr_name, value)
-    
+
     def _get_full_user_content(self, gameBoard, user_content, instruction_override=None) :
         return UserContent.render(self, gameBoard, user_content, instruction_override)
 
@@ -163,6 +163,25 @@ class Debater(BaseAgent):
         context_string += "\n-----------------------------------------------------------\n"
         return context_string
     
+    def _life_lesson_compression_field(self):
+        if len(self.life_lessons) < 5:
+            return {}
+        existing = "\n".join(f"- {l}" for l in self.life_lessons)
+        return {
+            "compressed_life_lessons": (
+                list[str],
+                Field(
+                    min_length=3,
+                    max_length=3,
+                    description=(
+                        f"Synthesize your {len(self.life_lessons)} accumulated lessons into exactly 3 "
+                        f"distilled principles. Merge redundant themes.\n\n{existing}"
+                    )
+                )
+            )
+        }
+
+
     def _build_summary_model(self):
         
         brief_summary_field = {"brief_summary" : (str, Field(description="Write an a brief summary of the phase from your perspective- Include the most essential information you want to remember. A brief couple of bullet points. Eventually this will be all you have to access from early phases."))}
@@ -175,7 +194,8 @@ class Debater(BaseAgent):
         public_response_prompt = "This is your summary- write in the first person, how you experienced the phase. Write every detail you think is important to commit to memory. This will only be seen by you. "
         if self.game_over:
             public_response_prompt += "Remember, you have been eliminated and you are now in the audience observing. What do you think of the players, who's doing well, what do you think of their strategies, who do you want to win?"
-       
+
+        action_fields = brief_summary_field | game_commentary_field | self._life_lesson_compression_field()
         response_model = DynamicModelFactory.create_model_(
                 self,
                 model_name="sumariser",
@@ -183,8 +203,11 @@ class Debater(BaseAgent):
                 private_thoughts_prompt=(
                     "What is important to remember?"
                 ),
-                action_fields=brief_summary_field | game_commentary_field
+                action_fields= action_fields,
+                action_post_response = True
             )
+        
+        
         return response_model
         
     def summarise_phase(self, game_board):
@@ -204,7 +227,11 @@ class Debater(BaseAgent):
         response_model = self._build_summary_model()
         
         response = self.take_turn_standard(prompt, game_board, response_model, instruction_override=context_string)
-        print(self.name + ": " + response.game_commentary)
+        self._process_life_lesson_compression(response)
         self.phase_summaries_detailed[phase_number] = response.public_response
         self.phase_summaries_brief[phase_number] = response.brief_summary
         
+    def _process_life_lesson_compression(self, response):
+        if hasattr(response, "compressed_life_lessons") and response.compressed_life_lessons:
+            self.life_lessons.clear()
+            self.life_lessons.extend(response.compressed_life_lessons)

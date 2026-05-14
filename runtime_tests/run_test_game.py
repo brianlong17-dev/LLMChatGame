@@ -71,7 +71,7 @@ if __name__ == "__main__":
         if state["strategy"]:
             agent.game_strategy = state["strategy"]
         if state["math_assessment"]:
-            agent.mathematical_assessment = state["math_assessment"]
+            agent.position_assessment = state["math_assessment"]
 
         agent.life_lessons.clear()
         for lesson in state["life_lessons"]:
