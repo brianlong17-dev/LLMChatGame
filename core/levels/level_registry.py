@@ -12,8 +12,8 @@ AVAILABLE_LEVELS: List[LevelDefinition] = [
         id="beginner",
         name="First Elimination",
         description="A quick introductory game with rock-paper-scissors and one vote.",
-        min_players=4,
-        max_players=4,
+        min_players=6,
+        max_players=6,
         phase_recipe_factory=PhaseRecipeFactoryBeginner,
         locked=False
     ),

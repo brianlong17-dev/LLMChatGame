@@ -31,7 +31,7 @@ class UserContent:
         anchor, other_player_message_found = cb._recency_anchor(agent)
         
         current_round = cb.current_round_formatted(agent, anchor, other_player_message_found)
-        previous_rounds = cb.previous_rounds(agent, anchor, other_player_message_found)
+        previous_rounds = cb.previous_rounds_formatted(agent, anchor, other_player_message_found)
         
         if summaries:
             dash.append("=== PHASE SUMMARIES ===")

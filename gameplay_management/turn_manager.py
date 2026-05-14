@@ -122,6 +122,8 @@ class TurnManager:
 
         if broadcast and result and result.public_response:
             directed_to_name = self._get_target_name_from_response(result) if include_target_name else None
+            #this needs to go out of here. 
+            directed_to_name = None if directed_to_name == 'Group' else directed_to_name
             self.gameBoard.handle_public_private_output(player, result, directed_to_name = directed_to_name)
 
         return result

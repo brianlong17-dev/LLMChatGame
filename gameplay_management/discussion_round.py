@@ -24,7 +24,7 @@ class DiscussionRound(BaseRound):
     def run_game(self):
         for player in self.simulationEngine.agents:
             #-----------
-            user_content =  "Time to discuss!"
+            user_content =  self.cfg().discussion_round_topic
             basic_model = DynamicModelFactory.create_model_(player, "basic_turn")
             result = player.take_turn_standard(user_content, self.gameBoard, basic_model)
             #----------

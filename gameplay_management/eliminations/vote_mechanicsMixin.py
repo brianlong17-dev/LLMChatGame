@@ -80,7 +80,7 @@ class VoteMechanicsMixin(BaseRound):
         name_field_prompt = VotePromptLibrary.vote_one_player_name_field_prompt
         #----------------
         action_fields = self._choose_name_field(eligible_players_names, name_field_prompt) 
-        response_model = DynamicModelFactory.create_model_(player, model_name="vote_out_player", action_fields=action_fields) 
+        response_model = DynamicModelFactory.create_model_(player, model_name="vote_out_player", action_fields=action_fields, action_post_response = True) 
         vote_result = player.take_turn_standard(user_content, self.gameBoard, response_model)
         #-----------------
         return vote_result

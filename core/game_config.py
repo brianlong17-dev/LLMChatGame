@@ -128,7 +128,7 @@ class GameConfig:
     def set_pd_pairing_all(self):
         self.pd_pairing_method = self.pd_pairing_choice_all
         
-    def set_directed_discussion_group_allowed(self, bool):
-        self.directed_discussion_group_allowed = bool
+    def set_directed_discussion_group_allowed(self, boolean):
+        self.directed_discussion_group_allowed = boolean
     
     
