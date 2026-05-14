@@ -228,6 +228,94 @@ function FeedMarker({ label }) {
   return <div id={id} style={{ height: 0 }} />
 }
 
+export function groupThread(msgs) {
+  const groups = []
+  for (const m of msgs) {
+    const last = groups.length > 0 ? groups[groups.length - 1] : null
+    if (m.child && last) {
+      if (last.kind === 'thread') {
+        last.children.push(m)
+      } else {
+        groups[groups.length - 1] = { kind: 'thread', root: last.msg, children: [m] }
+      }
+    } else if (m.type === 'private_thought' && last && last.kind === 'thread') {
+      last.children.push(m)
+    } else {
+      groups.push({ kind: 'single', msg: m })
+    }
+  }
+  return groups
+}
+
+function packBlocks(children) {
+  const blocks = []
+  let i = 0
+  while (i < children.length) {
+    const c = children[i]
+    const next = children[i + 1]
+    if (
+      c.type === 'public_action' &&
+      next && next.type === 'private_thought' && next.speaker === c.speaker
+    ) {
+      blocks.push({ msg: c, thinking: next })
+      i += 2
+    } else {
+      blocks.push({ msg: c })
+      i++
+    }
+  }
+  return blocks
+}
+
+const HOST_RAIL = '#8a8a8a'
+
+function railColor(msg, colorMap) {
+  if (msg.speaker === 'HOST' || msg.speaker === 'SYSTEM') return HOST_RAIL
+  return getSpeakerColor(msg.speaker, colorMap)
+}
+
+export function ThreadedFeed({ events, colorMap, animateText, onAnimationComplete, skipRef }) {
+  const groups = groupThread(events)
+  const lastEvent = events[events.length - 1]
+
+  const renderMsg = (evt) => {
+    const isLast = evt === lastEvent
+    return (
+      <Message
+        event={evt}
+        colorMap={colorMap}
+        onComplete={isLast ? onAnimationComplete : undefined}
+        skipRef={isLast ? skipRef : undefined}
+        animateText={animateText}
+      />
+    )
+  }
+
+  return groups.map((g, gi) => {
+    if (g.kind === 'single') {
+      return <div key={gi}>{renderMsg(g.msg)}</div>
+    }
+    const blocks = packBlocks(g.children)
+    return (
+      <div className="thread" key={gi}>
+        {renderMsg(g.root)}
+        <div className="thread-children">
+          {blocks.map((b, bi) => (
+            <div
+              key={bi}
+              className="reply-block"
+              style={{ '--reply-color': railColor(b.msg, colorMap) }}
+            >
+              {renderMsg(b.msg)}
+              {b.thinking && renderMsg(b.thinking)}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  })
+}
+
 export function Message({ event, colorMap, onComplete, skipRef, animateText}) {
   switch (event.type) {
     case 'phase_header':

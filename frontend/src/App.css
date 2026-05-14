@@ -271,7 +271,7 @@
 }
 
 /* Private thought */
-.private-thought { margin: 2px 0; }
+.private-thought { margin: 2px 0; padding-left: 6em; }
 
 .thought-toggle {
   background: none;
@@ -1440,3 +1440,22 @@
 .private-msg-text {
   color: var(--text);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Threaded messages — V4 (Speaker Color Rail)
+───────────────────────────────────────────────────────────── */
+.thread { margin-bottom: 40px; }
+
+.thread-children {
+  padding-left: 14px;
+  padding-top: 7px;
+}
+
+.reply-block {
+  border-left: 2px solid var(--reply-color, var(--border));
+  padding-left: 14px;
+  margin-left: 2px;
+}
+.reply-block + .reply-block { margin-top: 2px; }
+
+.reply-block .public-action { padding: 3px 0; }

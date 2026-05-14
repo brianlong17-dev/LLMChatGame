@@ -124,14 +124,14 @@ class GameBoard:
             if key not in excluded_keys
         ]
 
-    def handle_public_private_output(self, agent: BaseAgent, response, delay: float = 0.0, output_inner_workings=False, directed_to_name = None):
-        
+    def handle_public_private_output(self, agent: BaseAgent, response, delay: float = 0.0, output_inner_workings=False, directed_to_name = None, is_reply: bool = False):
+
         if self.game_log._current_round_most_recent_player_entry(self.RESERVED_NAMES) and not agent.is_human():
             self.game_sink.await_continue()
         public_message, private_message = response.public_response, response.private_thoughts
-        
-            
-        self.broadcast_public_action(agent, public_message, directed_to_name=directed_to_name)
+
+
+        self.broadcast_public_action(agent, public_message, directed_to_name=directed_to_name, is_reply=is_reply)
         self.game_sink.on_private_thought(agent, private_message)
         if output_inner_workings:
             self.game_sink.on_inner_workings(agent, self._get_inner_thought_fields(response))
@@ -142,11 +142,11 @@ class GameBoard:
         is_human_speaker = hasattr(speaker, 'is_human') and speaker.is_human()
         return not (is_system_speaker or is_human_speaker)
 
-    def broadcast_public_action(self, speaker: Union[str, BaseAgent], message: str, color: str = "", directed_to_name = None):
+    def broadcast_public_action(self, speaker: Union[str, BaseAgent], message: str, color: str = "", directed_to_name = None, is_reply = False):
         display_name = self._as_display_name(speaker)
         self.game_log._update_history(display_name, message)
         animate = self._should_animate(speaker)
-        self.game_sink.on_public_action(speaker, message, color=color, animate=animate, directed_to_name = directed_to_name)
+        self.game_sink.on_public_action(speaker, message, color=color, animate=animate, directed_to_name = directed_to_name, is_reply = is_reply)
 
     def system_broadcast(self, message, private=False):
         if private:
@@ -160,13 +160,12 @@ class GameBoard:
             return msg.get('speaker') in self.RESERVED_NAMES
         return False
         
-    def host_broadcast(self, message, delay: float = 0.0):
+    def host_broadcast(self, message, delay: float = 0.0, is_reply: bool = False):
         entry = self.game_log._current_round_most_recent_message_entry()
         if entry and not self._is_sys_host_message(entry):
             self.game_sink.await_continue()
-        self.broadcast_public_action(self.HOST_NAME, message)
-        if delay:
-            self.game_sink.delay(delay)
+        self.broadcast_public_action(self.HOST_NAME, message, is_reply=is_reply)
+        self.game_sink.delay(delay)
 
     def environment_broadcast(self, message, delay):
         #TODO make this right

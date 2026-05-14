@@ -45,5 +45,3 @@ class SystemPrompt:
             output_string += f"\n{agent.system_prompt_init()}"
 
         return output_string
-            
-    

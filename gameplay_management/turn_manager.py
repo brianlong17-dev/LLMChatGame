@@ -92,7 +92,8 @@ class TurnManager:
                   instruction_override = None,
                   optional: bool = False,
                   broadcast: bool = False,
-                  include_target_name = False):
+                  include_target_name = False,
+                  is_reply = False):
         
         
         optional = optional and self.optional_responses_in_use
@@ -124,17 +125,18 @@ class TurnManager:
             directed_to_name = self._get_target_name_from_response(result) if include_target_name else None
             #this needs to go out of here. 
             directed_to_name = None if directed_to_name == 'Group' else directed_to_name
-            self.gameBoard.handle_public_private_output(player, result, directed_to_name = directed_to_name)
+            self.gameBoard.handle_public_private_output(player, result, directed_to_name = directed_to_name, is_reply = is_reply)
 
         return result
 
     def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None,
-                   private_thoughts_prompt: str = None, instruction_override = None, broadcast = False):
+                   private_thoughts_prompt: str = None, instruction_override = None, broadcast = False, is_reply = False):
         return self.take_turn(player, text_to_respond_to, #TODO rename as turn prompt
                               public_response_prompt=public_response_prompt,
                               private_thoughts_prompt=private_thoughts_prompt,
                               instruction_override=instruction_override,
-                              broadcast = broadcast)
+                              broadcast = broadcast,
+                              is_reply = is_reply)
 
     def get_response(self, player, model_name, context_msg, action_fields = None, additional_thought_nudge = None, broadcast = False):
         return self.take_turn(player, context_msg,

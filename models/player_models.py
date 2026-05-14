@@ -53,7 +53,7 @@ class DynamicModelFactory:
                 str, Field(description=f"Remind yourself of who you are, so you don't get confused")
             )
         ordered_fields["hallucination_catcher"] = (
-                str, Field(description=f"In the past round do you see a hallucination or lie? Be careful not to repeat it")
+                str, Field(description=f"In the past round do you see another player hallucination or lie? Be careful not to repeat it")
             )
         ordered_fields["bandwagon"] = (
                 str, Field(description=f"Is everyone jumping on a repeated thought? Do you agree? If not, say so")

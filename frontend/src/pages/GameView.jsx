@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { Message } from '../components/Messages'
+import { ThreadedFeed } from '../components/Messages'
 import Scoreboard from '../components/Scoreboard'
 import RoundTracker from '../components/RoundTracker'
 import RoundWidget from '../components/RoundWidget'
@@ -200,16 +200,13 @@ export default function GameView({
             onTouchMove={handleUserScrollIntent}
             style={{ display: showPrivateChats && activeTab === 'private' ? 'none' : undefined }}
           >
-            {visibleEvents.map((evt, i) => (
-              <Message
-                key={i}
-                event={evt}
-                colorMap={colorMapRef.current}
-                onComplete={i === visibleEvents.length - 1 ? onAnimationComplete : undefined}
-                skipRef={i === visibleEvents.length - 1 ? skipRef : undefined}
-                animateText={animateText}
-              />
-            ))}
+            <ThreadedFeed
+              events={visibleEvents}
+              colorMap={colorMapRef.current}
+              animateText={animateText}
+              onAnimationComplete={onAnimationComplete}
+              skipRef={skipRef}
+            />
             <div ref={bottomRef} />
           </main>
           {showPrivateChats && (

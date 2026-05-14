@@ -82,11 +82,12 @@ class GameEventSink(ABC):
     # -- Speech and thought ---------------------------------------------------
 
     @abstractmethod
-    def on_public_action(self, speaker: Speaker, message: str, color: str = "", animate: bool = True, directed_to_name=None) -> None:
+    def on_public_action(self, speaker: Speaker, message: str, color: str = "", animate: bool = True, directed_to_name=None, is_reply: bool = False) -> None:
         """
         A speaker acted publicly — goes into game history, visible to all agents.
         color is a hint for terminal renderers; animate signals whether the frontend
         should word-by-word animate this message (False for HOST, SYSTEM, human players).
+        is_reply marks this message as a threaded reply (frontend emits child: true).
         """
         ...
 
@@ -215,7 +216,7 @@ class NoopGameSink(GameEventSink):
     def on_round_start(self, round_number, scores): pass
     def on_round_summary(self, summary): pass
     def on_turn_header(self, turn_number): pass
-    def on_public_action(self, speaker, message, color="", animate=True, directed_to_name=None): pass
+    def on_public_action(self, speaker, message, color="", animate=True, directed_to_name=None, is_reply=False): pass
     def on_private_thought(self, speaker, message): pass
     def on_inner_workings(self, speaker, inner_workings, override=False): pass
     def system_private(self, message): pass
@@ -285,7 +286,7 @@ class CapturingGameSink(GameEventSink):
     def on_turn_header(self, turn_number):
         self.turn_headers.append(turn_number)
 
-    def on_public_action(self, speaker, message, color="", animate=True, directed_to_name=None):
+    def on_public_action(self, speaker, message, color="", animate=True, directed_to_name=None, is_reply=False):
         if directed_to_name:
             message = f"@{directed_to_name} - {message}"
         self.public_actions.append({"speaker": speaker, "message": message, "color": color})
