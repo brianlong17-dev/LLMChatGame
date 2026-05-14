@@ -26,7 +26,6 @@ export default function GameView({
   const privateBottomRef = useRef(null)
   const lastSeenPrivateCountRef = useRef(0)
   const userScrolledUpRef = useRef(false)
-  const lastScrollTopRef = useRef(0)
   const leftDragRef = useRef({ startX: 0, startWidth: 0, moved: false })
   const [leftToggleCursor, setLeftToggleCursor] = useState('col-resize')
 
@@ -57,13 +56,17 @@ export default function GameView({
     const feed = feedRef.current
     if (!feed) return
     const distFromBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight
-    const movedUp = feed.scrollTop < lastScrollTopRef.current - 1
-    lastScrollTopRef.current = feed.scrollTop
+    if (distFromBottom < 20) userScrolledUpRef.current = false
+  }
 
-    if (distFromBottom < 80) {
-      userScrolledUpRef.current = false
-    } else if (movedUp) {
-      userScrolledUpRef.current = true
+  const handleUserScrollIntent = (e) => {
+    if (e.deltaY !== undefined) {
+      if (e.deltaY < 0) userScrolledUpRef.current = true
+    } else {
+      const feed = feedRef.current
+      if (!feed) return
+      const distFromBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight
+      if (distFromBottom > 5) userScrolledUpRef.current = true
     }
   }
 
@@ -193,6 +196,8 @@ export default function GameView({
             className="feed"
             ref={feedRef}
             onScroll={handleFeedScroll}
+            onWheel={handleUserScrollIntent}
+            onTouchMove={handleUserScrollIntent}
             style={{ display: showPrivateChats && activeTab === 'private' ? 'none' : undefined }}
           >
             {visibleEvents.map((evt, i) => (
