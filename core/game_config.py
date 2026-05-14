@@ -9,9 +9,18 @@ class GameConfig:
         self.testing_human_as_agent = False
         
         self.discussion_round_topic = "Chat and strategise"
+        self.directed_discussion_group_allowed = True
         
         self.inject_host_question = True
         
+        #..... level setup ....#
+        self.intro_round_welcome_message = None
+        self.intro_round_QA = None
+        
+        self.phase_one_intro = None
+        
+        
+        #....
         
         
         # --------------------------------------------------------------
@@ -118,4 +127,8 @@ class GameConfig:
 
     def set_pd_pairing_all(self):
         self.pd_pairing_method = self.pd_pairing_choice_all
+        
+    def set_directed_discussion_group_allowed(self, bool):
+        self.directed_discussion_group_allowed = bool
+    
     

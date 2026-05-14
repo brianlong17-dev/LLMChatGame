@@ -25,6 +25,7 @@ class SimulationEngine:
         self.gameBoard = game_board
         self.generator = generator
         self.gameplay_config = GameConfig()
+        self.phase_factory.initialise_game_config(self.gameplay_config)
         self.phase_runner = PhaseRunner(self)
         
         

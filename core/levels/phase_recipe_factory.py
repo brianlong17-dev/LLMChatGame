@@ -28,6 +28,26 @@ from gameplay_management.game_cycle.game_mob import GameMob
 class PhaseRecipeFactory:
     
     @classmethod
+    def initialise_game_config(cls, config):
+        config.intro_round_welcome_message = cls.intro()
+        config.intro_round_QA = cls.intro_QA()
+        config.phase_one_intro = cls.phase_intro()
+
+    @classmethod
+    def intro(cls):
+        return None
+
+    @classmethod
+    def intro_QA(cls):
+        return None
+
+    @classmethod
+    def phase_intro(cls):
+        return None
+    
+    
+    
+    @classmethod
     def make_phase(cls, pre_game_discussion_rounds, game, pre_vote_discussion_rounds,
                    vote, post_vote_discussion_rounds, immunity_types, config_mutations=None):
         rounds = []
@@ -86,7 +106,7 @@ class PhaseRecipeFactoryDefault(PhaseRecipeFactory):
             None,  # phase 0 unused
             
             #rich foes IntroRound, DiscussionRound,
-            PhaseRecipe(rounds=[IntroRound, InterviewRound, DiscussionRoundDirected,  GameRockPaperScissors, VoteElectLeader]),
+            PhaseRecipe(rounds=[DiscussionRoundDirected, InterviewRound, DiscussionRoundDirected,  GameRockPaperScissors, VoteElectLeader]),
             PhaseRecipe(rounds=[GameTargetedChoiceGive, VoteBottomTwo]),
             PhaseRecipe(rounds=[GameTargetedChoiceSteal, VoteBottomTwo]),
             PhaseRecipe(rounds=[GameCircle, DiscussionRound, VoteBottomTwo]),
