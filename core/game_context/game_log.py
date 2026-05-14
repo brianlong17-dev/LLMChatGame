@@ -61,7 +61,7 @@ class GameLog:
         self.current_round.messageEntries.append(entry)
         return self.message_id
 
-    def phase_rounds(self, phase_number: int) -> list[RoundEntry]:
+    def completed_phase_rounds(self, phase_number: int) -> list[RoundEntry]:
         return [r for r in self.completed_round_entries if r.phase_number == phase_number]
 
     def start_round(self, phase_number: int, round_number: int):

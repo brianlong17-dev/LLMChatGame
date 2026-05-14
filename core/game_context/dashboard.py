@@ -8,7 +8,7 @@ class Dashboard:
         leaders = [name for name, score in agent_scores.items() if score == max_score]
         
         dash.append(cls.header("SCOREBOARD"))
-        dash.append("(LIVE SCORES: updated each turn — already reflect every event shown below.)")
+        dash.append("(CURRENT SCORES: ALREADY UPDATED AFTER GAMEPLAY BELOW)")
         for name, score in sorted_scores:
             marker = " <-- YOU" if name == agent_name else ""
             dash.append(f"- {name}: {score} points{marker}")

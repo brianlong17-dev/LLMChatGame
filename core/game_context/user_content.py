@@ -27,9 +27,12 @@ class UserContent:
     @classmethod
     def append_game_context(cls, dash, agent, game_board):
         summaries = agent.phase_summaries_string()
-        previous_rounds = game_board.context_builder.previous_rounds(agent)
-        current_round = game_board.context_builder.current_round_formatted(agent)
-            
+        cb = game_board.context_builder
+        anchor, other_player_message_found = cb._recency_anchor(agent)
+        
+        current_round = cb.current_round_formatted(agent, anchor, other_player_message_found)
+        previous_rounds = cb.previous_rounds(agent, anchor, other_player_message_found)
+        
         if summaries:
             dash.append("=== PHASE SUMMARIES ===")
             dash.append(summaries)
