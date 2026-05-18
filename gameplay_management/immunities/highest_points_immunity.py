@@ -19,7 +19,7 @@ class HighestPointsImmunity(ImmunityMechanicsMixin):
         
 
     def run_immunity(self) -> list[str]:
-        return self._highest_points_immunity(self.cfg().immunity_highest_points_only_one)
+        return self._highest_points_immunity(self.cfg.immunity_highest_points_only_one)
 
     def _highest_points_immunity(self, only_one: bool = False) -> list[str]:
         host_string = ""

@@ -14,7 +14,7 @@ class VoteBottomTwo(VoteMechanicsMixin):
         return "The bottom two players will face the vote to be removed."
 
     def rules_description_detailed(self):
-        cfg = self.cfg()
+        cfg = self.cfg
         rules_string = self.rules_description(cfg)
         if cfg.vote_bottom_two_multiple:
             rules_string += "In the event of a tie for the bottom spots, all tied players will also face the vote. "
@@ -25,8 +25,8 @@ class VoteBottomTwo(VoteMechanicsMixin):
         
             
     def run_vote(self, immunity_players: Optional[Sequence[str]]):
-        self.run_voting_bottom_players(immunity_players, multiple = self.cfg().vote_bottom_two_multiple,
-                                       dont_miss = self.cfg().vote_dont_miss)
+        self.run_voting_bottom_players(immunity_players, multiple = self.cfg.vote_bottom_two_multiple,
+                                       dont_miss = self.cfg.vote_dont_miss)
     
      
     

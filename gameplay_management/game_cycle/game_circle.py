@@ -133,7 +133,7 @@ class GameCircle(CycleRound):
 
             circle.remove(player_to_remove)
             survivors = [a for a in circle if a != gun_holder and a != shield_holder]
-            if self.cfg().circle_get_shot_reactions:
+            if self.cfg.circle_get_shot_reactions:
                 self._host_broadcast("Now for some reactions...")
                 random_survivor = random.choice(survivors)
                 #survivors = [random_survivor]
@@ -147,7 +147,7 @@ class GameCircle(CycleRound):
         self._cycle_game_setup()
         circle = list(self._shuffled_agents())
         cycle_num = 0
-        self.use_double_shots = self.cfg().use_double_shots
+        self.use_double_shots = self.cfg.use_double_shots
 
         #Intro message
         #self.double_shot = use_double_shots

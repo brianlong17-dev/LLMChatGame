@@ -25,7 +25,7 @@ class GameRockPaperScissors(GameMechanicsMixin):
         )
 
     def _points_string(self):
-        cfg = self.cfg()
+        cfg = self.cfg
         return (
             f"- WIN  → {cfg.rps_points_win} points\n"
             f"- TIE  → {cfg.rps_points_tie} points each\n"
@@ -51,7 +51,7 @@ class GameRockPaperScissors(GameMechanicsMixin):
         return player.take_turn_standard(user_content, self.gameBoard, model)
 
     def _calculate_outcome(self, choice0, choice1, name0, name1):
-        cfg = self.cfg()
+        cfg = self.cfg
         c0 = choice0.strip().lower().replace(".", "")
         c1 = choice1.strip().lower().replace(".", "")
 
@@ -108,7 +108,7 @@ class GameRockPaperScissors(GameMechanicsMixin):
         pairs, leftover = self._generate_random_pairings(agents)
 
         if leftover:
-            auto_pts = self.cfg().rps_odd_player_auto_points
+            auto_pts = self.cfg.rps_odd_player_auto_points
             self.gameBoard.host_broadcast(
                 f"{leftover.name} has no opponent this round — they automatically receive {auto_pts} points.\n\n"
             )

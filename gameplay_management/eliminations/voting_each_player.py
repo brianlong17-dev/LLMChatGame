@@ -17,12 +17,12 @@ class VoteEachPlayer(VoteMechanicsMixin):
     def rules_description_detailed(self):
         rules_string = (f"\n - Each player will vote for one player they want to REMOVE from the game. "
                         f"\n - The player that receives the most votes will leave the game IMMEDIATELY. ")
-        if self.cfg().vote_dont_miss:
-            rules_string += f"\n - {GamePromptLibrary.dont_miss_string.format(points = self.cfg().vote_missed_points)}"
+        if self.cfg.vote_dont_miss:
+            rules_string += f"\n - {GamePromptLibrary.dont_miss_string.format(points = self.cfg.vote_missed_points)}"
         return rules_string
         
     def run_vote(self, immunity_players: Optional[Sequence[str]]):
-        dont_miss = self.cfg().vote_dont_miss
+        dont_miss = self.cfg.vote_dont_miss
         self.run_voting_round_basic(immunity_players, dont_miss = dont_miss)
         
               

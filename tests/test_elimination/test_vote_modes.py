@@ -182,7 +182,7 @@ def test_run_voting_lowest_points_removed_announces_and_eliminates_lowest():
 def test_run_vote_reads_cfg_for_dont_miss_flag():
     game, _board, _agents, _clients = build_vote_game({})
     seen = []
-    game.cfg().vote_dont_miss = True
+    game.cfg.vote_dont_miss = True
     game.run_voting_round_basic = lambda immunity_players, dont_miss=False: seen.append(
         (immunity_players, dont_miss)
     )

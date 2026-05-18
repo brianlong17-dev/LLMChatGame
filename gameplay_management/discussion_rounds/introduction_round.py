@@ -67,8 +67,8 @@ class IntroRound(BaseRound):
     def _wake_up_player_i(self, player):
         
         player.initialising = True
-        welcome_message = self.cfg().intro_round_welcome_message
-        qa = self.cfg().intro_round_QA
+        welcome_message = self.cfg.intro_round_welcome_message
+        qa = self.cfg.intro_round_QA
         
         if not welcome_message:
             welcome_message = self.default_welcome_message()

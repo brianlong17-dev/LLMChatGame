@@ -26,7 +26,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         return "Players will be paired randomly."
 
     def _prisoners_dilemma_intro(self):
-        pairing_string = self.pairing_method_string(self.cfg())
+        pairing_string = self.pairing_method_string(self.cfg)
         points_rules_string = self.points_rules_string()
         return (
             f"It's time to play: Prisoner's Dilemma. "
@@ -36,7 +36,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         )
         
     def points_rules_string(self):
-        cfg = self.cfg()
+        cfg = self.cfg
         pd_split=cfg.pd_points_split
         pd_steal=cfg.pd_points_steal
         pd_both_steal=cfg.pd_points_both_steal
@@ -45,7 +45,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         return points_str
     
     def points_rules_string_technical(self):
-        cfg = self.cfg()
+        cfg = self.cfg
         return (
             f"Split | Split : {cfg.pd_points_split} - {cfg.pd_points_split}\n"
             f"Steal | Split : {cfg.pd_points_steal} - 0\n"
@@ -90,7 +90,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
                                     broadcast = False)
 
     def _calculate_pd_payout(self, choice0, choice1, name0, name1):
-        cfg = self.cfg()
+        cfg = self.cfg
         splitPoints=cfg.pd_points_split
         stealPoints=cfg.pd_points_steal
         bothSteal=cfg.pd_points_both_steal
@@ -148,8 +148,8 @@ class GamePrisonersDilemma(GameMechanicsMixin):
 
     def _opening_message(self):
         self._host_broadcast("Any last words to share with the group before we play? ")
-        for agent in self.agents():
-            others = self._names(self._other_agents(agent, self.agents()))
+        for agent in self.agents:
+            others = self._names(self._other_agents(agent, self.agents))
             others_names = self.format_list(others)
             user_content = (f"Each player plays each player- you will face off against both {others_names} (and they will play each other). \n"
             f"BEFORE YOU PLAY- You have the opportunity to strategise- Trick a player into splitting? Really arrange to split? Turn the tables two on one? \n"
@@ -169,7 +169,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         
         available = self._shuffled_agents()
         
-        cfg=self.cfg()
+        cfg=self.cfg
         choose_partner = cfg.pd_pairing_method in (cfg.pd_pairing_choice_random, cfg.pd_pairing_choice_lowest)
         if cfg.pd_pairing_method == cfg.pd_pairing_choice_all:
             self._opening_message()
@@ -206,7 +206,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
                 
                 
     def _award_leftover(self, leftover):
-        auto_points = self.cfg().pd_odd_player_auto_points
+        auto_points = self.cfg.pd_odd_player_auto_points
         self._host_broadcast(f"{leftover.name} is the odd one out this round! They automatically receive {auto_points} points.\n\n")
         self.gameBoard.append_agent_points(leftover.name, auto_points)
         

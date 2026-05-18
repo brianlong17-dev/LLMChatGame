@@ -8,7 +8,7 @@ class CycleRound(BaseRound):
         return True
 
     def _cycle_game_setup(self):
-        cfg = self.cfg()
+        cfg = self.cfg
         self.turn_manager._buffer_amount = cfg.cycle_buffer_amount
         self.turn_manager.optional_responses_in_use = cfg.cycle_use_optional_response
         

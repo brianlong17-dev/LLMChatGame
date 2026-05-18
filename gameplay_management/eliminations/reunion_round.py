@@ -82,7 +82,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
         #- set up -#
         self._set_segment_titles(self._SEGMENTS)
         self.voting_players = list(self.simulationEngine.dead_agents)
-        self.finalists = list(self.agents())
+        self.finalists = list(self.agents)
         
         self._initialise_voting_widget(self._names(self.finalists), self._names(self.voting_players))
                                        

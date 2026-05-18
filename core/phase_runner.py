@@ -23,6 +23,7 @@ class PhaseRunner:
     def game_board(self):
         return self.simulation_engine.gameBoard
     
+    @property
     def _cfg(self):
         return self.simulation_engine.gameplay_config
 
@@ -43,10 +44,10 @@ class PhaseRunner:
 
     
     def get_phase_progress_string(self):
-        return self.current_recipe.phase_progress_string(self._cfg(), self.current_round_index)
+        return self.current_recipe.phase_progress_string(self._cfg, self.current_round_index)
 
     def _introduce_phase(self):
-        cfg = self._cfg()
+        cfg = self._cfg
         host_intro = self.current_recipe.phase_intro_string(self.game_board.phase_number,
                                     len(self.agent_names()), cfg)
         system_phase_summary = self.current_recipe.phase_summary_string(cfg)
@@ -84,7 +85,7 @@ class PhaseRunner:
         
         self.current_round_index = 0
 
-        cfg = self._cfg()
+        cfg = self._cfg
         for method, args in recipe.config_mutations:
             getattr(cfg, method)(*args)
 

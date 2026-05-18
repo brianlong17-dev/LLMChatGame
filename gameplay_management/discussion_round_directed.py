@@ -13,12 +13,12 @@ class DiscussionRoundDirected(BaseRound):
 
     def run_game(self):
         ordered_agents = self._shuffled_agents()
-        group_allowed = self.cfg().directed_discussion_group_allowed
+        group_allowed = self.cfg.directed_discussion_group_allowed
 
         while ordered_agents:
             player = ordered_agents.pop(0)
 
-            names = [agent.name for agent in self.agents() if agent != player]
+            names = [agent.name for agent in self.agents if agent != player]
 
             turn_prompt = "You can directly address another player and get a response. "
             if group_allowed:
