@@ -47,7 +47,6 @@ if __name__ == "__main__":
     for name in elimination_order:
         agent = agents[name]
         engine.eliminate_player(agent)
-        engine.gameBoard.remove_agent_state(agent.name)
 
     # ── 6. Apply saved state to all agents ──
     for name, state in agent_state.items():

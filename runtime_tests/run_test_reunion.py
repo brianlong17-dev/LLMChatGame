@@ -33,7 +33,6 @@ if __name__ == "__main__":
     # ── 3. Eliminate 3 agents (Capa phase 1, Delta phase 2, Elphie phase 3) ──
     for agent in [capa, delta, elphie]:
         engine.eliminate_player(agent)
-        engine.gameBoard.remove_agent_state(agent.name)
 
     # ── 4. Fill agent fields ──
     alpha.game_strategy = "Dominate through points and let my record speak. Stay calm in the finale."

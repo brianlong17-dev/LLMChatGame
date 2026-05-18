@@ -257,7 +257,7 @@ async def demo_ws(websocket: WebSocket):
         demo_id = msg.get("demo_id")
         human_name = str(msg["human_name"])[:30] if msg.get("human_name") else None
 
-        LOCKED_DEMOS = {"game_phase"}
+        LOCKED_DEMOS = {} #"game_phase"}
         if demo_id in LOCKED_DEMOS:
             await websocket.send_text(json.dumps({"type": "error", "message": "This demo is not available yet."}))
             return

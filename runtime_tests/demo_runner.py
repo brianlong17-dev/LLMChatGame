@@ -6,6 +6,8 @@ import json
 import os
 import sys
 
+from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "tests", "fixtures")
@@ -39,31 +41,42 @@ def _apply_agent_state(agents: dict, agent_state: dict):
         for phase_str, text in state["summaries_brief"].items():
             agent.phase_summaries_brief[int(phase_str)] = text
 
+def _create_agents_from_names(names):
+    from core.bootstrap import create_agent
+    return  [create_agent(name) for name in names]
 
+def _add_human(human_name, engine, is_dead = False):
+    from agents.human_player import Human
+    human = Human(human_name)
+    agent_to_replace = next((a for a in engine.agents if a.name == human_name), None)
+    if agent_to_replace:
+        idx = engine.agents.index(agent_to_replace)
+        engine.agents[idx] = human
+    else:
+        if is_dead:
+            human.game_over = True
+            engine.dead_agents.append(human)
+        else:
+            engine.agents.append(human)
+            engine.game_board.add_agent_state(human.name)
+        
 def _run_reunion(sink, fixture_filename: str, finalist_scores: dict, elimination_order: list, human_name: str = None, phase_number = None):
     from core.bootstrap import create_engine
     from core.levels.phase_recipe import PhaseRecipe
     from gameplay_management.eliminations.reunion_round import FinaleReunionRound
-    from agents.human_player import Human
-    from core.bootstrap import create_agent
+    
+    
 
     agent_state = _load_fixture(fixture_filename)
     all_names = list(agent_state.keys())
-    agents = [create_agent(name) for name in all_names]
+    agents = _create_agents_from_names(all_names)
 
     engine = create_engine(sink, agents=agents, allow_rename=False)
     if phase_number:
         engine.gameBoard.phase_number = 11
 
     if human_name:
-        human = Human(human_name)
-        agent_to_replace = next((a for a in engine.agents if a.name == human_name), None)
-        if agent_to_replace:
-            engine.agents.remove(agent_to_replace)
-            engine.agents.append(human)
-        else:
-            human.game_over = True
-            engine.dead_agents.append(human)
+        _add_human(human_name, engine, is_dead = True )
 
     engine.initialiseGameBoard()
     agents = {a.name: a for a in engine.agents}
@@ -75,7 +88,6 @@ def _run_reunion(sink, fixture_filename: str, finalist_scores: dict, elimination
 
     for name in elimination_order:
         agent = agents[name]
-        engine.eliminate_player(agent)
         engine.gameBoard.remove_agent_state(agent.name)
 
     _apply_agent_state(agents, agent_state)
@@ -124,12 +136,13 @@ def run_demo_game(sink, human_name: str = None):
 
     agent_state = _load_fixture("game_agent_state.json")
     all_names = list(agent_state.keys())
+    agents = _create_agents_from_names(all_names)
 
-    engine = create_engine(sink, names=all_names, allow_rename=False)
+    engine = create_engine(sink, agents=agents, allow_rename=False)
+
 
     if human_name:
-        human = Human(human_name)
-        engine.agents.append(human)
+        _add_human(human_name, engine, is_dead = True )
 
     engine.initialiseGameBoard()
     agents = {a.name: a for a in engine.agents}
@@ -147,12 +160,21 @@ def run_demo_game(sink, human_name: str = None):
         engine.gameBoard.agent_scores[human_name] = 9
 
     _apply_agent_state(agents, agent_state)
-
+    num_agents = 3
+    for agent in engine.agents[num_agents:]: engine.eliminate_player(agent)
+    
+    engine.gameBoard.phase_number = 5
+    cfg = engine.gameplay_config
+    #cfg.pd_pairing_method = cfg.pd_pairing_choice_lowest
+    #cfg.pd_pairing_method = cfg.pd_pairing_choice_none
+    #cfg.pd_pairing_method = cfg.pd_pairing_choice_all
+    cfg.pd_pairing_method = cfg.pd_pairing_choice_all 
+    
     round_count = 0
     #while len(engine.agents) > 2:
     while round_count < 1:
         round_count += 1
-        phase = PhaseRecipe(rounds=[GameTargetedChoiceGive, VoteBottomTwo])
+        phase = PhaseRecipe(rounds=[GamePrisonersDilemma, VoteBottomTwo])
         engine.phase_runner.run_phase(phase)
 
 

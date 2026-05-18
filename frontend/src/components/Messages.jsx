@@ -13,6 +13,16 @@ export function getSpeakerColor(name, colorMap) {
   return colorMap[name]
 }
 
+function renderBold(text) {
+  const parts = text.split(/(\*[^*\n]+\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <span key={i} className="msg-bold">{part.slice(1, -1)}</span>
+    }
+    return part
+  })
+}
+
 function WordByWord({ text, onComplete, skipRef, animateText }) {
   const [typed, setTyped] = useState('')
   const [snapped, setSnapped] = useState('')
@@ -121,7 +131,7 @@ function WordByWord({ text, onComplete, skipRef, animateText }) {
 
   return (
     <span style={{ whiteSpace: 'pre-wrap' }}>
-      {typed}
+      {renderBold(typed)}
       {snapped && <span style={{ animation: 'fadeIn 0.4s ease forwards' }}>{snapped}</span>}
       {dots && <span style={{ color: 'var(--text-dim)', marginLeft: 2 }}>{dots}</span>}
     </span>

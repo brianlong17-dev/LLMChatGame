@@ -18,7 +18,7 @@ const DEMOS = [
     title: 'Game Phase',
     description: 'A full Knives + Vote round from mid-game state. 11 real players.',
     cast: ['Aang', 'Michael Jackson', 'HAL 9000', 'Jo March', 'Lady Macbeth', 'Lady Diana', 'Morty Smith', 'Amy March', 'Benoit Blanc', 'Gollum', 'Buffy Summers'],
-    locked: true,
+    locked: false,
   },
 ]
 

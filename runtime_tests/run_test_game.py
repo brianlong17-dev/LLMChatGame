@@ -6,6 +6,8 @@ Swap the game class at the bottom to test different games.
 import json
 import os
 import sys
+
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..")) 
 from core.bootstrap import create_engine, ConsoleGameEventSink
 from core.api_client import api_client
@@ -16,8 +18,8 @@ from gameplay_management.game_cycle.game_circle import GameCircle
 from gameplay_management.games.game_guess import GameGuess
 from gameplay_management.game_cycle.game_mob import GameMob
 from gameplay_management.game_cycle.game_knives import GameKnives
-from gameplay_management.game_cycle.game_knives_2 import GameKnives2
 from gameplay_management.eliminations.voting_bottom_two import VoteBottomTwo
+from gameplay_management.games.game_prisoners_dilemma import GamePrisonersDilemma
 
 # from gameplay_management.games.game_knives import GameKnives
 
@@ -93,9 +95,11 @@ if __name__ == "__main__":
     engine.gameBoard.new_phase()
     engine.gameBoard.newRound()
     rounds = 0
-    while len(engine.agents) > 2:
-    #while rounds < 2:
+    cfg = engine.gameplay_config
+    cfg.pd_pairing_method = cfg.pd_pairing_choice_random
+    #while len(engine.agents) > 2:
+    while rounds < 1:
         rounds += 1
-        phase = PhaseRecipe(rounds=[GameKnives, VoteBottomTwo])
+        phase = PhaseRecipe(rounds=[GamePrisonersDilemma, VoteBottomTwo])
         engine.phase_runner.run_phase(phase)
     api_client.print_summary()
