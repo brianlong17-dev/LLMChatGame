@@ -47,13 +47,7 @@ class GamePromptLibrary:
     )
 
     #------------------------ Prisoner's Dilemma ----------------------- #
-    pd_game_prompt = (
-            f"🚨 PRISONER'S DILEMMA 🚨\n"
-            "You have been paired with {opponent_name}.\n"
-            f"Remember:\n"
-            "{points_rules_string}"
-            f"Based on your game history and personality, make your choice."
-        )
+    
     
     targeted_games_points = 3
     give_game_intro = (f"Well, enough of the scheming, lying, conning... whatever happened to giving!? "
@@ -61,11 +55,4 @@ class GamePromptLibrary:
         f"Everyone is happy! Well... except any player with no friends! hehe")
     give_game_player_intro = ("{player_name}! You're up- what player are you choosing, and why?")
 
-    @classmethod
-    def prisonersDilemmaIntro(cls, pairing_string: str, points_rules_string: str):
-        return (
-            f"It's time to play: Prisoner's Dilemma.\n"
-            f"{pairing_string}\n"
-            f"In each pairing you get a choice: SPLIT or STEAL.\n"
-            f"{points_rules_string}\n\n"
-        )
+    

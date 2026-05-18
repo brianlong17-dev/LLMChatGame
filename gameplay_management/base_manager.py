@@ -29,9 +29,9 @@ class BaseRound:
     def game_log(self):
         return self.gameBoard.game_log
 
-    def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0, action_string = ""):
+    def publicPrivateResponse(self, agent: BaseAgent, result, delay: float = 0.0, is_reply = False):
         #TODO deprecate
-        self.gameBoard.handle_public_private_output(agent, result, delay)
+        self.gameBoard.handle_public_private_output(agent, result, delay, is_reply=is_reply)
 
     @classmethod
     def is_discussion(cls):
@@ -110,8 +110,8 @@ class BaseRound:
     #   Broadcasting    #
     #####################
 
-    def _host_broadcast(self, message, delay = 0):
-        self.gameBoard.host_broadcast(message, delay)
+    def _host_broadcast(self, message, delay = 0, is_reply = False):
+        self.gameBoard.host_broadcast(message, delay, is_reply=is_reply)
 
     def _host_broadcast_multiple_choice(self, messages):
         self.gameBoard.host_broadcast(random.choice(messages))
@@ -227,7 +227,7 @@ class BaseRound:
     #####################
 
     def points_string(self, count):
-        return "a point" if count == 1 else f"{count} points"
+        return "1 point" if count == 1 else f"{count} points"
 
     def format_list(self, lst):
         if not lst:

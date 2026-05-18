@@ -41,6 +41,7 @@ class SimulationEngine:
         agent.game_over = True
         self.agents.remove(agent)
         self.dead_agents.append(agent)
+        self.gameBoard.remove_agent_state(agent.name)
         
     def _select_debug_targets(self):
         debug_targets = ['Morty Smith', 'Lady Macbeth']

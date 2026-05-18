@@ -105,7 +105,7 @@ class GameRockPaperScissors(GameMechanicsMixin):
         self.gameBoard.host_broadcast(GamePromptLibrary.rps_game_intro)
 
         agents = list(self.simulationEngine.agents)
-        pairs, leftover = self._generate_pairings(agents, choose_partner=False)
+        pairs, leftover = self._generate_random_pairings(agents)
 
         if leftover:
             auto_pts = self.cfg().rps_odd_player_auto_points

@@ -243,6 +243,16 @@
   white-space: pre-wrap;
 }
 
+.msg-bold {
+  font-weight: 600;
+  font-size: 1.08em;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 2px rgba(255, 255, 255, 0.02);
+}
+
 /* Round summary */
 .round-summary {
   margin: 6px 0;

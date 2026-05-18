@@ -29,7 +29,8 @@ class VoteMechanicsMixin(BaseRound):
 
             
             self.simulationEngine.eliminate_player(victim)
-            self.gameBoard.remove_agent_state(victim.name)
+            
+            
             final_words_result = self.respond_to(victim, final_words_prompt)
 
             self.publicPrivateResponse(victim, final_words_result)
@@ -124,8 +125,8 @@ class VoteMechanicsMixin(BaseRound):
                 votes.append(actual_vote)
 
             self._update_voting_widget(agent.name, actual_vote or "—")
-
-            self.publicPrivateResponse(agent, vote_response)
+            self.gameBoard.handle_public_private_output(agent, vote_response, is_reply = True, delay = 2)
+            
         return votes, voting_results
    
     def process_vote_rounds(self, players_up_for_elimination: Sequence[str], revote_count: int = 0, initial_votes = None):

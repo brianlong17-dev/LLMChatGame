@@ -43,7 +43,7 @@ class GameTargetedChoice(GameMechanicsMixin):
                 
             else:
                 response = player.take_turn_standard(game_instruction, self.gameBoard, response_model)
-                self.publicPrivateResponse(player, response)
+                self.publicPrivateResponse(player, response, is_reply = True)
                 
                 target_name = self._get_target_name_from_response(response)
                 target_agent = self._agent_by_name(self._clean_target_name(target_name))
@@ -58,8 +58,8 @@ class GameTargetedChoice(GameMechanicsMixin):
                     # Execute the specific logic (Give vs Steal vs Sacrifice)
                     result_host_string, player_for_reaction = logic_callback(player, target_agent, response)
                     
-            self.gameBoard.host_broadcast(result_host_string)
-            reaction = self.respond_to(player_for_reaction, result_host_string)
-            self.publicPrivateResponse(player_for_reaction, reaction)
+            self.gameBoard.host_broadcast(result_host_string, is_reply = True)
+            reaction = self.turn_manager.respond_to(player_for_reaction, result_host_string, is_reply = True)
+            self.publicPrivateResponse(player_for_reaction, reaction, is_reply = True)
             self.gameBoard.system_broadcast(self.gameBoard.agent_scores, private = True)
    
