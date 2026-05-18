@@ -44,7 +44,7 @@ class HighestPointsImmunity(ImmunityMechanicsMixin):
         if len(highest_players) <= 2:
             for agent_name in highest_players:
                 winner = self._agent_by_name(agent_name)
-                winner_response = self.respond_to(winner, host_string)
+                winner_response = self.turn_manager.respond_to(winner, host_string)
                 self.publicPrivateResponse(winner, winner_response)
             
         return highest_players

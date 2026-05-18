@@ -31,7 +31,7 @@ class VoteMechanicsMixin(BaseRound):
             self.simulationEngine.eliminate_player(victim)
             
             
-            final_words_result = self.respond_to(victim, final_words_prompt)
+            final_words_result = self.turn_manager.respond_to(victim, final_words_prompt)
 
             self.publicPrivateResponse(victim, final_words_result)
         else:
@@ -80,7 +80,7 @@ class VoteMechanicsMixin(BaseRound):
         )
         name_field_prompt = VotePromptLibrary.vote_one_player_name_field_prompt
         #----------------
-        action_fields = self._choose_name_field(eligible_players_names, name_field_prompt) 
+        action_fields = self.turn_manager._choose_name_field(eligible_players_names, name_field_prompt)
         response_model = DynamicModelFactory.create_model_(player, model_name="vote_out_player", action_fields=action_fields, action_post_response = True) 
         vote_result = player.take_turn_standard(user_content, self.gameBoard, response_model)
         #-----------------
@@ -102,7 +102,7 @@ class VoteMechanicsMixin(BaseRound):
             voting_results = [vote_future.result() for vote_future in voting_futures]
 
         for agent, vote_response in zip(self.simulationEngine.agents, voting_results):
-            actual_vote = self._get_target_name_from_response(vote_response)
+            actual_vote = self.turn_manager._get_target_name_from_response(vote_response)
             actual_vote = actual_vote.strip() if actual_vote else ""
 
             if actual_vote not in players_up_for_elimination:
@@ -174,7 +174,7 @@ class VoteMechanicsMixin(BaseRound):
             points_per_survived_vote = GamePromptLibrary.points_per_survived_vote
         survivors_rewarded = {}
         for vote_obj in voting_results:
-            targeted_player = self._get_target_name_from_response(vote_obj)
+            targeted_player = self.turn_manager._get_target_name_from_response(vote_obj)
             targeted_player = targeted_player.strip() if targeted_player else ""
             if targeted_player and targeted_player != victim_name:
                 self.gameBoard.append_agent_points(targeted_player, points_per_survived_vote)

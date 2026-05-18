@@ -60,7 +60,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
             f"You get to choose who you want to play with from the following list: {available_agents_names}.\n"
             f"Based on your history and the current game context, who do you choose to partner up with for the next mini-game and why? "
         )
-        action_fields = self._choose_name_field(available_agents_names, "The exact name of the agent to PAIR UP WITH. ") 
+        action_fields = self.turn_manager._choose_name_field(available_agents_names, "The exact name of the agent to PAIR UP WITH. ")
         public_response_prompt = (f"After your choice has been revealed what do you say? Why did you pick them, and what do you want to say to them? "
         "This is your chance to convince them to split. Keep it brief. ")
         
@@ -68,7 +68,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
                                   action_fields=action_fields, broadcast = True, is_reply = True)
         
         
-        partner_name = self._get_target_name_from_response(response)
+        partner_name = self.turn_manager._get_target_name_from_response(response)
         return self._agent_by_name(partner_name)
         
     
@@ -81,7 +81,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
         )
         
         choices = ["split", "steal"]
-        action_fields = self.create_choice_field("action", choices)
+        action_fields = self.turn_manager.create_choice_field("action", choices)
         additional_thought_nudge="What points are available? How will the next elimination work? Do you need points or alliance?"
         public_response_prompt = "A one liner, for AFTER your result has been revealed. (Not neccessary to re-state your choice as it will already be revealed.)."
         return self.turn_manager.take_turn(player, user_content= user_content, additional_thought_nudge=additional_thought_nudge, 
@@ -134,11 +134,11 @@ class GamePrisonersDilemma(GameMechanicsMixin):
             
         elif (choices[0] != choices[1]):
             for agent in (agent0, agent1):
-                reaction = self.respond_to(agent, result_host_message)
+                reaction = self.turn_manager.respond_to(agent, result_host_message)
                 self.gameBoard.handle_public_private_output(agent, reaction, is_reply = True)
     
     def respond_to_return_sender(self, agent, msg):
-        return (agent, self.respond_to(agent, msg ))
+        return (agent, self.turn_manager.respond_to(agent, msg))
     
     def _execute_pairs(self, pairs):
         for agent0, agent1 in pairs:

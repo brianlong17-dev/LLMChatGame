@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from gameplay_management.base_manager import BaseRound
 
 
+
 class TurnManager:
 
     def __init__(self, base_manager: 'BaseRound'):
@@ -23,7 +24,7 @@ class TurnManager:
     # --- Model Creation ---
     
     def _get_target_name_from_response(self, response):
-        return self.base_manager._get_target_name_from_response(response)
+        return getattr(response, GamePromptLibrary.model_field_choose_name, None)
 
     def _make_model_optional(self, model, agent):
         buffer = agent.optional_response_buffer

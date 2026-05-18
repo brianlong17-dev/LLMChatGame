@@ -75,7 +75,7 @@ class GamePerformSobStory(GameMechanicsMixin):
         score_choices = [str(i) for i in range(1, 11)]
         
 
-        action_fields = self.create_choice_field(
+        action_fields = self.turn_manager.create_choice_field(
             "score",
             score_choices,
             f"Your score for {performer.name}'s story. 1 = unmoved, 10 = devastated.",
@@ -186,7 +186,7 @@ class GamePerformSobStory(GameMechanicsMixin):
             self.gameBoard.host_broadcast(summary)
             self.gameBoard.append_agent_points(performer.name, average)
             round_scores[performer.name] = average
-            performer_score_response = self.respond_to(performer, summary)
+            performer_score_response = self.turn_manager.respond_to(performer, summary)
             self.publicPrivateResponse(performer, performer_score_response)
         
         # --- Final scoreboard -------------------------------------------------

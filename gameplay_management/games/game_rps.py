@@ -38,7 +38,7 @@ class GameRockPaperScissors(GameMechanicsMixin):
             points_string=self._points_string(),
         )
         choices = ["rock", "paper", "scissors"]
-        action_fields = self.create_choice_field("action", choices)
+        action_fields = self.turn_manager.create_choice_field("action", choices)
         additional_thought_nudge = (
             "Think carefully — what would your opponent choose? "
             "Is there a psychological edge you can exploit?"
@@ -98,7 +98,7 @@ class GameRockPaperScissors(GameMechanicsMixin):
             self.gameBoard.host_broadcast(f"{msg}\n")
 
             for agent in (agent0, agent1):
-                reaction = self.respond_to(agent, msg)
+                reaction = self.turn_manager.respond_to(agent, msg)
                 self.publicPrivateResponse(agent, reaction)
 
     def run_game(self):

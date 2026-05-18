@@ -39,7 +39,7 @@ class GameTargetedChoiceSacrifice(GameTargetedChoice):
                 return self.get_error_model(error_response)
             targets = [name for name in self.gameBoard.agent_names() if name != player.name]
             targets.append("Pass") 
-            action_fields = self._choose_name_field(targets, "Choose a player to attack, or 'Pass'.")
+            action_fields = self.turn_manager._choose_name_field(targets, "Choose a player to attack, or 'Pass'.")
             spend_field_desc = (
                 f"How many of your own points will you spend? You have {my_score} points. Your target player can't go into negative points, so don't waste points."
                 f"Enter 0 if passing."
@@ -66,7 +66,7 @@ class GameTargetedChoiceSacrifice(GameTargetedChoice):
         def sacrifice_points_logic(player, target_agent, response):
             
             spent = response.points_to_spend
-            target_name = self._get_target_name_from_response(response)
+            target_name = self.turn_manager._get_target_name_from_response(response)
             normalized_target = self._normalize_target_string(target_name)
             
             if normalized_target == "pass" or spent <= 0:

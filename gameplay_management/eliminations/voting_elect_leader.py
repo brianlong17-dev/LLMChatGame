@@ -28,7 +28,7 @@ class VoteElectLeader(VoteMechanicsMixin):
         )
         name_field_prompt = "The exact name of the player you nominate as Executioner."
         additional_thought_nudge = "What does it mean to elect an executioner? What will happen to them? What power will they have? Who would your choice send home?"
-        action_fields = self._choose_name_field(eligible, name_field_prompt)
+        action_fields = self.turn_manager._choose_name_field(eligible, name_field_prompt)
         response_model = DynamicModelFactory.create_model_(agent, model_name="vote_for_leader", action_fields=action_fields, additional_thought_nudge = additional_thought_nudge)
         return agent.take_turn_standard(user_content, self.gameBoard, response_model)
 
@@ -44,7 +44,7 @@ class VoteElectLeader(VoteMechanicsMixin):
         for agent, vote_response in zip(self.simulationEngine.agents, voting_results):
             #I think all public private responses with action should probably take an action as well, to output it
             self.publicPrivateResponse(agent, vote_response, delay = 1)
-            target_name = self._get_target_name_from_response(vote_response)
+            target_name = self.turn_manager._get_target_name_from_response(vote_response)
             choice = self._agent_by_name(target_name)
             if choice:
                 votes.append(choice.name)
@@ -77,7 +77,7 @@ class VoteElectLeader(VoteMechanicsMixin):
         host_message += self.immunity_string(immunity_players, players_up_for_elimination)
 
         # Leader chooses from non-immune players only
-        action_fields = self._choose_name_field(players_up_for_elimination, "Choose who to send home.")
+        action_fields = self.turn_manager._choose_name_field(players_up_for_elimination, "Choose who to send home.")
         response_model = DynamicModelFactory.create_model_(leader, model_name="elect_leader_choice", action_fields=action_fields)
         leader_response = leader.take_turn_standard(
             f"You have been elected Executioner. Choose who to eliminate from: {', '.join(players_up_for_elimination)}",
@@ -86,7 +86,7 @@ class VoteElectLeader(VoteMechanicsMixin):
         self.publicPrivateResponse(leader, leader_response)
 
         # --- Step 4: Reveal and eliminate ---
-        victim_name = self._get_target_name_from_response(leader_response)
+        victim_name = self.turn_manager._get_target_name_from_response(leader_response)
         if not victim_name or victim_name not in players_up_for_elimination:
             self.gameBoard.host_broadcast(f"⚡ {leader_name} has made an invalid choice of... {victim_name}.")
             victim_name = random.choice(players_up_for_elimination)

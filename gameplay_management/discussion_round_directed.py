@@ -30,7 +30,7 @@ class DiscussionRoundDirected(BaseRound):
 
             response = self.turn_manager._ask_directed_question(player, names, turn_prompt, public_response_prompt, additional_thought_nudge)
 
-            chosen_name = self._get_target_name_from_response(response)
+            chosen_name = self.turn_manager._get_target_name_from_response(response)
             chosen_agent = self._agent_by_name(chosen_name.strip())
 
             appendage = ""

@@ -26,7 +26,7 @@ class GameCircle(CycleRound):
     def _quick_get_in(self, shield_holder, unprotected_pool, gun_holder_name):
         self.gameBoard.host_broadcast(f"{shield_holder.name}, who do you choose! ")
         pool_names = [a.name for a in unprotected_pool] + [shield_holder.name]
-        action_fields = self._choose_name_field([a.name for a in unprotected_pool], "Choose one player to protect behind your shield.")
+        action_fields = self.turn_manager._choose_name_field([a.name for a in unprotected_pool], "Choose one player to protect behind your shield.")
         model = DynamicModelFactory.create_model_(shield_holder, action_fields=action_fields, 
                                 public_response_prompt = "What do you yell at the person you've chosen!",
                                 additional_thought_nudge = "Who do you want to protect? Who is most at danger from the shooter? Would be a valuable ally? To whom do you owe a favor?")
@@ -34,7 +34,7 @@ class GameCircle(CycleRound):
                         f"There's room for one more... {self.format_list(pool_names)} are all in danger- who will you call to protect? ")
         result = shield_holder.take_turn_standard(user_content, self.gameBoard, model)
         self.gameBoard.handle_public_private_output(shield_holder, result)
-        protected_name = self._get_target_name_from_response(result).strip()
+        protected_name = self.turn_manager._get_target_name_from_response(result).strip()
         if protected_name in pool_names:
             self._shield_host_response(shield_holder.name, protected_name)
             return [a for a in unprotected_pool if a.name != protected_name]
@@ -44,9 +44,9 @@ class GameCircle(CycleRound):
         
     def _take_shot(self, gun_holder, unprotected_pool):
         targetable_names = [a.name for a in unprotected_pool] + [gun_holder.name]  # includes gun_holder themselves
-        action_fields = self._choose_name_field(targetable_names, "Choose who to shoot.", field_name = 'target_choice')
+        action_fields = self.turn_manager._choose_name_field(targetable_names, "Choose who to shoot.", field_name = 'target_choice')
         if self.double_shot:
-            action_fields = action_fields | self._choose_name_field(targetable_names, "Choose who to shoot with second bullet.", field_name = 'target_choice_2')
+            action_fields = action_fields | self.turn_manager._choose_name_field(targetable_names, "Choose who to shoot with second bullet.", field_name = 'target_choice_2')
         model = DynamicModelFactory.create_model_(gun_holder, action_fields=action_fields, 
                                                   public_response_prompt = "What you say to the group AFTER the shot goes and the smoke clears. It can be a smooth one liner, or remorseful plea for forgiveness. ",
                                                   additional_thought_nudge = "Who do you want to shoot? Whose points do you want? What will you say? Do you want to intimidate the group or make them feel sorry for you? ")
@@ -97,7 +97,7 @@ class GameCircle(CycleRound):
             public_response_prompt = "Do you stay silent, and hope to be ignored? Or do you speak up and plead? Your public response to them both, and to be heard by the group. "
             private_thoughts_prompt = "Do you protect yourself? Can you remind them of alliance? What is the best strategy here? Is it better to stay silent? "
             
-            self._basic_turn(player, user_content_prompt, public_response_prompt, 
+            self.turn_manager._basic_turn(player, user_content_prompt, public_response_prompt, 
                              private_thoughts_prompt=private_thoughts_prompt, optional = True)
        
         
@@ -139,7 +139,7 @@ class GameCircle(CycleRound):
                 #survivors = [random_survivor]
                 for survivor in survivors:
                     react_prompt = f"{player_to_remove.name} has been shot. React to what just happened- or stay silent."
-                    self._basic_turn(survivor, react_prompt, "Your reaction.", 
+                    self.turn_manager._basic_turn(survivor, react_prompt, "Your reaction.", 
                                  optional = True)
 
    

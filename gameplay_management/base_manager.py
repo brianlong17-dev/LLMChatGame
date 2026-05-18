@@ -5,7 +5,6 @@ from typing import Callable, Sequence
 from agents.base_agent import BaseAgent
 from models.player_models import DynamicModelFactory
 from gameplay_management.turn_manager import TurnManager
-from prompts.gamePrompts import GamePromptLibrary
 from pydantic import Field
 
 from typing import TYPE_CHECKING
@@ -124,40 +123,6 @@ class BaseRound:
         restricted_users = [admin, agent.name]
         id = self.gameBoard.log_new_restricted_conversation(restricted_users, admin, message)
         self.gameBoard.close_private_conversation(id, silent)
-
-    ###########################
-    #   Model Field Builders  #
-    ###########################
-
-    def create_choice_field(self, field_name, choices, field_description = None):
-        return self.turn_manager.create_choice_field(field_name, choices, field_description)
-
-    def create_basic_field(self, field_name, field_description, optional: bool = False):
-        return self.turn_manager.create_basic_field(field_name, field_description, optional)
-
-    def _choose_name_field(self, allowed_names, reason_for_choosing_prompt, field_name = None):
-        return self.turn_manager._choose_name_field(allowed_names, reason_for_choosing_prompt, field_name)
-
-    def _get_target_name_from_response(self, response):
-        return getattr(response, GamePromptLibrary.model_field_choose_name, None)
-
-    #####################
-    #   Player Turns    #
-    #####################
-
-    def respond_to(self, player: Debater, text_to_respond_to: str, public_response_prompt: str = None,
-                   private_thoughts_prompt: str = None, instruction_override = None):
-        return self.turn_manager.respond_to(player, text_to_respond_to, public_response_prompt, private_thoughts_prompt, instruction_override)
-
-    def get_response(self, player, model_name, context_msg, action_fields = None, additional_thought_nudge = None):
-        return self.turn_manager.get_response(player, model_name, context_msg, action_fields, additional_thought_nudge)
-
-    def _ask_directed_question(self, player, possible_target_names, user_content,
-                               public_response_prompt, additional_thought_nudge = None):
-        return self.turn_manager._ask_directed_question(player, possible_target_names, user_content, public_response_prompt, additional_thought_nudge)
-
-    def _basic_turn(self, agent, user_content_prompt, public_response_prompt, private_thoughts_prompt = None, optional = False):
-        return self.turn_manager._basic_turn(agent, user_content_prompt, public_response_prompt, private_thoughts_prompt, optional)
 
     ###########################
     #   Parallel Execution    #

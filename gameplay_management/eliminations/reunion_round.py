@@ -198,7 +198,7 @@ class FinaleReunionRound(VoteMechanicsMixin):
                 f"Who do you vote for, and why? Please include every detail of personal drama you mentioned in your pre-round conversation with the host. "
             )
 
-        action_fields = self._choose_name_field(
+        action_fields = self.turn_manager._choose_name_field(
             finalist_names,
             "Vote for the finalist you believe deserves to win. "
         )
@@ -321,10 +321,12 @@ class FinaleReunionRound(VoteMechanicsMixin):
                 )
                 user_content = "Direct a question or statement to one of the finalists."
                 additional_thought_nudge = "What could you ask that would change your mind? What would cause the most drama? "
-                result = self._ask_directed_question(player, self._names(self.finalists), user_content, public_response_prompt, additional_thought_nudge)
+                result = self.turn_manager._ask_directed_question(
+                    player, self._names(self.finalists), user_content, public_response_prompt, additional_thought_nudge
+                )
 
                 #--------Get some answers ------
-                chosen_name = self._get_target_name_from_response(result) 
+                chosen_name = self.turn_manager._get_target_name_from_response(result)
                 if chosen_name:
                     chosen_agent = self._agent_by_name(chosen_name.strip())
                     if chosen_agent:

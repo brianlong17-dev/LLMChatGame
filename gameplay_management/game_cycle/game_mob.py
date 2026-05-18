@@ -96,7 +96,7 @@ class GameMob(BaseRound):
         self._host_broadcast_multiple_choice(questions)
         
         valid_targets = [a.name for a in self.agents if a.name != agent.name]
-        action_fields = self.create_choice_field(
+        action_fields = self.turn_manager.create_choice_field(
             "mob_choice",
             valid_targets,
             "You have been chosen as a mob leader. You must pick a target — no passing."
@@ -136,7 +136,7 @@ class GameMob(BaseRound):
         valid_targets = [a.name for a in other_agents if a.name != agent.name]
         choices = [self.PASS] + valid_targets
 
-        action_fields = self.create_choice_field(
+        action_fields = self.turn_manager.create_choice_field(
             "mob_choice",
             choices,
             ("Choose a player to TARGET. If you want to join someone elses mob, choose PASS. "
@@ -193,7 +193,7 @@ class GameMob(BaseRound):
 
     def _make_mob_choice(self, follower, rejoining = False):
         choices = [self._mob_label(mob, target_label='targetting') for mob in self.mobs]
-        action_fields = self.create_choice_field(
+        action_fields = self.turn_manager.create_choice_field(
             "mob_choice",
             choices,
             "Choose which mob to join."
@@ -313,7 +313,7 @@ class GameMob(BaseRound):
                 f"{mob.leader.name} — all of a sudden you're in position of power- time to make your case. Why should the free agents join you?",
                 f"The floor is yours, {mob.leader.name}. Should they join you?",
             ])
-            self._basic_turn(
+            self.turn_manager._basic_turn(
                 mob.leader,
                 f"{free_names} must now choose which mob to join.  Why should they join your mob targeting {mob.target}?",
                 "Your pitch to the free agents.",
@@ -329,7 +329,7 @@ class GameMob(BaseRound):
                     f"How does it feel, {target.name}? The mob is growing — do you have anything to say?",
                     f"{target.name} — now's your chance. Can you turn the tide?",
                 ])
-                self._basic_turn(
+                self.turn_manager._basic_turn(
                     target,
                     f"{free_names} are considering joining the mob targeting you. This is your opportunity to plead your case. ",
                     "Your public words. ", 
@@ -378,8 +378,8 @@ class GameMob(BaseRound):
         # Reactions — target responds, then winning mob members
         target = self._agent_by_name(winner.target)
         if target:
-            self._basic_turn(target, "You've been mobbed. React.", "Your reaction.", optional=False)
-        self._basic_turn(winner.leader, "Your mob won. React.", "Your reaction.", optional=False)
+            self.turn_manager._basic_turn(target, "You've been mobbed. React.", "Your reaction.", optional=False)
+        self.turn_manager._basic_turn(winner.leader, "Your mob won. React.", "Your reaction.", optional=False)
         return points_value
 
     
@@ -404,7 +404,7 @@ class GameMob(BaseRound):
         current_mob = next((m for m in self.mobs if player in m.followers), None)
         other_mobs = [m for m in self.mobs if m is not current_mob]
         choices = [self._mob_label(m) for m in other_mobs] + [self.STAY]
-        action_fields = self.create_choice_field(
+        action_fields = self.turn_manager.create_choice_field(
             "mob_choice", choices, "Choose a mob to switch to, or 'Stay' to remain where you are."
         )
         nudge = (

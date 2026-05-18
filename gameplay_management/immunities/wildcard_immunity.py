@@ -32,7 +32,7 @@ class WildcardImmunity(ImmunityMechanicsMixin):
         
         self.gameBoard.host_broadcast(host_string)
         
-        winner_response = self.respond_to(winner , host_string)
+        winner_response = self.turn_manager.respond_to(winner, host_string)
         self.publicPrivateResponse(winner, winner_response)
         return [response.target_name]
 

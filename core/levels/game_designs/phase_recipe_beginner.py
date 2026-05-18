@@ -23,6 +23,7 @@ class PhaseRecipeFactoryBeginner(PhaseRecipeFactory):
             "values": "What traits do you most value in an ally? In a friend or in a competitor? " ,
             "dislikes": "What traits do you most dislike in a person? What type of behaviour is most unacceptable to you in a teammate? " ,
             "kindness" : "Tell me about an act of kindness shown to you that has always stayed with you. ",
+            "cooperation" : "In a game where someone has to be eliminated, how do you manage co-operation? Do you try to build alliance against the most dangerous player, or do you go it alone? Or another strategy entirely? ", 
             "values_strategy" : "You walk into the room. You have thirty seconds before the game begins. You approach one person. Who is it, what do you say to them, and what are you hoping to get out of it?", 
         }
         return questions

@@ -69,7 +69,7 @@ class GameGuess(GameMechanicsMixin):
 
         # --- Build the response model (same for everyone) ---------------------
         valid_choices = list(range(1, number_range + 1))
-        action_fields = self.create_choice_field(
+        action_fields = self.turn_manager.create_choice_field(
             "choice",
             [str(i) for i in valid_choices],
             f"Which number do you guess? Choose between 1 and {number_range}.",
@@ -145,7 +145,7 @@ class GameGuess(GameMechanicsMixin):
         if agents_for_response:
             with ThreadPoolExecutor() as executor:
                 for player in agents_for_response:
-                    future = executor.submit(self.respond_to, player, result_string)
+                    future = executor.submit(self.turn_manager.respond_to, player, result_string)
                     reaction_futures.append((player, future))
 
             

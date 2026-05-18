@@ -72,7 +72,7 @@ class GameKnives(CycleRound):
 
         action_fields = {}
         for i in range(1, state.held + 1):
-            action_fields |= self.create_choice_field(
+            action_fields |= self.turn_manager.create_choice_field(
                 f"knife_{i}",
                 allowed_choices,
                 f"Knife {i}: choose a player to stab, or 'Pass' to keep this knife for later."
@@ -85,12 +85,12 @@ class GameKnives(CycleRound):
         )
         if self.SECRET_NOTES:
             public_response_prompt += "You also have the chance to pass a player a secret note. "
-            action_fields |= self.create_choice_field(
+            action_fields |= self.turn_manager.create_choice_field(
                 "secret_note_target",
                 other_names + [self.PASS],
                 "If you want to send a secret private note to someone, address it here — pass if you don't want to send a note."
             )
-            action_fields |= self.create_basic_field(
+            action_fields |= self.turn_manager.create_basic_field(
                 "note_content",
                 "Leave null if you chose pass for secret note. Otherwise — the content of your note. "
                 "Sign it off explicitly if you want them to know the sender, or else the note is anonymous.",
@@ -194,12 +194,12 @@ class GameKnives(CycleRound):
             self.gameBoard.append_agent_points(p.name, count)
 
         for p in runners_up:
-            self._basic_turn(p.agent, f"You were stabbed {count} times, but survived. How do you feel? What do you have to say? Do you have any suspects? ",
+            self.turn_manager._basic_turn(p.agent, f"You were stabbed {count} times, but survived. How do you feel? What do you have to say? Do you have any suspects? ",
                              "Speak to the group. Be coy or brash, or whatever your personality prompts you to do.")
 
     def _optional_pitch(self, players):
         for p in players:
-            self._basic_turn(p.agent, "Before we head to the next round, would you like to say something to the group? ",
+            self.turn_manager._basic_turn(p.agent, "Before we head to the next round, would you like to say something to the group? ",
                         "Speak to the group, or return an empty response to remain silent. ",
                         private_thoughts_prompt="Could you direct the group? Or will you just draw attention? ",
                         optional=True)
