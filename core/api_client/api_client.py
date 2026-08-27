@@ -28,7 +28,7 @@ class APIClient:
             raise ValueError("token_budget is required")
         self._mock_output = False
         self._min_mock_time = 1
-        self._max_mock_time = 3
+        self._max_mock_time = 1
         self._client = client
         self.default_model = model
         self.higher_model = higher_model_name
