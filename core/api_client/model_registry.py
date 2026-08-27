@@ -5,7 +5,7 @@ MODEL_3_5 = "gemini-3.5-flash-lite"
 MODEL_3 = "gemini-3.1-flash-lite"
 MODEL_2 = "gemini-2.5-flash-lite"
 DEFAULT_MODEL_NAME = MODEL_3
-DEFAULT_HIGHER_MODEL_NAME = "gemini-2.5-flash"
+DEFAULT_HIGHER_MODEL_NAME = "gemini-3.1-flash"
 
 
 AVAILABLE_MODELS: List[ModelOption] = [

@@ -248,7 +248,9 @@ class AgenticPlayer(AbstractAgenticPlayer):
                        "How do you feel about how they treated your allies or enemies? ")
         
         context_string = self._summarise_phase_context_string(game_board)
-        use_higher_model_for_summary = not self.game_over
+        
+        use_higher_model_for_summary = False #not self.game_over
+        
         response_model = self._build_summary_model(game_board)
         
         response = self.take_turn_standard(prompt, game_board, response_model, instruction_override=context_string, 
