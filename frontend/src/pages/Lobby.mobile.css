@@ -199,6 +199,7 @@
   transition: border-color .12s, color .12s;
 }
 .ml-name.selected { border-color: var(--accent); color: var(--accent); background: rgba(224,123,84,.08); }
+.ml-name.selected.inactive { border-color: var(--border); color: var(--text-dim); background: transparent; opacity: .55; }
 .ml-name-add { border-color: var(--accent); color: var(--accent); }
 .ml-add-row {
   display: flex;

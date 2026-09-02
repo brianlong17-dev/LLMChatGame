@@ -25,6 +25,8 @@ const LEVEL_PRESENTATION = {
 
 const STEP_LABELS = ['You', 'Level', 'Cast', 'Review']
 
+const HARD_CAP = 12
+
 export default function Lobby({ onStart, initialStep = 0, onInitialStepUsed }) {
   const saved = JSON.parse(localStorage.getItem(LOBBY_STORAGE_KEY) || '{}')
 
@@ -127,6 +129,7 @@ export default function Lobby({ onStart, initialStep = 0, onInitialStepUsed }) {
   const maxPlayers = selectedLevelObj?.max_players || 12
   const minPlayers = selectedLevelObj?.min_players || 2
   const maxAI = maxPlayers - (playing ? 1 : 0)
+  const selectCap = Math.max(maxAI, HARD_CAP - (playing ? 1 : 0))
   const minAI = Math.max(0, minPlayers - (playing ? 1 : 0))
   const defaultModelId = (modelOptions.find(m => m.default) || modelOptions[0])?.id || ''
 
@@ -139,7 +142,7 @@ export default function Lobby({ onStart, initialStep = 0, onInitialStepUsed }) {
   const toggle = (name) => {
     if (selected.includes(name)) {
       removeAI(name)
-    } else if (selected.length < maxAI) {
+    } else if (selected.length < selectCap) {
       setSelected([...selected, name])
     }
   }
@@ -173,7 +176,7 @@ export default function Lobby({ onStart, initialStep = 0, onInitialStepUsed }) {
       return
     }
     setCustomNames([...customNames, name])
-    if (selected.length < maxAI) setSelected([...selected, name])
+    if (selected.length < selectCap) setSelected([...selected, name])
     setCustomInput('')
   }
 
@@ -184,7 +187,7 @@ export default function Lobby({ onStart, initialStep = 0, onInitialStepUsed }) {
 
   const addFromSearch = () => {
     const name = query.trim()
-    if (!name || selected.length >= maxAI) return
+    if (!name || selected.length >= selectCap) return
     setCustomNames([...customNames, name])
     setSelected([...selected, name])
     setQuery('')
@@ -400,7 +403,7 @@ export default function Lobby({ onStart, initialStep = 0, onInitialStepUsed }) {
 
             {q && filtered.length === 0 && (
               <div className="custom-input-row">
-                <button className="input-submit" onClick={addFromSearch} disabled={selected.length >= maxAI}>
+                <button className="input-submit" onClick={addFromSearch} disabled={selected.length >= selectCap}>
                   + Add “{query.trim()}”
                 </button>
               </div>
@@ -411,7 +414,7 @@ export default function Lobby({ onStart, initialStep = 0, onInitialStepUsed }) {
                 const selectedIndex = selected.indexOf(name)
                 const isSelected = selectedIndex !== -1
                 const isInactive = isSelected && selectedIndex >= maxAI
-                const isDisabled = !isSelected && selected.length >= maxAI
+                const isDisabled = !isSelected && selected.length >= selectCap
                 const isCustom = !q && activeTab === 'Custom'
                 const btnClass = `name-btn ${isSelected ? 'selected' : ''} ${isInactive ? 'inactive' : ''}`
                 return isCustom ? (

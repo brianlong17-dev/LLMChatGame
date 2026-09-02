@@ -101,14 +101,15 @@ export default function LobbyMobile({ onStart }) {
   const maxPlayers = levelObj?.max_players || 12
   const minPlayers = levelObj?.min_players || 2
 
-  const aiCap = Math.min(HARD_CAP, maxPlayers) - (playing ? 1 : 0)
+  const aiCap = maxPlayers - (playing ? 1 : 0)
+  const selectCap = Math.max(aiCap, HARD_CAP - (playing ? 1 : 0))
   const activeSelected = selected.slice(0, aiCap)
   const inactiveCount = selected.length - activeSelected.length
   const count = activeSelected.length + (playing ? 1 : 0)
   const need = Math.max(0, minPlayers - count)
 
   const toggle = (name) => setSelected(s =>
-    s.includes(name) ? s.filter(n => n !== name) : (s.length >= aiCap ? s : [...s, name]))
+    s.includes(name) ? s.filter(n => n !== name) : (s.length >= selectCap ? s : [...s, name]))
   const remove = (name) => setSelected(s => s.filter(n => n !== name))
 
   // ── Watch / Play fork ──
@@ -132,13 +133,13 @@ export default function LobbyMobile({ onStart }) {
     const existing = [...customNames, ...Object.values(tabs).flat()].find(n => n.toLowerCase() === lower)
     if (existing) { toggle(existing); setCustomInput(''); return }
     setCustomNames([...customNames, name])
-    if (selected.length < aiCap) setSelected([...selected, name])
+    if (selected.length < selectCap) setSelected([...selected, name])
     setCustomInput('')
   }
   const removeCustom = (name) => { setCustomNames(customNames.filter(n => n !== name)); remove(name) }
   const addFromSearch = () => {
     const name = query.trim()
-    if (!name || selected.length >= aiCap) return
+    if (!name || selected.length >= selectCap) return
     setCustomNames([...customNames, name])
     setSelected([...selected, name])
     setQuery('')
@@ -255,7 +256,7 @@ export default function LobbyMobile({ onStart }) {
 
           {q && filtered.length === 0 && (
             <div className="ml-add-row">
-              <button className="ml-name ml-name-add" onClick={addFromSearch} disabled={selected.length >= aiCap}>
+              <button className="ml-name ml-name-add" onClick={addFromSearch} disabled={selected.length >= selectCap}>
                 + Add “{query.trim()}”
               </button>
             </div>
@@ -263,16 +264,19 @@ export default function LobbyMobile({ onStart }) {
 
           <div className="ml-grid">
             {filtered.map(name => {
-              const sel = activeSelected.includes(name)
-              const dis = !selected.includes(name) && activeSelected.length >= aiCap
+              const idx = selected.indexOf(name)
+              const sel = idx !== -1
+              const inactive = sel && idx >= aiCap
+              const dis = !sel && selected.length >= selectCap
               const isCustom = !q && activeTab === 'Custom'
+              const cls = `ml-name ${sel ? 'selected' : ''} ${inactive ? 'inactive' : ''}`
               return isCustom ? (
                 <span key={name} className="ml-name-wrap">
-                  <button className={`ml-name ${sel ? 'selected' : ''}`} onClick={() => toggle(name)} disabled={dis}>{name}</button>
+                  <button className={cls} onClick={() => toggle(name)} disabled={dis}>{name}</button>
                   <button className="ml-name-rm" onClick={() => removeCustom(name)}>×</button>
                 </span>
               ) : (
-                <button key={name} className={`ml-name ${sel ? 'selected' : ''}`} onClick={() => toggle(name)} disabled={dis}>{name}</button>
+                <button key={name} className={cls} onClick={() => toggle(name)} disabled={dis}>{name}</button>
               )
             })}
             {!q && activeTab === 'Custom' && customNames.length === 0 && <span className="ml-hint">Add names above.</span>}
