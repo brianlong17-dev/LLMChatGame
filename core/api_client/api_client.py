@@ -12,7 +12,7 @@ import google.genai.types as types
 MAX_TOKENS_PER_GAME_CAP = int(os.environ.get("MAX_TOKENS_PER_GAME", 1500000))
 
 from core.sinks.game_sink import NoopGameSink
-from core.api_client.api_record_manager import APIRecordManager
+from core.api_client.api_record_manager import APIRecordManager, CallTiming, NO_LOCATION
 from core.api_client.model_registry import MODEL_2
 
 if TYPE_CHECKING:
@@ -83,9 +83,14 @@ class APIClient:
             client = self.european_client
         else:
             client = self._client
-        
+
+        location = getattr(getattr(client, "_api_client", None), "location", None) or NO_LOCATION
+        timing = CallTiming()
+
         for attempt in range(max_429_retries):
-            try: 
+            timing.attempts += 1
+            attempt_start = time.monotonic()
+            try:
                 response = client.models.generate_content(
                     model=api_model,
                     contents=user_content,  # just the user message string
@@ -100,24 +105,34 @@ class APIClient:
                     ),
                 )
                 result = response_model(**json.loads(response.text))
+                timing.call_ms = _elapsed_ms(attempt_start)
                 break
             except json.JSONDecodeError:
+                timing.record_failure("malformed_json", _elapsed_ms(attempt_start))
+                timing.record_wasted(response)
                 if attempt < max_429_retries - 1:
+                    timing.retries += 1
                     print(f"malformed JSON response — retrying ({attempt + 1}/{max_429_retries - 1})")
                     continue
                 raise
             except Exception as e:
-                if attempt < max_429_retries - 1 and (_is_rate_limit(e) or _is_transient_server_error(e)):
+                is_rate_limit = _is_rate_limit(e)
+                kind = "rate_limit" if is_rate_limit else "server_error" if _is_transient_server_error(e) else "other"
+                timing.record_failure(kind, _elapsed_ms(attempt_start))
+                if attempt < max_429_retries - 1 and kind != "other":
+                    timing.retries += 1
                     wait = backoff * (2 ** attempt)
-                    reason = f"{client._api_client.location} - {api_model} - 429 rate limit" if _is_rate_limit(e) else "5xx server error"
+                    reason = f"{location} - {api_model} - 429 rate limit" if is_rate_limit else "5xx server error"
                     error_message = (f"server {reason} — waiting {wait}s before retry {attempt + 1}/{max_429_retries - 1}")
                     print(error_message)
                     if attempt > 1:
                         self.sink.system_private(error_message)
                     time.sleep(wait)
+                    timing.wait_ms += wait * 1000
                 else:
                     raise
-        return response, result
+
+        return response, result, timing, location
     
     def create(self, response_model, messages: list, thinking=False, agent_api_model=None, use_higher_model = False, span=None):
         if self._mock_output:
@@ -137,13 +152,15 @@ class APIClient:
 
         caller = _caller()
         start = time.monotonic()
-        response, result = self._make_call(messages, api_model, response_model, thinking=thinking)
+        response, result, timing, location = self._make_call(messages, api_model, response_model, thinking=thinking)
         record = self._record_manager.log_call(
             caller=caller,
             api_model=api_model,
             response_model=response_model,
             response=response,
             start=start,
+            timing=timing,
+            location=location,
         )
         if span is not None:
             _tag_span(span, record, thinking=thinking, game_id=self.game_id)
@@ -185,7 +202,11 @@ def _tag_span(span, record, thinking: bool, game_id=None) -> None:
     span.set_attribute("llm.model", record.model)
     span.set_attribute("llm.caller", record.caller)
     span.set_attribute("llm.thinking", thinking)
+    span.set_attribute("llm.location", record.location)
     span.set_attribute("llm.duration_ms", record.duration_ms)
+    span.set_attribute("llm.call_ms", record.call_ms)
+    span.set_attribute("llm.wait_ms", record.wait_ms)
+    span.set_attribute("llm.retries", record.retries)
     for name, value in (
         ("llm.tokens.prompt", record.prompt_tokens),
         ("llm.tokens.completion", record.completion_tokens),
@@ -194,6 +215,10 @@ def _tag_span(span, record, thinking: bool, game_id=None) -> None:
     ):
         if value is not None:
             span.set_attribute(name, value)
+
+
+def _elapsed_ms(start: float) -> int:
+    return int((time.monotonic() - start) * 1000)
 
 
 def _is_rate_limit(exc: Exception) -> bool:
