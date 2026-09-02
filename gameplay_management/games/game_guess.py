@@ -181,41 +181,41 @@ class GameGuess(GameMechanicsMixin):
     # ---
     # widget helpers
     # ---
-        def _build_widget_update_entry(self, name, state=None, guess=None, correct=None, points=None):
-            for entry in self._widget_rows:
-                if entry["name"] == name:
-                    if state:
-                        entry["state"] = state
-                    if guess is not None:
-                        entry["guess"] = guess
-                    if correct is not None:
-                        entry["correct"] = correct
-                    if points is not None:
-                        entry["points"] = points
-                    return self._widget_payload()
-            return None
-    
-        def _widget_update_entry(self, name, state=None, guess=None, correct=None, points=None):
-            payload = self._build_widget_update_entry(name, state, guess, correct, points)
-            if payload is not None:
-                self.game_board.game_sink.on_widget_update(payload)
-            return
-    
-        def _widget_payload(self):
-            return {
-                "kind": "guess",
-                "range": self._widget_range,
-                "rows": self._widget_rows,
-            }
-    
-        def _emit_widget(self):
-            self.game_board.game_sink.on_widget_update(self._widget_payload())
-    
-        def _initialise_widget(self, agents, number_range):
-            self._widget_range = {"min": 1, "max": number_range}
-            self._widget_rows = [
-                {"name": agent.name, "state": "waiting", "guess": None, "correct": None, "points": None}
-                for agent in agents
-            ]
-            self._emit_widget()
+    def _build_widget_update_entry(self, name, state=None, guess=None, correct=None, points=None):
+        for entry in self._widget_rows:
+            if entry["name"] == name:
+                if state:
+                    entry["state"] = state
+                if guess is not None:
+                    entry["guess"] = guess
+                if correct is not None:
+                    entry["correct"] = correct
+                if points is not None:
+                    entry["points"] = points
+                return self._widget_payload()
+        return None
+
+    def _widget_update_entry(self, name, state=None, guess=None, correct=None, points=None):
+        payload = self._build_widget_update_entry(name, state, guess, correct, points)
+        if payload is not None:
+            self.game_board.game_sink.on_widget_update(payload)
+        return
+
+    def _widget_payload(self):
+        return {
+            "kind": "guess",
+            "range": self._widget_range,
+            "rows": self._widget_rows,
+        }
+
+    def _emit_widget(self):
+        self.game_board.game_sink.on_widget_update(self._widget_payload())
+
+    def _initialise_widget(self, agents, number_range):
+        self._widget_range = {"min": 1, "max": number_range}
+        self._widget_rows = [
+            {"name": agent.name, "state": "waiting", "guess": None, "correct": None, "points": None}
+            for agent in agents
+        ]
+        self._emit_widget()
 

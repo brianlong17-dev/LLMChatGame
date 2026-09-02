@@ -247,6 +247,12 @@ class GameHarness:
     def widgets(self, kind: str) -> list[dict]:
         return [w for w in self.sink.widget_updates if w and w.get("kind") == kind]
 
+    def widget_shown_with(self, speaker: str) -> dict:
+        for action in reversed(self.sink.public_actions):
+            if str(action["speaker"]) == speaker and action["widget"]:
+                return action["widget"]
+        raise AssertionError(f"No widget arrived attached to a message from '{speaker}'")
+
     def turn_by(self, actor: str) -> dict:
         for widget in reversed(self.widgets("give_take")):
             for turn in widget.get("turns", []):
@@ -266,6 +272,18 @@ class GameHarness:
     @property
     def _board(self):
         return self._engine.game_board
+
+
+def guess_with_number(number: int):
+    from gameplay_management.games.game_guess import GameGuess
+
+    class ScriptedGuess(GameGuess):
+        def _pick_winning_number(self, number_range):
+            return number
+
+    ScriptedGuess.__name__ = GameGuess.__name__
+    ScriptedGuess.__qualname__ = GameGuess.__qualname__
+    return ScriptedGuess
 
 
 def start_game(players, rounds=None, phases=None, summarise_phases: bool = False) -> GameHarness:

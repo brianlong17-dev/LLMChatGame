@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from typing import Union
 
 from agents.base_agent import BaseAgent
@@ -286,7 +287,9 @@ class CapturingGameSink(GameEventSink):
     def on_public_action(self, speaker, message, color="", animate_as_player=True, should_hold=True, directed_to_name=None, is_reply=False, is_human=False, pop_wrap=False, widget=None):
         if directed_to_name:
             message = f"@{directed_to_name} - {message}"
-        self.public_actions.append({"speaker": speaker, "message": message, "color": color})
+        if widget is not None:
+            self.widget_updates.append(deepcopy(widget))
+        self.public_actions.append({"speaker": speaker, "message": message, "color": color, "widget": deepcopy(widget)})
 
     def on_private_thought(self, speaker, message):
         self.private_thoughts.append({"speaker": speaker, "message": message})
@@ -313,5 +316,5 @@ class CapturingGameSink(GameEventSink):
         pass
 
     def on_widget_update(self, widget) -> None:
-        self.widget_updates.append(widget)
+        self.widget_updates.append(deepcopy(widget))
 
