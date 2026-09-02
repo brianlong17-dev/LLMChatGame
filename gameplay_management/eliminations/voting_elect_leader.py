@@ -106,8 +106,8 @@ class VoteElectLeader(VotingRoundBase):
             self.turn_manager._output_response(
                 player, vote_response, is_reply=True,
                 pre_message_choice_reveal=self.TARGET_NAME_FIELD,
+                widget=self._build_voting_widget_update(player.name, choice or "—"),
             )
-            self._update_voting_widget(player.name, choice or "—")
             if choice:
                 votes.append(choice)
                 

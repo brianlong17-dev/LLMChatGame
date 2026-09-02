@@ -274,15 +274,15 @@ class TurnManager:
         return public_response, directed_to_name
 
     def _output_response(self, player, response, single_message_overwrite=None, pre_message_choice_reveal=None, post_message_choice_reveal=None, is_reply=False, delay=0,
-                         include_target_name=False):
-        
+                         include_target_name=False, widget=None):
+
         if single_message_overwrite:
             #In case of multiple turns being included in a single response model- we will only have public output.
-            return self.game_board.broadcast_public_action_agent(player, single_message_overwrite, is_reply=is_reply, delay=delay)
-        
+            return self.game_board.broadcast_public_action_agent(player, single_message_overwrite, is_reply=is_reply, delay=delay, widget=widget)
+
         private_thoughts = None if player.is_human() else getattr(response, 'private_thoughts', None)
         private_thoughts_brief = None if player.is_human() else getattr(response, 'private_thoughts_brief', None)
         public_response, directed_to_name = self._format_public_response(response, pre_message_choice_reveal, post_message_choice_reveal, include_target_name)
         self.game_board.handle_public_private_output(player,
                 public_response, private_thoughts, private_thoughts_brief, delay=delay,
-                is_reply=is_reply, directed_to_name=directed_to_name)
+                is_reply=is_reply, directed_to_name=directed_to_name, widget=widget)

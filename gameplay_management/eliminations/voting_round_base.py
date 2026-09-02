@@ -36,7 +36,8 @@ class VotingRoundBase(BaseRound):
     
     def _handle_vote_response(self, agent, vote_response):
         actual_vote = self.turn_manager._get_target_name_from_response(vote_response)
-        self.turn_manager._output_response(agent, vote_response, is_reply=True, pre_message_choice_reveal=self.TARGET_NAME_FIELD)
-        self._update_voting_widget(agent.name, actual_vote or "—")
-        return actual_vote 
+        widget = self._build_voting_widget_update(agent.name, actual_vote or "—")
+        self.turn_manager._output_response(agent, vote_response, is_reply=True, pre_message_choice_reveal=self.TARGET_NAME_FIELD,
+                                           widget=widget)
+        return actual_vote
         

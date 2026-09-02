@@ -145,7 +145,7 @@ class GamePrisonersDilemma(GameMechanicsMixin):
                 self.TARGET_NAME_FIELD: "Who do you want to pair up with?",
                 "public_response": "What do you say to them before the game? Propose a split?",
             },
-            placeholders={"public_response": "a pre-game message?"},
+            placeholders={"public_response": "..."},
         )
 
     def _human_split_or_steal_description(self):
@@ -217,12 +217,12 @@ class GamePrisonersDilemma(GameMechanicsMixin):
 
         choices = []
         for agent, opponent, res in ((agent0, agent1, results[0]), (agent1, agent0, results[1])):
-            self.turn_manager._output_response(agent, res, pre_message_choice_reveal="action", is_reply=True)
-            self._widget_update_entry(agent.name, opponent.name, state="revealed", choice=res.action)
+            widget = self._build_widget_update_entry(agent.name, opponent.name, state="revealed", choice=res.action)
+            self.turn_manager._output_response(agent, res, pre_message_choice_reveal="action", is_reply=True, widget=widget)
             choices.append(res.action)
 
-        result_host_message = self._process_results_and_points(choices[0], choices[1], agent0, agent1)
-        self._host_broadcast(f"{result_host_message}\n")
+        result_host_message, results_widget = self._process_results_and_points(choices[0], choices[1], agent0, agent1)
+        self._host_broadcast(f"{result_host_message}\n", widget=results_widget)
         
         if self.cfg.pd_get_reactions and (self.cfg.pd_pairing_method != self.cfg.pd_pairing_round_robin):
             if (choices[0] == 'steal' and choices[1] == 'steal'):
@@ -241,12 +241,13 @@ class GamePrisonersDilemma(GameMechanicsMixin):
     def _process_results_and_points(self, choice0, choice1, agent0, agent1):
         p0_gain, p1_gain, msg = self._calculate_pd_payout(choice0, choice1, agent0.name, agent1.name)
 
+        widget = None
         for agent, opponent, gain in ((agent0, agent1, p0_gain), (agent1, agent0, p1_gain)):
             self.game_board.append_agent_points(agent.name, gain)
-            self._widget_update_entry(agent.name, opponent.name, points=gain)
-            
+            widget = self._build_widget_update_entry(agent.name, opponent.name, points=gain) or widget
+
         result_host_message = f"{msg}{agent0.name} receives {p0_gain}, and {agent1.name} receives {p1_gain} points."
-        return result_host_message
+        return result_host_message, widget
 
     
     def respond_to_return_sender(self, agent, msg):
@@ -276,12 +277,12 @@ class GamePrisonersDilemma(GameMechanicsMixin):
             return next(e for e in pair if e["name"] == active_name)
         return None
             
-    def _widget_update_entry(self, active_name, partner_name=None, state=None, choice=None, points=None):
-        
-        entry = self._get_widget_entry(active_name, partner_name) 
+    def _build_widget_update_entry(self, active_name, partner_name=None, state=None, choice=None, points=None):
+
+        entry = self._get_widget_entry(active_name, partner_name)
         if entry is None:
-            #should we crash? probably not for a widget 
-            return
+            #should we crash? probably not for a widget
+            return None
 
         if state:
             entry["state"] = state
@@ -289,7 +290,12 @@ class GamePrisonersDilemma(GameMechanicsMixin):
             entry["choice"] = choice
         if points is not None:
             entry["points"] = points
-        self._emit_widget()
+        return self._widget_payload()
+
+    def _widget_update_entry(self, active_name, partner_name=None, state=None, choice=None, points=None):
+        payload = self._build_widget_update_entry(active_name, partner_name, state, choice, points)
+        if payload is not None:
+            self.game_board.game_sink.on_widget_update(payload)
         return
 
     def _widget_pair_entry_initial(self, pair):
@@ -301,8 +307,11 @@ class GamePrisonersDilemma(GameMechanicsMixin):
             couple.append(entry)
         return couple
 
+    def _widget_payload(self):
+        return {"kind": "pd", "pairs": self._widget_pairs}
+
     def _emit_widget(self):
-        self.game_board.game_sink.on_widget_update({"kind": "pd", "pairs": self._widget_pairs})
+        self.game_board.game_sink.on_widget_update(self._widget_payload())
 
     def _initialise_widget(self, pairs):
         self._widget_pairs = [self._widget_pair_entry_initial(pair) for pair in pairs]

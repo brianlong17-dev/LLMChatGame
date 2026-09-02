@@ -183,8 +183,8 @@ class BaseRound:
     #   Broadcasting    #
     #####################
 
-    def _host_broadcast(self, message, delay = 0, is_reply = False, animate_as_player=False):
-        self.game_board.host_broadcast(message, delay, is_reply=is_reply, animate_as_player=animate_as_player)
+    def _host_broadcast(self, message, delay = 0, is_reply = False, animate_as_player=False, widget=None):
+        self.game_board.host_broadcast(message, delay, is_reply=is_reply, animate_as_player=animate_as_player, widget=widget)
 
     def _host_broadcast_multiple_choice(self, messages):
         self.game_board.host_broadcast(random.choice(messages))
@@ -308,7 +308,7 @@ class BaseRound:
         self.game_board.game_sink.on_widget_update(self._voting_dictionary)
                 
     
-    def _update_voting_widget(self, voter_name, target_name, is_final=False):
+    def _build_voting_widget_update(self, voter_name, target_name, is_final=False):
         for nominee in self._voting_dictionary["nominees"]:
             if nominee["name"] == target_name:
                 nominee["votes"] += 1
@@ -316,7 +316,7 @@ class BaseRound:
         self._voting_dictionary["voters_pending"] = [
             n for n in self._voting_dictionary["voters_pending"] if n != voter_name
         ]
-        
+
         # ---- (edge case - tie breaker second vote) ---- #
         voters_done = self._voting_dictionary["voters_done"]
         existing = next((v for v in voters_done if v["name"] == voter_name), None)
@@ -326,7 +326,7 @@ class BaseRound:
             voters_done.append({"name": voter_name, "voted_for": target_name})
         # ------------------------------------------------ #
         self._voting_dictionary["is_final"] = is_final
-        self.game_board.game_sink.on_widget_update(self._voting_dictionary)
+        return self._voting_dictionary
         
     def _vote_widget_vote_finalised(self):
         self._voting_dictionary["is_final"] = True

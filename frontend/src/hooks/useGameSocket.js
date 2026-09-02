@@ -104,6 +104,7 @@ export function useGameSocket(autoRun, animateText, mobileOutputs) {
       // Yay! we're through the breaks ! Lets get something out the queue! 
 
       const evt = pendingQueue.current.shift()
+      if (evt.type === 'public_action' && evt.widget) setWidget(evt.widget)
       if (evt.type === 'input_form_request') { setInputRequest(evt); return }
 
       if (evt.type === 'delay') {

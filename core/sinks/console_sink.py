@@ -91,7 +91,7 @@ class ConsoleGameEventSink(GameEventSink):
 
     def on_public_action(self, speaker: Speaker, message: str, color: str = "",
                          animate_as_player = False, should_hold: bool = True, directed_to_name = None,
-                         is_reply: bool = False, is_human: bool = False, pop_wrap: bool = False) -> None:
+                         is_reply: bool = False, is_human: bool = False, pop_wrap: bool = False, widget: dict | None = None) -> None:
         if directed_to_name:
             message = f"@{directed_to_name} - {message}"
         ConsoleRenderer.print_public_action(speaker, message, color)

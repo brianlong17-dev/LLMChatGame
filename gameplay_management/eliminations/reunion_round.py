@@ -188,7 +188,7 @@ class FinaleReunionRound(VotingRoundBase):
 
         self._host_broadcast(line)
 
-    def _cast_jury_vote(self, juror, finalist_names, deadlock_vote=False):
+    def _cast_jury_vote(self, juror, finalist_names, deadlock_vote=False, is_final=False):
         if deadlock_vote:
             turn_prompt = "It's a dead tie. You get to pick the winner. Who do you choose?"
         else:
@@ -202,9 +202,12 @@ class FinaleReunionRound(VotingRoundBase):
             finalist_names,
             "Vote for the finalist you believe deserves to win. "
         )
-        result = self.turn_manager.take_turn(juror, turn_prompt, model_name="jury_vote", 
+        result = self.turn_manager.take_turn(juror, turn_prompt, model_name="jury_vote",
                                              action_fields=action_fields, broadcast=False)
-        self.turn_manager._output_response(juror, result, post_message_choice_reveal=self.TARGET_NAME_FIELD, is_reply=True)
+        vote = getattr(result, "target_name", "").strip()
+        widget = self._build_voting_widget_update(juror.name, vote, is_final=is_final) if vote in finalist_names else None
+        self.turn_manager._output_response(juror, result, post_message_choice_reveal=self.TARGET_NAME_FIELD, is_reply=True,
+                                           widget=widget)
         return result
 
     def time_to_vote(self):
@@ -222,7 +225,6 @@ class FinaleReunionRound(VotingRoundBase):
             vote = getattr(result, "target_name", "").strip()
             if vote in finalist_names:
                 vote_counts[vote] += 1
-                self._update_voting_widget(juror.name, vote)
                 self.host_vote_response(juror.name, vote, vote_counts, vote_number, total_votes)
             else:
                 self._host_broadcast(f"{juror.name} cast an invalid vote: '{vote}', skipping.")
@@ -259,9 +261,8 @@ class FinaleReunionRound(VotingRoundBase):
             f"We have a tie... in this case, one additional vote will be given to our first runner up. "
             f"The player who will decide the winner is... {runner_up.name}!"
         )
-        result = self._cast_jury_vote(runner_up, leaders, deadlock_vote=True)
+        result = self._cast_jury_vote(runner_up, leaders, deadlock_vote=True, is_final=True)
         winner_name = getattr(result, "target_name", "").strip()
-        self._update_voting_widget(runner_up.name, winner_name, is_final=True)
         if winner_name in leaders:
             return winner_name
 

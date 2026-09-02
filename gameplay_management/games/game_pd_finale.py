@@ -154,8 +154,8 @@ class GamePrisonersDilemmaFinale(GamePrisonersDilemma):
         choices = []
         for agent, res in zip((agent0, agent1), results):
             choice = res.action
-            self.turn_manager._output_response(agent, res, pre_message_choice_reveal="action", is_reply=True)
-            self._widget_update_entry(agent.name, state="revealed", choice=choice)
+            widget = self._build_widget_update_entry(agent.name, state="revealed", choice=choice)
+            self.turn_manager._output_response(agent, res, pre_message_choice_reveal="action", is_reply=True, widget=widget)
             choices.append(choice)
 
         return choices
@@ -304,13 +304,13 @@ class GamePrisonersDilemmaFinale(GamePrisonersDilemma):
         results = self._run_tasks([(agent, tie_possible) for agent in self.agents], self.finale_reg_split_or_steal)
 
         choices = self._process_choices(agent0, agent1, results)
-        result_msg = self._process_results_and_points(choices[0], choices[1], agent0, agent1)
+        result_msg, results_widget = self._process_results_and_points(choices[0], choices[1], agent0, agent1)
 
         if self._is_tie(agent0, agent1):
             commentary = f"This means {follower.name} has leapt into a tie for first place! "
-            self._host_broadcast(f"{result_msg} {commentary}")
+            self._host_broadcast(f"{result_msg} {commentary}", widget=results_widget)
             self.run_tie(agent0, agent1, is_second_game = True)
-            
+
         else:
             for player in self.agents:
                 player._mask_drop=True
@@ -318,11 +318,11 @@ class GamePrisonersDilemmaFinale(GamePrisonersDilemma):
             loser = agent1 if winner is agent0 else agent0
             is_upset = (winner == follower)
             commentary = self._regular_game_commentary(agent0, winner, loser, choices, is_coronation, is_upset)
-            
+
             if is_upset:
-                self._host_broadcast(f"{commentary}")
+                self._host_broadcast(f"{commentary}", widget=results_widget)
             else:
-                self._host_broadcast(f"{result_msg}\n{commentary}")
+                self._host_broadcast(f"{result_msg}\n{commentary}", widget=results_widget)
             self._one_winner_reg(winner, loser, commentary, is_upset)
             
     def run_tie(self, agent0, agent1, is_second_game = False):

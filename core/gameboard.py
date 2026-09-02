@@ -142,9 +142,9 @@ class GameBoard:
         ]
 
     def handle_public_private_output(self, agent: BaseAgent, public_resonse, private_thought, private_thought_brief,
-            delay: float = 0.0, is_reply: bool = False, directed_to_name=None):
+            delay: float = 0.0, is_reply: bool = False, directed_to_name=None, widget=None):
         message_id = self.broadcast_public_action_agent(agent, public_resonse, private_thought_brief=private_thought_brief,
-                                     directed_to_name=directed_to_name, is_reply=is_reply)
+                                     directed_to_name=directed_to_name, is_reply=is_reply, widget=widget)
 
         agent.last_message_id = (message_id, 0)
 
@@ -170,18 +170,19 @@ class GameBoard:
         is_repeated_host_message = isinstance(speaker, str) and speaker.upper() == self.HOST_NAME and self._was_last_message_from_host()
         return not (is_system_speaker or self._is_human(speaker) or is_repeated_host_message)
 
-    def broadcast_public_action_agent(self, agent, message, private_thought_brief=None, color: str = "", directed_to_name = None, 
-                            is_reply = False, delay=0):
+    def broadcast_public_action_agent(self, agent, message, private_thought_brief=None, color: str = "", directed_to_name = None,
+                            is_reply = False, delay=0, widget=None):
         message_id = self.game_log._update_history(agent.name, message, private_thought_brief=private_thought_brief)
-        
+
         self.game_sink.on_public_action(agent.name, message, color=color, animate_as_player=True, should_hold=True,
-                                        directed_to_name = directed_to_name, is_reply = is_reply, is_human=agent.is_human())
+                                        directed_to_name = directed_to_name, is_reply = is_reply, is_human=agent.is_human(),
+                                        widget=widget)
         self.game_sink.delay(delay)
         self.first_message_sent = True
         return message_id
 
     def broadcast_public_action_non_player(self, speaker: str, message: str, color: str = "", directed_to_name = None, is_reply = False, 
-                                should_animate_override = False, is_human=False, pop_wrap=False):
+                                should_animate_override = False, is_human=False, pop_wrap=False, widget=None):
         
         if speaker.upper() == self.SYSTEM:
             raise ValueError("SYSTEM cannot broadcast a public_action; use system_broadcast instead") 
@@ -190,7 +191,8 @@ class GameBoard:
         is_repeated_host = speaker.upper() == self.HOST_NAME and self._was_last_message_from_host()
         should_hold = should_animate_override or not is_repeated_host
         self.game_sink.on_public_action(speaker, message, color=color, animate_as_player=should_animate_override, should_hold=should_hold,
-                    directed_to_name = directed_to_name, is_reply = is_reply, is_human=is_human, pop_wrap=pop_wrap)
+                    directed_to_name = directed_to_name, is_reply = is_reply, is_human=is_human, pop_wrap=pop_wrap,
+                    widget=widget)
         
     def system_broadcast(self, message, private=False, border_bottom = False):
         if not private:
@@ -209,9 +211,10 @@ class GameBoard:
         return False
         
     def host_broadcast(self, message, delay: float = 0.0, is_reply: bool = False,
-                       animate_as_player=False):
+                       animate_as_player=False, widget=None):
         entry = self.game_log._current_round_most_recent_conversation_entry()
-        self.broadcast_public_action_non_player(self.HOST_NAME, message, is_reply=is_reply, should_animate_override=animate_as_player)
+        self.broadcast_public_action_non_player(self.HOST_NAME, message, is_reply=is_reply, should_animate_override=animate_as_player,
+                                               widget=widget)
         self.game_sink.delay(delay)
 
     def delay(self, delay: float = 0.0):

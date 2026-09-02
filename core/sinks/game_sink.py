@@ -85,9 +85,9 @@ class GameEventSink(ABC):
     # -- Speech and thought ---------------------------------------------------
 
     @abstractmethod
-    def on_public_action(self, speaker: Speaker, message: str, color: str = "", 
-                         animate_as_player: bool = True, should_hold: bool = True, directed_to_name=None, 
-                         is_reply: bool = False, is_human: bool = False, pop_wrap: bool = False) -> None:
+    def on_public_action(self, speaker: Speaker, message: str, color: str = "",
+                         animate_as_player: bool = True, should_hold: bool = True, directed_to_name=None,
+                         is_reply: bool = False, is_human: bool = False, pop_wrap: bool = False, widget: dict | None = None) -> None:
         """
         A speaker acted publicly — goes into game history, visible to all agents.
         color is a hint for terminal renderers; animate_as_player signals whether the
@@ -96,6 +96,10 @@ class GameEventSink(ABC):
         should_hold signals whether the frontend should pause queue draining until the
         viewer presses next (False for HOST, SYSTEM, human players, back-to-back host).
         is_reply marks this message as a threaded reply (frontend emits child: true).
+        widget, if given, is a widget-state snapshot that should apply at the exact
+        moment this message clears should_hold/animation gating, instead of as an
+        independently-ordered on_widget_update event (avoids the widget updating
+        ahead of a reveal the viewer hasn't advanced to yet).
         """
         ...
 
@@ -215,7 +219,7 @@ class NoopGameSink(GameEventSink):
     def on_phase_round_index(self, index): pass
     def on_round_start(self, round_number, round_type, round_name, scores): pass
     def on_round_summary(self, summary): pass
-    def on_public_action(self, speaker, message, color="", animate_as_player=True, should_hold=True, directed_to_name=None, is_reply=False, is_human=False, pop_wrap=False): pass
+    def on_public_action(self, speaker, message, color="", animate_as_player=True, should_hold=True, directed_to_name=None, is_reply=False, is_human=False, pop_wrap=False, widget=None): pass
     def on_private_thought(self, speaker, message): pass
     def system_private(self, message, border_bottom=False): pass
     def system_public(self, message, border_bottom=False): pass
@@ -279,7 +283,7 @@ class CapturingGameSink(GameEventSink):
     def on_round_summary(self, summary):
         self.round_summaries.append(summary)
 
-    def on_public_action(self, speaker, message, color="", animate_as_player=True, should_hold=True, directed_to_name=None, is_reply=False, is_human=False, pop_wrap=False):
+    def on_public_action(self, speaker, message, color="", animate_as_player=True, should_hold=True, directed_to_name=None, is_reply=False, is_human=False, pop_wrap=False, widget=None):
         if directed_to_name:
             message = f"@{directed_to_name} - {message}"
         self.public_actions.append({"speaker": speaker, "message": message, "color": color})
